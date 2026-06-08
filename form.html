@@ -5179,6 +5179,7 @@ function buildShareCardHTML(row) {
         ${rawMat    ? row_('🧱','วัตถุดิบ', rawMat) : ''}
         ${workType  ? row_('🔧','แบบงาน', workType) : ''}
         ${row_('📐','ขนาด', size)}
+        ${unit > 0  ? row_('🔢','จำนวน', `${unit.toLocaleString('th-TH')} ลูก`) : ''}
         ${meshOut   ? row_('🔲','ตะแกรงนอก', meshOut) : ''}
         ${meshIn    ? row_('⬜','ตะแกรงใน', meshIn)   : ''}
         ${(() => {
