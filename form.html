@@ -3801,7 +3801,10 @@ function dtRender() {
   tbody.innerHTML = pageRows.map((r, ri) => {
     const globalIdx = _dtPage * DT_PAGE_SIZE + ri;
     const od = r[DT.od]||'', id2 = r[DT.id]||'', h = r[DT.h]||'';
-    const size = od && id2 && h ? `${od}×${id2}×${h}` : (r[DT.size]||'—');
+    const od2r = parseFloat(r[DT.od2]) || 0;
+    const size = od && id2 && h
+      ? (od2r > 0 ? `${od2r}/${od}×${id2}×${h}` : `${od}×${id2}×${h}`)
+      : (r[DT.size]||'—');
     const tc   = parseFloat(r[DT.totalCost]) || 0;
     const sp   = parseFloat(r[DT.sellPrice]) || 0;
     const prof = sp - tc;
@@ -5540,7 +5543,10 @@ function submitForm() {
 
   const isUpdate = !!_loadedNoQuo;
   const _cfOd   = num('f_od'), _cfId = num('f_id'), _cfH = num('f_h');
-  const _cfSize = _cfOd && _cfId && _cfH ? `${_cfOd}×${_cfId}×${_cfH} mm.` : '—';
+  const _cfOd2  = ($('f_hasOd2')?.checked && num('f_od2') > 0) ? num('f_od2') : 0;
+  const _cfSize = _cfOd && _cfId && _cfH
+    ? (_cfOd2 > 0 ? `${_cfOd2}/${_cfOd}×${_cfId}×${_cfH} mm.` : `${_cfOd}×${_cfId}×${_cfH} mm.`)
+    : '—';
   const _cfCust = ($('f_contact') && $('f_contact').value) ? $('f_contact').value : '—';
   const _cfNo   = isUpdate ? _loadedNoQuo : $('f_noQuo').value;
   const confirmHtml = `
@@ -7155,6 +7161,7 @@ function _shareRow(row) {
     noQuo    : row[1]  || '—',
     date     : row[2]  || '—',
     od       : row[3],  id2: row[4],  h: row[5],
+    od2      : parseFloat(row[54]) || 0,
     unit     : parseInt(row[6])  || 0,
     size     : row[7]  || '—',
     workType : row[8]  || '',
@@ -7175,7 +7182,9 @@ function _shareRow(row) {
 
 function buildShareText(row) {
   const d = _shareRow(row);
-  const size = (d.od && d.id2 && d.h) ? `${d.od}×${d.id2}×${d.h} mm.` : d.size;
+  const size = (d.od && d.id2 && d.h)
+    ? (d.od2 > 0 ? `${d.od2} / ${d.od}×${d.id2}×${d.h} mm.` : `${d.od}×${d.id2}×${d.h} mm.`)
+    : d.size;
   const marginPct = d.sellPrice > 0 ? ((d.profitU/d.sellPrice)*100).toFixed(1) : '0';
   const now = new Date();
   const thDate = now.toLocaleDateString('th-TH',{year:'numeric',month:'numeric',day:'numeric'})
@@ -7192,7 +7201,7 @@ function buildShareText(row) {
     d.meshIn    ? `ตะแกรงใน: ${matLabel(d.meshIn)}`   : '',
     d.gapWeld !== '' ? `ช่องว่างจีบเหลือ: ${d.gapWeld} mm.` : '',
     `หมายเหตุ: ${d.remark || '-'}`,
-    `ราคา: @${_fmtShareN(d.sellPrice)}.`,
+    `ราคา: @ ${Math.round(d.sellPrice).toLocaleString('th-TH')}.-`,
     '----------------------------------',
     `📅 วันที่: ${thDate}`,
   ].filter(Boolean).join('\n');
@@ -7200,10 +7209,12 @@ function buildShareText(row) {
 
 function buildShareCardHTML(row) {
   const d = _shareRow(row);
-  const { noQuo, date, od, id2, h, unit, workType, meshOut, meshIn,
+  const { noQuo, date, od, id2, h, od2, unit, workType, meshOut, meshIn,
           totalCost, sellPrice, profitU, profitJ, gapWeld,
           contact, remark, quoter, rawMat, refId } = d;
-  const size = (od && id2 && h) ? `${od} × ${id2} × ${h} mm` : (row[7]||'—');
+  const size = (od && id2 && h)
+    ? (od2 > 0 ? `${od2} / ${od} × ${id2} × ${h} mm` : `${od} × ${id2} × ${h} mm`)
+    : (row[7]||'—');
 
   // company logo
   const logoB64 = localStorage.getItem('ptts_logo_b64');
@@ -7895,6 +7906,7 @@ function buildDocuments() {
   const dateVal  = $('f_date').value  || '';
   const unit     = num('f_unit') || 1;
   const od       = num('f_od'); const id_ = num('f_id'); const h = num('f_h');
+  const od2      = ($('f_hasOd2') && $('f_hasOd2').checked && num('f_od2') > 0) ? num('f_od2') : 0;
   const rawMat   = $('f_rawMat').value || '';
   const workType = $('f_workType').value || '';
   const remark   = $('f_remark').value || '';
@@ -7950,8 +7962,9 @@ function buildDocuments() {
   const vatAmt    = subtotal * 0.07;
   const grandTotal= subtotal + vatAmt;
 
+  const _sizeStr  = od2 > 0 ? `OD ฝา2: ${od2} / ${od}×${id_}×${h}` : `${od}×${id_}×${h}`;
   const productDesc = [
-    `ไส้กรองอุตสาหกรรม OD×ID×H: ${od}×${id_}×${h} มม.`,
+    `ไส้กรองอุตสาหกรรม: ${_sizeStr} มม.`,
     rawMat   ? `วัสดุ: ${rawMat}` : '',
     workType ? `แบบงาน: ${workType}` : '',
   ].filter(Boolean).join(' | ');
