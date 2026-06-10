@@ -1166,7 +1166,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v5.5</span>
+      <span class="ph-chip ver">v5.9</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1946,7 +1946,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
       <span style="margin-left:auto;font-size:.72rem;color:var(--t3)">เปิด/ปิด แต่ละกระบวนการได้</span>
     </div>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-      <table id="procTable" style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:420px">
+      <table id="procTable" style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:480px;table-layout:fixed">
         <thead>
           <tr style="border-bottom:1px solid var(--bc-div);background:var(--bg-deep)">
             <th style="padding:6px 8px;color:var(--t3);text-align:center;width:36px">เปิด</th>
@@ -1954,13 +1954,19 @@ select option { background: var(--sel-bg); color: var(--t1); }
             <th style="padding:6px 8px;color:var(--t3);text-align:center;width:72px">Base<br><span style="font-weight:400;font-size:.68rem">นาที/ชิ้น</span></th>
             <th style="padding:6px 8px;color:var(--t3);text-align:center;width:72px">Setup<br><span style="font-weight:400;font-size:.68rem">นาที/Job</span></th>
             <th style="padding:6px 8px;color:var(--t3);text-align:center;width:72px">Factor<br><span style="font-weight:400;font-size:.68rem">นาที/mm</span></th>
-            <th style="padding:6px 8px;color:var(--t3);text-align:center">มิติ</th>
+            <th style="padding:6px 8px;color:var(--t3);text-align:center;width:64px">มิติ</th>
+            <th style="padding:6px 8px;color:var(--t3);text-align:center;width:36px"></th>
           </tr>
         </thead>
         <tbody id="proc_tbody"></tbody>
       </table>
     </div>
-    <div class="btn-row" style="margin-top:14px;justify-content:flex-start">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+      <button class="btn" onclick="addProc()" style="padding:8px 14px;font-size:.8rem">
+        ➕ เพิ่มกระบวนการ
+      </button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
       <button class="btn btn-primary" onclick="saveLaborConfig()" style="padding:10px 18px;font-size:.88rem">
         💾 บันทึกเป็นค่าเริ่มต้น
       </button>
@@ -5056,13 +5062,14 @@ async function loadAllData(showResult) {
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
 
   try {
-    const [matData, specData, workData, contactData, nextNoData, moldDataRes] = await Promise.all([
+    const [matData, specData, workData, contactData, nextNoData, moldDataRes, laborData] = await Promise.all([
       fetchJSON('getMAT'),
       fetchJSON('getSpecMat'),
       fetchJSON('getWorkTypes'),
       fetchJSON('getContacts'),
       fetchJSON('getNextNo'),
       fetchJSON('getModl'),
+      fetchJSON('getLaborConfig'),
     ]);
 
     // MAT — server เป็นข้อมูลหลักเสมอ (sync ข้ามเครื่อง) คงค่า w/l เดิมไว้ถ้ามี
@@ -5136,6 +5143,23 @@ async function loadAllData(showResult) {
     // Mold data
     if (moldDataRes && moldDataRes.status === 'ok' && Array.isArray(moldDataRes.molds)) {
       _moldData = moldDataRes.molds;
+    }
+
+    // Labor config (อัตราค่าแรง + กระบวนการผลิต) — sync ทุกเครื่องจาก Sheet
+    if (laborData && laborData.status === 'ok' && laborData.config) {
+      const cfg = laborData.config;
+      if (Array.isArray(cfg.processes) && cfg.processes.length) {
+        _laborProcs = cfg.processes;
+        localStorage.setItem('ptts_labor_processes', JSON.stringify(cfg.processes));
+      }
+      if (cfg.ratePerMin)  localStorage.setItem('ptts_labor_rate_min', cfg.ratePerMin);
+      if (cfg.ratePerDay)  localStorage.setItem('ptts_labor_rate_day', cfg.ratePerDay);
+      if (cfg.hoursPerDay) localStorage.setItem('ptts_labor_hours_per_day', cfg.hoursPerDay);
+      if (cfg.ratePerMin && cfg.hoursPerDay) {
+        localStorage.setItem('ptts_labor_rate_hour', (cfg.ratePerMin * 60).toFixed(2));
+      }
+      if (typeof renderProcTable === 'function' && $('proc_tbody')) renderProcTable();
+      if (typeof calcLaborByProcess === 'function') calcLaborByProcess();
     }
 
     setDbStatus('ok', '✓ เชื่อมต่อแล้ว');
@@ -6276,7 +6300,10 @@ function renderProcTable() {
         <input type="checkbox" ${p.enabled?'checked':''} onchange="toggleProc(${i},this.checked)"
           style="width:16px;height:16px;cursor:pointer;accent-color:var(--c1)">
       </td>
-      <td style="padding:8px;color:var(--t1);white-space:nowrap">${p.name}</td>
+      <td style="padding:6px 4px;overflow:hidden">
+        <input type="text" value="${(p.name||'').replace(/"/g,'&quot;')}" oninput="editProc(${i},'name',this.value)"
+          style="${inStyle};text-align:left;min-width:0;width:100%;box-sizing:border-box">
+      </td>
       <td style="padding:6px 4px">
         <input type="number" value="${p.base}" step="0.1" oninput="editProc(${i},'base',this.value)" style="${inStyle}">
       </td>
@@ -6287,12 +6314,39 @@ function renderProcTable() {
         <input type="number" value="${p.factor}" step="0.001" oninput="editProc(${i},'factor',this.value)" style="${inStyle}">
       </td>
       <td style="padding:6px 4px">
-        <select onchange="editProc(${i},'dim',this.value)" style="${inStyle};width:60px">
+        <select onchange="editProc(${i},'dim',this.value)" style="${inStyle};width:100%;box-sizing:border-box">
           <option ${p.dim==='OD'?'selected':''}>OD</option>
           <option ${p.dim==='H' ?'selected':''}>H</option>
         </select>
       </td>
+      <td style="padding:6px 4px;text-align:center">
+        <button onclick="deleteProc(${i})" title="ลบกระบวนการ"
+          style="padding:5px 8px;border-radius:7px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.1);color:#f87171;font-size:.7rem;cursor:pointer">🗑️</button>
+      </td>
     </tr>`).join('');
+}
+
+function addProc() {
+  const procs = getLaborProcesses();
+  procs.push({ name: 'กระบวนการใหม่', base: 0, setup: 0, factor: 0, dim: 'OD', enabled: true });
+  renderProcTable();
+  updateLaborPreview();
+}
+
+function deleteProc(i) {
+  const procs = getLaborProcesses();
+  const name = procs[i]?.name || '';
+  Swal.fire({
+    icon:'warning', title:`ลบ "${name}"?`,
+    background:'#0d1b2a', color:'#cce4ff',
+    confirmButtonText:'🗑 ลบเลย', confirmButtonColor:'#c0464a',
+    showCancelButton:true, cancelButtonText:'ยกเลิก', cancelButtonColor:'#374151',
+  }).then(r => {
+    if (!r.isConfirmed) return;
+    procs.splice(i, 1);
+    renderProcTable();
+    updateLaborPreview();
+  });
 }
 
 function toggleProc(i, val) {
@@ -6303,7 +6357,7 @@ function toggleProc(i, val) {
 
 function editProc(i, key, val) {
   const procs = getLaborProcesses();
-  procs[i][key] = key === 'dim' ? val : (parseFloat(val) || 0);
+  procs[i][key] = (key === 'dim' || key === 'name') ? val : (parseFloat(val) || 0);
   updateLaborPreview();
 }
 
@@ -9281,9 +9335,40 @@ function closeDocCfg() { $('docCfgModal').style.display = 'none'; }
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260610-AK',
+    ref: '#REV-20260610-AO',
     date: '2026-06-10',
     current: true,
+    items: [
+      'แก้ปุ่ม "➕ เพิ่มกระบวนการ" ในแท็บค่าแรงที่หายไป — เกิดจากใช้คลาส .btn-row (กริด 5 ช่อง กว้างสูงสุด 860px) ผิดที่ เปลี่ยนเป็น flex แถวธรรมดา ตอนนี้ปุ่มแสดงและกดได้ตามปกติ',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AN',
+    date: '2026-06-10',
+    items: [
+      'แก้ตาราง "กระบวนการผลิต" — คอลัมน์ "มิติ" (OD/H) หายไป/พื้นที่ว่างเพราะช่องชื่อกระบวนการขยายเบียดคอลัมน์อื่น แก้ด้วยการกำหนดความกว้างคอลัมน์แบบตายตัว (table-layout: fixed)',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AM',
+    date: '2026-06-10',
+    items: [
+      'ตาราง "กระบวนการผลิต" — แก้ชื่อกระบวนการได้ตรงๆ ในตาราง, เพิ่มปุ่ม "➕ เพิ่มกระบวนการ" และปุ่ม "🗑️" ลบรายการ',
+      'กดบันทึกแล้วจะ sync รายการกระบวนการที่เพิ่ม/ลบ/แก้ไขขึ้น Google Sheet ให้ทุกเครื่องเหมือนกัน',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AL',
+    date: '2026-06-10',
+    items: [
+      'ตาราง "กระบวนการผลิต" (Base/Setup/Factor/มิติ และอัตราค่าแรง) — ตอนนี้โหลดค่าจาก Google Sheet ทุกเครื่องเมื่อเปิดแอป (เดิมเก็บแค่ในเครื่อง ทำให้แต่ละเครื่องไม่ตรงกัน)',
+      'เพิ่ม action "saveLaborConfig"/"getLaborConfig" ใน Apps Script (Code.gs) — เก็บค่าไว้ใน sheet "Config"',
+      'กดปุ่ม "บันทึก" ในแท็บ ค่าแรง จะ sync ค่าขึ้น Sheet ให้ทุกเครื่องเห็นตรงกันหลังรีเฟรช',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AK',
+    date: '2026-06-10',
     items: [
       'เพิ่มระบบ PWA — ติดตั้งแอปลงหน้าจอหลักของมือถือ/แท็บเล็ตได้เหมือนแอปทั่วไป (เพิ่ม manifest.json, sw.js, ไอคอน, meta tag)',
       'รองรับการเปิดใช้งานแบบ standalone (ไม่มีแถบ URL) และแคชไฟล์หลักไว้ใช้งานออฟไลน์',
