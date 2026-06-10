@@ -621,6 +621,8 @@ select option { background: var(--sel-bg); color: var(--t1); }
 }
 .apv-card:last-child { margin-bottom:0; }
 .apv-card.active { border-color:var(--c1-28);background:var(--c1-05); }
+.apv-card .apv-body { display:none; }
+.apv-card.active .apv-body { display:block; }
 .apv-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px; }
 .apv-radio-wrap { display:flex;align-items:center;gap:10px;cursor:pointer;flex:1; }
 .apv-radio {
@@ -960,6 +962,14 @@ select option { background: var(--sel-bg); color: var(--t1); }
   max-height: 300px; object-fit: contain;
   border-radius: 12px; display: block;
 }
+/* รูปแนบที่ขยายดูใน Swal (viewAttachedImage) — จำกัดขนาดไม่ให้ล้นจอ */
+.attach-preview-img {
+  max-width: 90vw !important;
+  max-height: 75vh !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
 .ap-overlay {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: linear-gradient(transparent, rgba(0,0,0,.65));
@@ -1145,7 +1155,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v3.7</span>
+      <span class="ph-chip ver">v4.9</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2037,6 +2047,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="apiTabSaveScript()" style="padding:9px 16px;font-size:.85rem">💾 บันทึก URL</button>
       <button class="btn btn-calc" onclick="loadAllData(true)" style="padding:9px 16px;font-size:.85rem">🔄 ทดสอบเชื่อมต่อ</button>
+      <button class="btn" onclick="apiTabCopyScriptUrl()" style="padding:9px 16px;font-size:.85rem">📋 คัดลอก</button>
     </div>
     <div id="apiTab_scriptStatus" style="margin-top:8px;font-size:.78rem;color:#7c7a9a"></div>
   </div>
@@ -2151,12 +2162,14 @@ select option { background: var(--sel-bg); color: var(--t1); }
           <span class="apv-tag">~฿0.05/รูป</span>
         </div>
       </div>
+      <div class="apv-body">
       <div style="display:flex;gap:6px;align-items:center">
         <input type="password" id="key_anthropic" placeholder="sk-ant-api03-…"
           oninput="updateKeyPreview('anthropic',this.value)"
           style="flex:1;background:rgba(20,20,32,.7);border:1px solid rgba(155,143,255,.2);border-radius:8px;
           padding:9px 12px;color:#d4cfe8;font-family:Sarabun,sans-serif;font-size:.85rem;outline:none">
         <button class="apv-eye" onclick="toggleKeyVis('key_anthropic',this)">👁️</button>
+        <button class="apv-eye" onclick="copyProviderKey('anthropic')">📋</button>
         <button class="api-save-btn" onclick="saveProviderKey('anthropic')">💾</button>
         <button class="api-test-btn" onclick="testProviderKey('anthropic')">🧪</button>
       </div>
@@ -2165,6 +2178,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
         <span class="apv-status" id="status_anthropic"></span>
       </div>
       <div class="apv-detail" id="detail_anthropic" style="display:none"></div>
+      </div>
     </div>
 
     <!-- OpenAI -->
@@ -2183,12 +2197,14 @@ select option { background: var(--sel-bg); color: var(--t1); }
           <span class="apv-tag">~฿0.06/รูป</span>
         </div>
       </div>
+      <div class="apv-body">
       <div style="display:flex;gap:6px;align-items:center">
         <input type="password" id="key_openai" placeholder="sk-proj-…"
           oninput="updateKeyPreview('openai',this.value)"
           style="flex:1;background:rgba(20,20,32,.7);border:1px solid rgba(110,207,173,.2);border-radius:8px;
           padding:9px 12px;color:#d4cfe8;font-family:Sarabun,sans-serif;font-size:.85rem;outline:none">
         <button class="apv-eye" onclick="toggleKeyVis('key_openai',this)">👁️</button>
+        <button class="apv-eye" onclick="copyProviderKey('openai')">📋</button>
         <button class="api-save-btn" onclick="saveProviderKey('openai')">💾</button>
         <button class="api-test-btn" onclick="testProviderKey('openai')">🧪</button>
       </div>
@@ -2197,6 +2213,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
         <span class="apv-status" id="status_openai"></span>
       </div>
       <div class="apv-detail" id="detail_openai" style="display:none"></div>
+      </div>
     </div>
 
     <!-- Gemini -->
@@ -2215,12 +2232,14 @@ select option { background: var(--sel-bg); color: var(--t1); }
           <span class="apv-tag">~฿0.01/รูป</span>
         </div>
       </div>
+      <div class="apv-body">
       <div style="display:flex;gap:6px;align-items:center">
         <input type="password" id="key_gemini" placeholder="AIzaSy…"
           oninput="updateKeyPreview('gemini',this.value)"
           style="flex:1;background:rgba(20,20,32,.7);border:1px solid rgba(126,184,247,.2);border-radius:8px;
           padding:9px 12px;color:#d4cfe8;font-family:Sarabun,sans-serif;font-size:.85rem;outline:none">
         <button class="apv-eye" onclick="toggleKeyVis('key_gemini',this)">👁️</button>
+        <button class="apv-eye" onclick="copyProviderKey('gemini')">📋</button>
         <button class="api-save-btn" onclick="saveProviderKey('gemini')">💾</button>
         <button class="api-test-btn" onclick="testProviderKey('gemini')">🧪</button>
       </div>
@@ -2229,6 +2248,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
         <span class="apv-status" id="status_gemini"></span>
       </div>
       <div class="apv-detail" id="detail_gemini" style="display:none"></div>
+      </div>
     </div>
 
   </div>
@@ -3874,9 +3894,10 @@ function dtRender() {
     const rowBg = isStainless
       ? 'background:rgba(250,204,21,.16);border-left:3px solid #facc15'
       : (ri % 2 === 0 ? '' : 'background:var(--pair-bg)');
+    const hasAiSale = !!String(r[DT.aiSale]||'').trim();
     return `<tr style="${rowBg};border-bottom:1px solid var(--bc-div)" class="dt-row">
       <td style="padding:8px 10px;white-space:nowrap">${statusBadge(r[DT.status])}<br>
-        <span style="font-size:.72rem;color:var(--c1);font-weight:600">${r[DT.noQuo]||'—'}</span></td>
+        <span style="font-size:.72rem;color:var(--c1);font-weight:600">${r[DT.noQuo]||'—'}</span>${hasAiSale ? ' <span title="มีผลวิเคราะห์ AI เคาะราคาแนบไว้" style="font-size:.75rem">🤖</span>' : ''}</td>
       <td style="padding:8px 10px;font-size:.72rem;color:var(--t3);white-space:nowrap">${r[DT.date]||'—'}</td>
       <td style="padding:8px 10px;font-size:.78rem;color:var(--t1);font-weight:600;white-space:nowrap">${size} <span style="color:var(--t3);font-size:.65rem">มม.</span></td>
       <td style="padding:8px 10px;font-size:.72rem;white-space:nowrap">${r[DT.matTop]  ? `<span style="background:rgba(59,130,246,.18);color:#111;border-radius:5px;padding:1px 7px;font-weight:600">${r[DT.matTop]}</span>`  : '<span style="color:var(--t3)">—</span>'}</td>
@@ -4396,6 +4417,7 @@ function _updatePricingInsight() {
   };
 
   const sA = grpStats(grpA), sB = grpStats(grpB), sC = grpStats(grpC);
+  window._piGroupRows = { A: grpA, B: grpB, C: grpC };
 
   // ── verdict จากกลุ่มที่ดีที่สุด ─────────────────────
   const bestStat = sA || sB || sC;
@@ -4422,7 +4444,7 @@ function _updatePricingInsight() {
   };
 
   // กลุ่ม card
-  const grpCard = (stat, label, dot) => {
+  const grpCard = (stat, label, dot, groupKey) => {
     if (!stat) return '';
     const wc = stat.winRate>=50?'#34d399':'#f87171';
     const mc = stat.avgMgn>=25?'#34d399':stat.avgMgn>=10?'#fbbf24':'#f87171';
@@ -4430,7 +4452,8 @@ function _updatePricingInsight() {
     <div style="background:var(--bg-input2);border:1px solid var(--bc-div);border-left:3px solid ${dot};border-radius:8px;padding:8px 10px;margin-bottom:6px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
         <span style="font-size:.72rem;font-weight:700;color:${dot}">${label}</span>
-        <span style="font-size:.65rem;color:var(--t3)">${stat.count} งาน</span>
+        <span onclick="showGroupJobsModal('${groupKey}')" title="ดูรายการงานในกลุ่มนี้"
+          style="font-size:.65rem;color:var(--c1);cursor:pointer;text-decoration:underline">${stat.count} งาน 🔍</span>
       </div>
       <!-- ราคา min/avg/max -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:5px">
@@ -4442,8 +4465,8 @@ function _updatePricingInsight() {
       </div>
       <!-- win / margin / trend -->
       <div style="display:flex;gap:6px;align-items:center;font-size:.65rem;flex-wrap:wrap">
-        <span>🏆 <b style="color:${wc}">${P1(stat.winRate)}</b></span>
-        <span>📈 <b style="color:${mc}">${P1(stat.avgMgn)}</b></span>
+        <span onclick="showPricingMetricInfo()" style="cursor:pointer" title="คลิกดูคำอธิบาย">🏆 <b style="color:${wc}">${P1(stat.winRate)}</b></span>
+        <span onclick="showPricingMetricInfo()" style="cursor:pointer" title="คลิกดูคำอธิบาย">📈 <b style="color:${mc}">${P1(stat.avgMgn)}</b></span>
         ${stat.trendPct!==null?`<span style="color:${stat.trendCol}">${stat.trendDir}${SN(stat.trendPct)}</span>`:''}
       </div>
       <!-- percentile bar -->
@@ -4472,16 +4495,26 @@ function _updatePricingInsight() {
   </div>`:''}
 
   <!-- GROUP CARDS -->
-  ${grpCard(sA, '🟢 เหมือนมาก (OD+ID+H+วัตถุดิบ+ตะแกรง)', '#34d399')}
-  ${grpCard(sB, '🟡 คล้ายกัน (OD+บางมิติตรง)', '#fbbf24')}
-  ${grpCard(sC, '🔵 ขนาดใกล้เคียง (OD เป็นหลัก)', '#60a5fa')}
+  ${grpCard(sA, '🟢 เหมือนมาก (OD+ID+H+วัตถุดิบ+ตะแกรง)', '#34d399', 'A')}
+  ${grpCard(sB, '🟡 คล้ายกัน (OD+บางมิติตรง)', '#fbbf24', 'B')}
+  ${grpCard(sC, '🔵 ขนาดใกล้เคียง (OD เป็นหลัก)', '#60a5fa', 'C')}
 
   <!-- AI Detailed Analysis Button -->
-  <button onclick="showPricingAnalysis()"
-    style="width:100%;margin-top:4px;padding:9px 10px;border:none;border-radius:9px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.82rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 2px 10px rgba(79,70,229,.35);transition:opacity .15s"
-    onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-    🤖 AI เคาะราคา
-  </button>
+  <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+    <button onclick="showPricingAnalysis()"
+      style="flex:1;padding:9px 10px;border:none;border-radius:9px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.82rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 2px 10px rgba(79,70,229,.35);transition:opacity .15s"
+      onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      🤖 AI เคาะราคา
+    </button>
+    <span onclick="showLastPricingResult()" title="ดูผลวิเคราะห์ล่าสุด (ไม่เสียโควต้า)"
+      style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0;
+      border-radius:50%;background:rgba(79,70,229,.15);color:#a5b4fc;font-size:.85rem;font-weight:700;
+      cursor:pointer;border:1px solid rgba(124,58,237,.4)">🕐</span>
+    <span onclick="showPricingInfo()" title="วิธีคิดกลุ่ม A/B/C"
+      style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0;
+      border-radius:50%;background:rgba(79,70,229,.15);color:#a5b4fc;font-size:.78rem;font-weight:700;
+      cursor:pointer;font-style:italic;font-family:Georgia,serif;border:1px solid rgba(124,58,237,.4)">i</span>
+  </div>
   `;
 }
 
@@ -6404,6 +6437,34 @@ function apiTabSaveScript() {
     timer:1400,showConfirmButton:false,toast:true,position:'top-end'});
 }
 
+function apiTabCopyScriptUrl() {
+  const url = ($('apiTab_scriptUrl').value || '').trim();
+  if (!url) {
+    Swal.fire({icon:'warning',title:'ไม่มี URL ให้คัดลอก',background:'#0d1b2a',color:'#cce4ff',
+      timer:1400,showConfirmButton:false,toast:true,position:'top-end'});
+    return;
+  }
+  const _toast = () => Swal.fire({icon:'success',title:'คัดลอก URL แล้ว ✅',background:'#0d1b2a',color:'#cce4ff',
+    timer:1200,showConfirmButton:false,toast:true,position:'top-end'});
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(_toast).catch(() => _copyFallback(url, _toast));
+  } else {
+    _copyFallback(url, _toast);
+  }
+}
+
+function _copyFallback(text, onDone) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  if (onDone) onDone();
+}
+
 function selectProvider(name) {
   AI_PROVIDER = name;
   localStorage.setItem('ptts_ai_provider', name);
@@ -6416,6 +6477,23 @@ function selectProvider(name) {
   });
   const chip = $('activeProviderChip');
   if (chip) chip.textContent = '● ' + (labels[name] || name);
+}
+
+function copyProviderKey(provider) {
+  const inp = $('key_' + provider);
+  const val = inp ? inp.value : '';
+  if (!val) {
+    Swal.fire({icon:'warning',title:'ไม่มี API Key ให้คัดลอก',background:'#0d1b2a',color:'#cce4ff',
+      timer:1400,showConfirmButton:false,toast:true,position:'top-end'});
+    return;
+  }
+  const _toast = () => Swal.fire({icon:'success',title:'คัดลอก API Key แล้ว ✅',background:'#0d1b2a',color:'#cce4ff',
+    timer:1200,showConfirmButton:false,toast:true,position:'top-end'});
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(_toast).catch(() => _copyFallback(val, _toast));
+  } else {
+    _copyFallback(val, _toast);
+  }
 }
 
 function updateKeyPreview(provider, val) {
@@ -6806,6 +6884,88 @@ function showPricingInfo() {
   });
 }
 
+// อธิบายความหมายของ 🏆 Win rate และ 📈 Margin เฉลี่ยที่แสดงในแต่ละกลุ่ม
+function showPricingMetricInfo() {
+  Swal.fire({
+    title: 'ℹ️ ความหมายของตัวเลขในแต่ละกลุ่ม',
+    width: 440,
+    background: '#0a1c2e', color: '#cce4ff',
+    confirmButtonText: 'เข้าใจแล้ว',
+    confirmButtonColor: '#4f46e5',
+    html: `
+      <div style="text-align:left;font-family:Sarabun,sans-serif;font-size:.82rem;line-height:1.8;color:#cbd5e1">
+        <p style="margin:0 0 10px">
+          <b>🏆 Win rate</b> — สัดส่วนงาน <b>"ในกลุ่มนี้"</b> ที่มีสถานะเป็น
+          <span style="color:#60a5fa">"ผ่าน"</span> หรือ <span style="color:#22c55e">"อนุมัติ"</span>
+          เทียบกับจำนวนงานทั้งหมดในกลุ่ม<br>
+          เช่น 32.1% หมายถึง งานลักษณะนี้เคยถูกตอบรับ/อนุมัติประมาณ 32.1% ของงานคล้ายกันทั้งหมด
+        </p>
+        <p style="margin:0">
+          <b>📈 Margin เฉลี่ย</b> — กำไรเฉลี่ย คิดเป็น % ของราคาขาย (กำไร ÷ ราคาขาย × 100)
+          เฉลี่ยจากงานในกลุ่มนี้ทั้งหมด<br>
+          เช่น 14.2% หมายถึง โดยเฉลี่ยงานกลุ่มนี้มีกำไรประมาณ 14.2% ของราคาขาย
+        </p>
+      </div>`
+  });
+}
+
+// แสดงรายการงานทั้งหมดในกลุ่ม A/B/C (กดจากจำนวน "X งาน" ในการ์ดวิเคราะห์ราคา)
+function showGroupJobsModal(groupKey) {
+  const rows = (window._piGroupRows && window._piGroupRows[groupKey]) || [];
+  const labels = {
+    A: '🟢 เหมือนมาก (OD+ID+H+วัตถุดิบ+ตะแกรง)',
+    B: '🟡 คล้ายกัน (OD+บางมิติตรง)',
+    C: '🔵 ขนาดใกล้เคียง (OD เป็นหลัก)'
+  };
+  const stMap = { 'อนุมัติ':'#22c55e','ผ่าน':'#60a5fa','รอสรุป':'#f59e0b','ยกเลิก':'#f87171','':'#64748b' };
+  const fmtN = n => Math.round(n||0).toLocaleString('th-TH');
+
+  const sorted = [...rows].sort((a,b) => {
+    const da = thaiShortToIso(String(a[DT.date]||'')) || '';
+    const db = thaiShortToIso(String(b[DT.date]||'')) || '';
+    return db.localeCompare(da);
+  });
+
+  const rowsHtml = sorted.map(r => {
+    const od=r[DT.od]||'', idV=r[DT.id]||'', h=r[DT.h]||'';
+    const size = (od && idV && h) ? `${od}×${idV}×${h}` : (r[DT.size]||'—');
+    const tc = parseFloat(r[DT.totalCost])||0, sp = parseFloat(r[DT.sellPrice])||0;
+    const st = String(r[DT.status]||'').trim();
+    const col = stMap[st] || '#64748b';
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,.06)">
+      <td style="padding:6px 8px;font-size:.72rem;color:#a5b4fc;font-weight:600;white-space:nowrap">${r[DT.noQuo]||'—'}</td>
+      <td style="padding:6px 8px;font-size:.7rem;color:#94a3b8;white-space:nowrap">${r[DT.date]||'—'}</td>
+      <td style="padding:6px 8px;font-size:.74rem;color:#e2e8f0;white-space:nowrap">${size} <span style="color:#64748b;font-size:.65rem">มม.</span></td>
+      <td style="padding:6px 8px;font-size:.72rem;color:#cbd5e1;white-space:nowrap">${r[DT.matTop]||'—'}</td>
+      <td style="padding:6px 8px;text-align:right;font-size:.74rem;color:#60a5fa;white-space:nowrap">฿${fmtN(tc)}</td>
+      <td style="padding:6px 8px;text-align:right;font-size:.74rem;color:#e2e8f0;font-weight:700;white-space:nowrap">฿${fmtN(sp)}</td>
+      <td style="padding:6px 8px;text-align:center;white-space:nowrap"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:.62rem;font-weight:600;background:${col}22;color:${col};border:1px solid ${col}55">${st||'—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  Swal.fire({
+    title: labels[groupKey] || 'รายการงานที่คล้ายกัน',
+    width: 620,
+    background: '#0a1c2e', color: '#cce4ff',
+    confirmButtonText: 'ปิด', confirmButtonColor: '#4f46e5',
+    html: `
+      <div style="text-align:left;max-height:60vh;overflow:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid rgba(255,255,255,.15)">
+            <th style="padding:6px 8px;text-align:left;font-size:.66rem;color:#94a3b8">No.Quo</th>
+            <th style="padding:6px 8px;text-align:left;font-size:.66rem;color:#94a3b8">วันที่</th>
+            <th style="padding:6px 8px;text-align:left;font-size:.66rem;color:#94a3b8">ขนาด</th>
+            <th style="padding:6px 8px;text-align:left;font-size:.66rem;color:#94a3b8">MAT</th>
+            <th style="padding:6px 8px;text-align:right;font-size:.66rem;color:#94a3b8">ต้นทุน</th>
+            <th style="padding:6px 8px;text-align:right;font-size:.66rem;color:#94a3b8">ราคาขาย</th>
+            <th style="padding:6px 8px;text-align:center;font-size:.66rem;color:#94a3b8">สถานะ</th>
+          </tr></thead>
+          <tbody>${rowsHtml || '<tr><td colspan="7" style="padding:16px;text-align:center;color:#64748b">ไม่พบข้อมูล</td></tr>'}</tbody>
+        </table>
+      </div>`
+  });
+}
+
 // ── ประวัติผลวิเคราะห์ AI เคาะราคา (เก็บไว้ดูซ้ำ ไม่ต้องยิง AI ใหม่) ──
 const PRICING_HIST_KEY = 'ptts_pricing_history';
 const PRICING_HIST_MAX = 20;
@@ -6860,13 +7020,26 @@ function _showPricingResultModal(cur, result, time) {
 // แสดงผลวิเคราะห์ล่าสุด (ไม่เรียก AI ใหม่) — ถ้ายังไม่เคยวิเคราะห์ จะเรียก AI ให้เลย
 function showLastPricingResult() {
   const hist = _getPricingHistory();
-  if (!hist.length) {
-    Swal.fire({icon:'info', title:'ยังไม่เคยวิเคราะห์', text:'กดปุ่ม "AI เคาะราคา" เพื่อวิเคราะห์ครั้งแรก',
-      background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#4f46e5'});
+  if (hist.length) {
+    const e = hist[0];
+    _showPricingResultModal(e.cur, e.result, e.time);
     return;
   }
-  const e = hist[0];
-  _showPricingResultModal(e.cur, e.result, e.time);
+  // ไม่มีในประวัติ (เครื่อง/เบราว์เซอร์นี้) — ลองใช้ผลที่บันทึกไว้กับงานนี้ (BG) แทน
+  const saved = ($('f_aiSale')?.value || '').trim();
+  if (saved) {
+    const cur = {
+      od: parseFloat($('f_od')?.value) || 0,
+      id: parseFloat($('f_id')?.value) || 0,
+      h:  parseFloat($('f_h')?.value)  || 0,
+      unit: parseFloat($('f_unit')?.value) || 1,
+      costPerUnit: parseFloat($('f_totalCostUnit')?.value||'') || num('f_totalCost') / (parseFloat($('f_unit')?.value)||1),
+    };
+    _showPricingResultModal(cur, saved, null);
+    return;
+  }
+  Swal.fire({icon:'info', title:'ยังไม่เคยวิเคราะห์', text:'กดปุ่ม "AI เคาะราคา" เพื่อวิเคราะห์ครั้งแรก',
+    background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#4f46e5'});
 }
 
 // แสดงประวัติผลวิเคราะห์ทั้งหมด (สูงสุด 20 รายการล่าสุด) — กดดูซ้ำได้ ไม่เสียโควต้า
@@ -7171,13 +7344,34 @@ function openTextReader() {
   }
   Swal.fire({
     title: '📝 วางข้อความลูกค้า',
-    html: `<textarea id="swal-txt" rows="10" placeholder="วางข้อความขอราคาจากลูกค้าที่นี่..."
+    html: `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+        <button type="button" id="swal-paste-btn"
+          style="padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.15);
+          background:#475569;color:#fff;font-family:Sarabun,sans-serif;font-size:.8rem;
+          font-weight:600;cursor:pointer">📋 วาง</button>
+      </div>
+      <textarea id="swal-txt" rows="10" placeholder="วางข้อความขอราคาจากลูกค้าที่นี่..."
       style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.15);
       background:rgba(8,16,28,.8);color:#cce4ff;font-family:Sarabun,sans-serif;font-size:.85rem;
       resize:vertical;outline:none;box-sizing:border-box"></textarea>`,
     background:'#0d1b2a', color:'#cce4ff',
+    allowOutsideClick:false,
     showCancelButton:true, confirmButtonText:'🤖 วิเคราะห์',
     confirmButtonColor:'#2563eb', cancelButtonColor:'#6b7280', cancelButtonText:'ยกเลิก',
+    didOpen: () => {
+      const btn = document.getElementById('swal-paste-btn');
+      if (btn) {
+        btn.addEventListener('click', async () => {
+          try {
+            const text = await navigator.clipboard.readText();
+            const ta = document.getElementById('swal-txt');
+            if (ta && text) ta.value = text;
+          } catch (err) {
+            Swal.showValidationMessage('วางไม่ได้ — อนุญาตการเข้าถึงคลิปบอร์ดก่อน หรือวางด้วย Ctrl+V ในกล่องข้อความ');
+          }
+        });
+      }
+    },
     preConfirm: () => {
       const v = document.getElementById('swal-txt').value.trim();
       if (!v) { Swal.showValidationMessage('กรุณาวางข้อความก่อน'); return false; }
@@ -7655,10 +7849,9 @@ function buildShareCardHTML(row) {
     return `<div style="padding:10px 16px 0">
       <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
         letter-spacing:.6px;margin-bottom:6px">📎 รูปใบขอราคา</div>
-      <img src="${img.dataUrl}" alt="ใบขอราคา"
-        style="width:100%;border-radius:8px;border:1px solid #e2e8f0;
-        max-height:200px;object-fit:contain;background:#f8fafc;cursor:pointer"
-        onclick="viewAttachedImage()">
+      <div role="img" aria-label="ใบขอราคา" onclick="viewAttachedImage()"
+        style="width:100%;height:200px;border-radius:8px;border:1px solid #e2e8f0;
+        background:#f8fafc url('${img.dataUrl}') center center / contain no-repeat;cursor:pointer"></div>
     </div>`;
   })() : '';
 
@@ -7733,7 +7926,18 @@ async function shareCardAsImage(row) {
   el.style.top  = '0';
   el.style.display = 'block';
   try {
-    await new Promise(r => setTimeout(r, 80)); // wait for fonts
+    if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e) {} }
+    await new Promise(r => setTimeout(r, 80)); // wait for fonts/layout
+    // รอให้รูปแนบ (ถ้ามี) โหลด/ถอดรหัสเสร็จก่อน ไม่งั้น html2canvas จะ capture ตอนรูปยังไม่มาขนาด แล้วได้ภาพยืด/บิดเบี้ยว
+    const imgs = el.querySelectorAll('img');
+    await Promise.all(Array.from(imgs).map(im => {
+      if (im.complete && im.naturalWidth > 0) return Promise.resolve();
+      return new Promise(res => {
+        im.addEventListener('load', res, { once:true });
+        im.addEventListener('error', res, { once:true });
+        setTimeout(res, 1500); // กันค้าง
+      });
+    }));
     const canvas = await html2canvas(el, {
       backgroundColor: null, scale: 2,
       useCORS: true, allowTaint: true,
@@ -8870,9 +9074,96 @@ function closeDocCfg() { $('docCfgModal').style.display = 'none'; }
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260610-S',
+    ref: '#REV-20260610-AE',
     date: '2026-06-10',
     current: true,
+    items: [
+      'รูปบีบ/ยืดผิดสัดส่วนในไฟล์ "บันทึกรูป" — html2canvas ไม่รองรับ object-fit ของ &lt;img&gt; เปลี่ยนไปใช้ background-image แบบ contain แทน รูปไม่บีบแล้ว',
+      'รอฟอนต์โหลดเสร็จ (document.fonts.ready) ก่อน capture ภาพ ลดปัญหาข้อความซ้อนทับกัน',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AD',
+    date: '2026-06-10',
+    items: [
+      'แก้รูปใบขอราคาในรูป "บันทึกรูป" (PNG ที่ดาวน์โหลด) ที่เคยขยาย/ยืดผิดสัดส่วน — กำหนดกรอบรูปชัดเจน (height:200px, object-fit:contain) และรอรูปโหลดเสร็จก่อน capture',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AC',
+    date: '2026-06-10',
+    items: [
+      'แก้รูปแนบ "ใบขอราคา" ตอนคลิกขยายดู — เดิมรูปแสดงเต็มขนาดจริงล้นจอจนดูไม่ออก ตอนนี้ปรับให้พอดีจอ (max 90vw × 75vh)',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AB',
+    date: '2026-06-10',
+    items: [
+      'การ์ดวิเคราะห์ราคา (กลุ่ม A/B/C): กดที่ 🏆/📈 เพื่ออ่านคำอธิบาย Win rate และ Margin เฉลี่ยได้',
+      'การ์ดวิเคราะห์ราคา: กดที่ "X งาน 🔍" เพื่อเปิดตารางรายการงานที่อยู่ในกลุ่มนั้นทั้งหมด',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AA',
+    date: '2026-06-10',
+    items: [
+      'แก้ "🕐 ดูผลวิเคราะห์ล่าสุด": ถ้าไม่มีประวัติในเครื่องนี้ ให้ใช้ผลวิเคราะห์ AI ที่บันทึกไว้กับงานนั้น (BG) แสดงแทน แทนที่จะขึ้น "ยังไม่เคยวิเคราะห์"',
+    ],
+  },
+  {
+    ref: '#REV-20260610-Z',
+    date: '2026-06-10',
+    items: [
+      'Summary Panel (เดสก์ท็อป): เพิ่มไอคอน 🕐 "ดูผลวิเคราะห์ล่าสุด" และ "i" วิธีคิดกลุ่ม A/B/C ข้างปุ่ม "AI เคาะราคา"',
+    ],
+  },
+  {
+    ref: '#REV-20260610-Y',
+    date: '2026-06-10',
+    items: [
+      'ตารางคลังใบเสนอราคา: เพิ่มไอคอน 🤖 ข้าง No.Quo สำหรับแถวที่มีผลวิเคราะห์ "AI เคาะราคา" แนบไว้ (BG)',
+    ],
+  },
+  {
+    ref: '#REV-20260610-X',
+    date: '2026-06-10',
+    items: [
+      'แก้บัค: กล่อง "วางข้อความลูกค้า" ปิดเองเมื่อคลิกพื้นที่รอบๆ ทำให้ข้อความที่พิมพ์ไว้หาย — ตอนนี้ต้องกด "ยกเลิก" หรือ "วิเคราะห์" เท่านั้นถึงจะปิด',
+    ],
+  },
+  {
+    ref: '#REV-20260610-W',
+    date: '2026-06-10',
+    items: [
+      'แก้บัค: กล่อง "วางข้อความลูกค้า" หายไป/ต้องพิมพ์ใหม่ เมื่อกดปุ่ม "📋 วาง" — ย้ายปุ่มวางมาเป็นปุ่มในกล่องเอง ไม่ปิดหน้าต่างอีกต่อไป',
+    ],
+  },
+  {
+    ref: '#REV-20260610-V',
+    date: '2026-06-10',
+    items: [
+      'แท็บ AI สำหรับอ่านแบบ: เพิ่มปุ่ม "📋 คัดลอก" สำหรับคัดลอก API Key แต่ละ provider',
+      'ซ่อนช่องกรอก API Key / สถานะของ provider ที่ไม่ได้เลือกไว้ (แสดงเฉพาะตัวที่เลือกอยู่ ลดความรก)',
+    ],
+  },
+  {
+    ref: '#REV-20260610-U',
+    date: '2026-06-10',
+    items: [
+      'เพิ่มปุ่ม "📋 วาง" ในกล่อง "วางข้อความลูกค้า" (AI อ่านข้อความ) สำหรับวางข้อความจากคลิปบอร์ดอัตโนมัติ',
+    ],
+  },
+  {
+    ref: '#REV-20260610-T',
+    date: '2026-06-10',
+    items: [
+      'เพิ่มปุ่ม "📋 คัดลอก" ในแท็บ Config (Google Apps Script) สำหรับคัดลอก Script URL',
+    ],
+  },
+  {
+    ref: '#REV-20260610-S',
+    date: '2026-06-10',
     items: [
       'แก้: ช่อง Rev. ในฟอร์มจะไม่แสดงเลย ถ้างานนั้นยังไม่เคยถูกแก้ไข (Rev.=0) — แสดงเฉพาะตอนโหลดงานที่เคยแก้ไขแล้ว (Rev. ≥ 1)',
     ],
