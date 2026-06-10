@@ -1155,7 +1155,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v4.9</span>
+      <span class="ph-chip ver">v5.2</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -3906,13 +3906,18 @@ function dtRender() {
       <td style="padding:8px 10px;font-size:.72rem;white-space:nowrap">${r[DT.meshIn]  ? `<span style="background:rgba(74,222,128,.22);color:#111;border-radius:5px;padding:1px 7px;font-weight:600">${r[DT.meshIn]}</span>`  : '<span style="color:var(--t3)">—</span>'}</td>
       <td style="padding:8px 10px;text-align:center;font-size:.8rem;color:var(--t1)">${r[DT.unit]||'—'}</td>
       <td style="padding:8px 10px;text-align:right;font-size:.78rem;color:var(--c1);font-weight:600">${fmtB(tc)} <span style="font-size:.65rem">฿</span></td>
-      <td style="padding:8px 10px;text-align:right;font-size:.78rem;color:var(--t1);font-weight:600">${fmtB(sp)} <span style="font-size:.65rem">฿</span></td>
+      <td style="padding:8px 10px;text-align:right;font-size:.78rem;font-weight:600;color:${(sp>0&&tc>0&&sp<tc)?'#f87171':'var(--t1)'}">${fmtB(sp)} <span style="font-size:.65rem">฿</span></td>
       <td style="padding:8px 10px;font-size:.72rem;color:var(--t2);max-width:160px">${workNote||'—'}</td>
       <td style="padding:8px 10px;text-align:center;white-space:nowrap">
         <button onclick="dtLoadIntoForm(${globalIdx})"
           style="padding:5px 10px;border-radius:7px;border:none;background:#16a34a;color:#fff;
                  font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px">
           📂 โหลดจ็อบนี้
+        </button>
+        <button onclick="dtShowSpecSheet(${globalIdx})"
+          style="padding:5px 10px;border-radius:7px;border:none;background:#2563eb;color:#fff;
+                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px">
+          📋 สเปค
         </button>
         <button onclick="dtDelete('${String(r[DT.noQuo]||'').replace(/'/g,"\\'")}',this)"
           style="padding:5px 8px;border-radius:7px;border:1px solid rgba(248,113,113,.35);
@@ -4215,6 +4220,193 @@ function dtLoadIntoForm(idx) {
         background:'#0a1c2e',color:'#f1f5f9'});
     }, 200);
   });
+}
+
+function dtShowSpecSheet(idx) {
+  const tbody = $('dtBody');
+  const rows = tbody && tbody._filteredRows;
+  if (!rows || !rows[idx]) return;
+  const r = rows[idx];
+
+  const refId    = r[DT.refId] || generateRefId();
+  const revNo    = parseInt(r[DT.rev]) || 0;
+  const revSuffix = revNo > 0 ? ` Rev.${revNo}` : '';
+  const dateVal  = thaiShortToIso(r[DT.date]);
+  const unit     = parseFloat(r[DT.unit]) || 1;
+  const od       = parseFloat(r[DT.od]) || 0;
+  const id_      = parseFloat(r[DT.id]) || 0;
+  const h        = parseFloat(r[DT.h]) || 0;
+  const rawMat   = r[DT.rawMat] || '';
+  const workType = r[DT.workType] || '';
+  const contactName = r[DT.contact] || '—';
+  const contactCo   = (_contactsData.find(c=>c.name===contactName)||{}).company || '';
+
+  const sellPriceU = parseFloat(r[DT.sellPrice]) || 0;
+  const totalCost  = parseFloat(r[DT.totalCost]) || 0;
+  const profitJob  = parseFloat(r[DT.profitJob]) || 0;
+  const marginPct = totalCost > 0 && sellPriceU > 0
+    ? ((sellPriceU - totalCost) / sellPriceU * 100).toFixed(1)
+    : '—';
+
+  // ── COST LINE ITEMS (จากข้อมูลแถวที่บันทึกไว้) ──
+  const lines = [];
+  function addLine(label, detail, unitCost, isPerJob) {
+    const c = parseFloat(unitCost) || 0;
+    if (!c && !detail) return;
+    const perUnit = isPerJob ? c/unit : c;
+    lines.push({ label, detail, perUnit, total: perUnit*unit });
+  }
+  addLine('ฝาบน (Top Cap)',       matLabel(r[DT.matTop]), r[DT.costTop], false);
+  addLine('ฝาล่าง (Bottom Cap)',  matLabel(r[DT.matBot]), r[DT.costBot], false);
+  addLine('งานเทสเสีย (Testing Waste)', r[DT.testWasteLabel], r[DT.cTestWaste], false);
+  addLine('จ้างภายนอก (Outsource)', r[DT.outsource], r[DT.cOutsource], false);
+  addLine('ตะแกรงนอก (Outer Mesh)', matLabel(r[DT.meshOut]), r[DT.cMeshOut], false);
+  addLine('ตะแกรงใน (Inner Mesh)',  matLabel(r[DT.meshIn]),  r[DT.cMeshIn], false);
+  addLine('เลเซอร์ (Laser)',       r[DT.laser], r[DT.cLaser], false);
+  addLine('ร้าน/ชุป (Plating)',    r[DT.plating] || 'ชุบซิงค์ครั้ง', r[DT.cPlating], false);
+  addLine('แม่พิมพ์ (Mold)',       r[DT.mold], r[DT.cMold], true);
+  addLine('ค่าแรง (ต่อลูก)', '', r[DT.cLabor], false);
+  addLine('ค่าขนส่ง (Logistics)', '', r[DT.cTransport], false);
+  addLine('เครื่องจักร์ (Machine setup)', r[DT.machine], r[DT.cMachine], false);
+  if (r[DT.other1] || parseFloat(r[DT.cOther1])) addLine(r[DT.other1]||'อื่นๆ 1', '', r[DT.cOther1], false);
+  if (r[DT.other2] || parseFloat(r[DT.cOther2])) addLine(r[DT.other2]||'อื่นๆ 2', '', r[DT.cOther2], false);
+  if (r[DT.other3] || parseFloat(r[DT.cOther3])) addLine(r[DT.other3]||'อื่นๆ 3', '', r[DT.cOther3], false);
+  addLine('ต้นทุนคงที่ (Fixed Cost Unit)', 'ค่าบริหาร', r[DT.fixedCost], true);
+
+  const costRows = lines.map((l,i) => `
+<tr style="${i%2===0?'background:#f8fafc':''}">
+  <td style="padding:7px 10px">${l.label}</td>
+  <td style="padding:7px 10px;color:#555;font-size:.76rem">${l.detail||'—'}</td>
+  <td style="padding:7px 10px;text-align:right;font-weight:500">${fmtB(l.perUnit)} ฿</td>
+  <td style="padding:7px 10px;text-align:right;color:#2563eb;font-weight:600">${fmtB(l.total)} ฿</td>
+</tr>`).join('');
+
+  const netPerUnit = totalCost;
+  const marginAmt  = sellPriceU - netPerUnit;
+  const marginColor = marginAmt >= 0 ? '#059669' : '#dc2626';
+
+  $('docCost').innerHTML = `
+<div class="doc-paper" style="overflow:hidden">
+  <!-- ── Header ── -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;
+    padding:18px 28px 12px;background:#0a1828;color:#cce4ff;gap:12px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:.6rem;font-weight:700;letter-spacing:2px;color:#34d399;margin-bottom:4px">
+        INTERNAL COSTING SHEET &amp; MARGIN ANALYSIS</div>
+      <div style="font-size:1.1rem;font-weight:800;margin-bottom:2px">ใบพิกัดจำแนกสเปคและต้นทุนฟิลเตอร์ (ภายใน)</div>
+      <div style="font-size:.7rem;color:#7090a8">
+        วันที่ประเมิน: ${fmtDate(dateVal)} &nbsp;|&nbsp;
+        เลขอ้างอิง: ${refId}${revSuffix}
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:.78rem;margin-bottom:2px">อ้างอิง <b style="color:#60a5fa">${refId}${revSuffix}</b></div>
+      <div style="font-size:.76rem">เรียนส่ง: ${contactName}</div>
+      ${contactCo?`<div style="font-size:.7rem;color:#7090a8">${contactCo}</div>`:''}
+      <div style="margin-top:5px;font-size:.68rem;display:inline-block;
+        background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);
+        color:#fbbf24;padding:2px 8px;border-radius:10px">🔒 ข้อมูลภายในบริษัทเท่านั้น</div>
+    </div>
+  </div>
+
+  <!-- ── Specs ── -->
+  <div style="display:flex;gap:0;border-bottom:1px solid #e8ecf2">
+    <div style="flex:1;padding:14px 20px;border-right:1px solid #e8ecf2">
+      <div style="font-weight:700;font-size:.78rem;margin-bottom:8px;color:#1a2232">
+        1. รายละเอียดสเปควิศวกรรม</div>
+      <div style="font-size:.76rem;color:#333;line-height:2">
+        • เส้นผ่านศูนย์กลางภายนอก (OD): <b>${od} มม.</b><br>
+        • เส้นผ่านศูนย์กลางภายใน (ID): <b>${id_} มม.</b><br>
+        • ความสูงชิ้นงาน (H): <b>${h} มม.</b><br>
+        • แบบสไตล์งานท้ายท้าย: <b>${workType||'—'}</b>
+        ${rawMat?`<br>• วัตถุดิบหลัก: <b>${rawMat}</b>`:''}
+      </div>
+    </div>
+    <div style="flex:1;padding:14px 20px">
+      <div style="font-weight:700;font-size:.78rem;margin-bottom:8px;color:#1a2232">
+        2. ปริมาณเลือกผลิตพิจารณา</div>
+      <div style="font-size:.76rem;color:#333;line-height:2">
+        • จำนวนสั่งใบเสนอราคา: <b>${unit.toLocaleString('th-TH')} ชิ้น</b><br>
+        • ราคาเสนอต่อหน่วย: <b style="color:#2563eb;font-size:.86rem">${fmtB(sellPriceU)} บาท</b><br>
+        • ต้นทุนรวม/หน่วย: <b>${fmtB(netPerUnit)} บาท</b><br>
+        • กำไร/หน่วย: <b style="color:${marginColor}">${fmtB(marginAmt)} บาท</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Cost Table ── -->
+  <div style="padding:14px 20px">
+    <div style="font-weight:700;font-size:.78rem;margin-bottom:10px;color:#1a2232">
+      3. สรุปพิกัดบัญชีต้นทุนจริงประกอบ (NESTING-FORMULA BASED)</div>
+    <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+      <thead>
+        <tr style="background:#1d4ed8;color:#fff">
+          <th style="padding:8px 10px;text-align:left;border-radius:4px 0 0 0">หมวดรายการวัสดุ-บริการ</th>
+          <th style="padding:8px 10px;text-align:left;width:22%">ตัวเลือก / Nesting</th>
+          <th style="padding:8px 10px;text-align:right;width:17%">เฉลี่ยต่อลูก (บาท)</th>
+          <th style="padding:8px 10px;text-align:right;width:17%;border-radius:0 4px 0 0">
+            ยอดราคารวมล็อต (${unit} ลูก)</th>
+        </tr>
+      </thead>
+      <tbody>${costRows}</tbody>
+      <tfoot>
+        <tr style="background:#1e3a5f;color:#fff;font-weight:700">
+          <td colspan="2" style="padding:9px 10px;font-size:.85rem">
+            ยอดรวมผู้ควบคุมผลิตสุทธิ (Net Manufacturing Cost)</td>
+          <td style="padding:9px 10px;text-align:right;font-size:.85rem">${fmtB(netPerUnit)} ฿</td>
+          <td style="padding:9px 10px;text-align:right;font-size:.85rem">${fmtB(netPerUnit*unit)} ฿</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- ── Margin Analysis + Approvals ── -->
+  <div style="display:flex;gap:0;border-top:1px solid #e8ecf2;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px;padding:14px 20px;border-right:1px solid #e8ecf2">
+      <div style="font-weight:700;font-size:.78rem;margin-bottom:8px;color:#1a2232">
+        ผลสรุปวิเคราะห์เป้าจำลอง (MARGIN ANALYTICS)</div>
+      <div style="font-size:.79rem;line-height:2.1">
+        <div>ราคาเสนอขายตั้งไว้: <b style="color:#2563eb;font-size:.86rem">${fmtB(sellPriceU)} บาท/ลูก</b></div>
+        <div>ต้นทุนรวมแปรผันต่อลูก: ${fmtB(netPerUnit)} บาท/ลูก</div>
+        <div>มาร์จิ้นป้อปเปิ้งเซ็นส่วนต่าง: <b style="color:${marginColor}">
+          ${marginAmt >= 0 ? '+' : ''}${marginPct}%</b></div>
+        <div style="margin-top:6px;padding:7px 10px;border-radius:6px;
+          background:${marginAmt>=0?'rgba(5,150,105,.08)':'rgba(220,38,38,.08)'};
+          border-left:3px solid ${marginColor};font-weight:700;color:${marginColor}">
+          กำไรล็อตสรุปตามตลาด (Job Profit):<br>
+          <span style="font-size:1.05rem">${fmtB(profitJob)} บาท</span>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:200px;padding:14px 20px">
+      <div style="font-weight:700;font-size:.78rem;margin-bottom:8px;color:#1a2232">
+        การลงมติอนุมัติผลิต (APPROVALS)</div>
+      <div style="font-size:.73rem;color:#555;margin-bottom:12px;line-height:1.6">
+        ข้อมูลต้นทุนและการจัดสรรส่วน Nesting ได้ประเมินแล้วสมเหตุสมผล
+        อนุมัติเดินหน้าผลิต</div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <div style="flex:1;text-align:center">
+          <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">
+            อนุมัติ ผู้จัดการฝ่ายขาย</div>
+          <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">
+            อนุมัติ ผู้จัดการฝ่ายผลิต</div>
+          <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+  // เปิด overlay เฉพาะแท็บ Costing Sheet — ซ่อนแท็บใบเสนอราคา/ปุ่มสลับ เพราะข้อมูลฝั่งฟอร์มไม่ตรงกับแถวนี้
+  _specSheetMode = true;
+  $('docExportOverlay').classList.add('open');
+  switchDocTab('cost');
+  if ($('dtabQuo')) $('dtabQuo').style.display = 'none';
+  const swapBtn = document.querySelector('.doc-bottombar .doc-tab-btn[onclick*="_docActiveTab"]');
+  if (swapBtn) swapBtn.style.display = 'none';
 }
 
 async function dtDelete(noQuo, btn) {
@@ -8473,6 +8665,7 @@ function resetPartFormulas() {
 //  DOCUMENT EXPORT CENTER
 // ═══════════════════════════════════════════════════════════════
 let _docActiveTab = 'quo';
+let _specSheetMode = false;
 
 function showDocExport() {
   buildDocuments();
@@ -8482,6 +8675,12 @@ function showDocExport() {
 }
 function closeDocExport() {
   $('docExportOverlay').classList.remove('open');
+  if (_specSheetMode) {
+    _specSheetMode = false;
+    if ($('dtabQuo')) $('dtabQuo').style.display = '';
+    const swapBtn = document.querySelector('.doc-bottombar .doc-tab-btn[onclick*="_docActiveTab"]');
+    if (swapBtn) swapBtn.style.display = '';
+  }
 }
 function switchDocTab(tab) {
   _docActiveTab = tab;
@@ -8556,8 +8755,8 @@ function buildDocuments() {
   addLine('แม่พิมพ์ (Mold)',       $('f_mold').value,      num('f_cMold'),     true);
   const laborRate = num('f_laborRate');
   const workdays  = num('f_workdays');
-  addLine(`ค่าแรง (${laborRate>0?laborRate+'/วัน':''})`, `วันทำงาน: ${workdays} วัน`, num('f_cLabor'), true);
-  addLine('ค่าขนส่ง (Logistics)', $('f_transport').value, num('f_cTransport'), true);
+  addLine(`ค่าแรง (${laborRate>0?laborRate+'/วัน':''})`, '', num('f_cLabor'), false);
+  addLine('ค่าขนส่ง (Logistics)', $('f_transport').value, num('f_cTransport'), false);
   addLine('เครื่องจักร์ (Machine setup)', $('f_machine').value, num('f_cMachine'), false);
   if ($('f_other1').value || num('f_cOther1'))
     addLine($('f_other1').value||'อื่นๆ 1', '', num('f_cOther1'), false);
@@ -8565,7 +8764,7 @@ function buildDocuments() {
     addLine($('f_other2').value||'อื่นๆ 2', '', num('f_cOther2'), false);
   if ($('f_other3').value || num('f_cOther3'))
     addLine($('f_other3').value||'อื่นๆ 3', '', num('f_cOther3'), false);
-  addLine('ต้นทุนคงที่ (Fixed Cost Unit)', 'ค่าบริหาร', num('f_fixedCost'), false);
+  addLine('ต้นทุนคงที่ (Fixed Cost Unit)', 'ค่าบริหาร', num('f_fixedCost'), true);
 
   // totalCost = ต้นทุน/ลูก (after fix)
   const marginPct = totalCost > 0 && sellPriceU > 0
@@ -9074,9 +9273,32 @@ function closeDocCfg() { $('docCfgModal').style.display = 'none'; }
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260610-AE',
+    ref: '#REV-20260610-AH',
     date: '2026-06-10',
     current: true,
+    items: [
+      'ตาราง DATA — ถ้า "เสนอขาย/ลูก" น้อยกว่า "ต้นทุนรวม" ของแถวนั้น แสดงตัวเลขเสนอขายเป็นสีแดงเพื่อเตือนว่าขาดทุน',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AG',
+    date: '2026-06-10',
+    items: [
+      'แก้บั๊กในใบพิกัดจำแนกสเปคและต้นทุน (DOCUMENT 2) — ค่าแรง/ลูก และ ค่าขนส่ง/ลูก ถูกหารด้วยจำนวนชิ้นซ้ำซ้อน (ค่าจริงที่แสดงเหลือแค่ 1/10) แก้เป็นใช้ค่า/ลูก ตรงๆ',
+      'แก้ต้นทุนคงที่ (Fixed Cost) ในตารางเดียวกัน — เดิมไม่ได้หารด้วยจำนวนชิ้น ทำให้ "ยอดรวมต้นทุน/ลูก" ในตารางไม่ตรงกับยอดรวมจริง ตอนนี้ผลรวมรายการตรงกับยอดรวมแล้ว',
+      'แก้ไขทั้งใบจำแนกต้นทุนจากฟอร์ม และปุ่ม "📋 สเปค" ในตาราง DATA',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AF',
+    date: '2026-06-10',
+    items: [
+      'เพิ่มปุ่ม "📋 สเปค" ในตาราง DATA แต่ละแถว — ดูใบพิกัดจำแนกสเปคและต้นทุนฟิลเตอร์ (ภายใน) ของงานนั้นได้ทันที โดยไม่ต้องโหลดเข้าฟอร์ม',
+    ],
+  },
+  {
+    ref: '#REV-20260610-AE',
+    date: '2026-06-10',
     items: [
       'รูปบีบ/ยืดผิดสัดส่วนในไฟล์ "บันทึกรูป" — html2canvas ไม่รองรับ object-fit ของ &lt;img&gt; เปลี่ยนไปใช้ background-image แบบ contain แทน รูปไม่บีบแล้ว',
       'รอฟอนต์โหลดเสร็จ (document.fonts.ready) ก่อน capture ภาพ ลดปัญหาข้อความซ้อนทับกัน',
