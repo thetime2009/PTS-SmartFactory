@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=5.83">
+<link rel="stylesheet" href="style.css?v=5.88">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v5.83</span>
+      <span class="ph-chip ver">v5.88</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1622,9 +1622,17 @@
         style="flex:1;min-width:200px;padding:8px 12px;font-size:.82rem;border-radius:8px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
       <select id="trkFilter" onchange="renderTrackDashboard()"
         style="padding:8px 12px;font-size:.82rem;border-radius:8px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
+        <option value="active" selected>กำลังดำเนินการ</option>
         <option value="">ทุกสถานะ</option>
-        <option value="active">กำลังดำเนินการ</option>
         <option value="done">เรียบร้อยแล้ว</option>
+        <option value="proc:กำลังผลิต">กำลังผลิต</option>
+        <option value="proc:ส่งซุป">ส่งซุป</option>
+        <option value="proc:ส่งตัวอย่างเทส+รอสรุป">ส่งตัวอย่างเทส+รอสรุป</option>
+        <option value="proc:ส่งยังไม่ครบ">ส่งยังไม่ครบ</option>
+        <option value="proc:รอConfirm">รอConfirm</option>
+        <option value="proc:FG รอเรียก">FG รอเรียก</option>
+        <option value="proc:Stock">Stock</option>
+        <option value="proc:เรียบร้อย">เรียบร้อย</option>
       </select>
     </div>
     <div id="trackBody" class="track-grid"></div>
@@ -1897,13 +1905,13 @@
   </div>
 </div>
 
-<script src="core.js?v=5.83"></script>
-<script src="data.js?v=5.83"></script>
-<script src="formcalc.js?v=5.83"></script>
-<script src="aifeatures.js?v=5.83"></script>
-<script src="theme.js?v=5.83"></script>
-<script src="order.js?v=5.83"></script>
-<script src="purchase.js?v=5.83"></script>
+<script src="core.js?v=5.88"></script>
+<script src="data.js?v=5.88"></script>
+<script src="formcalc.js?v=5.88"></script>
+<script src="aifeatures.js?v=5.88"></script>
+<script src="theme.js?v=5.88"></script>
+<script src="order.js?v=5.88"></script>
+<script src="purchase.js?v=5.88"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2032,9 +2040,60 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260611-AX',
+    ref: '#REV-20260611-BD',
     date: '2026-06-11',
     current: true,
+    items: [
+      'แท็บ "ติดตามงาน" — งานที่เลยกำหนดส่ง วงกลมนับถอยหลังเปลี่ยนเป็นสีแดงเข้มเต็มวง พร้อมไอคอนเตือน ⚠️',
+    ],
+  },
+  {
+    ref: '#REV-20260611-BC',
+    date: '2026-06-11',
+    current: false,
+    items: [
+      'ตอนอัปโหลดรูปภาพ PO. ใหม่ นอกจากบันทึกลิงก์ลงคอลัมน์ V แล้ว ยังบันทึก path สัมพัทธ์ ORDER_Images/{เลขที่PO}.รูปภาพPO..{ชื่อไฟล์}.jpg ลงคอลัมน์ M ด้วย',
+    ],
+  },
+  {
+    ref: '#REV-20260611-BB',
+    date: '2026-06-11',
+    current: false,
+    items: [
+      'อัปโหลดรูปภาพ PO. ใหม่ — บันทึกลง Google Drive โฟลเดอร์ My Drive/appsheet/data/PTSytem-1001399782/ORDER_Images (ตามที่ AppSheet ใช้)',
+      'ตั้งชื่อไฟล์รูปแบบ {เลขที่PO}.รูปภาพPO..{HHmmss}.{นามสกุล} แล้วสร้างลิงก์แบบ AppSheet gettablefileurl บันทึกลงคอลัมน์ V อัตโนมัติ',
+    ],
+  },
+  {
+    ref: '#REV-20260611-BA',
+    date: '2026-06-11',
+    current: false,
+    items: [
+      'รูปภาพ PO. ในการ์ด/รายละเอียด Order เปลี่ยนไปอ่านจากคอลัมน์ V ไปก่อน (คอลัมน์ M ของเดิมยังไม่มีข้อมูล)',
+    ],
+  },
+  {
+    ref: '#REV-20260611-AZ',
+    date: '2026-06-11',
+    current: false,
+    items: [
+      'แก้คอลัมน์รูปภาพในการ์ด/รายละเอียด Order ให้ตรงกับชีตจริง — รูปงาน1 = คอลัมน์ N, รูปงาน2 = คอลัมน์ O (เดิมอ้างคอลัมน์ V ผิด)',
+      'แท็บ "ติดตามงาน" ใช้รูปจากคอลัมน์ N (รูปงาน1) เป็นรูปหลักของการ์ด',
+    ],
+  },
+  {
+    ref: '#REV-20260611-AY',
+    date: '2026-06-11',
+    current: false,
+    items: [
+      'ตัวกรองสถานะในแท็บ "ติดตามงาน" ตั้งค่าเริ่มต้นเป็น "กำลังดำเนินการ"',
+      'เพิ่มตัวเลือกกรองตาม Process แต่ละสถานะ (กำลังผลิต/ส่งซุป/ส่งตัวอย่างเทส+รอสรุป/ส่งยังไม่ครบ/รอConfirm/FG รอเรียก/Stock/เรียบร้อย)',
+    ],
+  },
+  {
+    ref: '#REV-20260611-AX',
+    date: '2026-06-11',
+    current: false,
     items: [
       'แก้ป้าย "false" ในการ์ดติดตามงานที่ยังขึ้นอยู่ — ตอนนี้รองรับค่า TRUE/FALSE จาก Sheet (ไม่ใช่แค่ boolean)',
     ],

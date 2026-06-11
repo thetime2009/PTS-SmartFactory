@@ -7,11 +7,14 @@ const ORDER_COLS = {
   qty: 6, material: 7, switch_: 8,
   price: 10,        // K = ราคาขาย
   note: 11,         // L = หมายเหตุ
-  poFile: 12,       // M = รูปภาพPO. (ไฟล์แนบ PO)
+  poFile: 21,       // V = รูปภาพPO. ลิงก์เปิดดู (ไฟล์แนบ PO) — ใช้คอลัมน์ V ไปก่อน
+  poFilePath: 12,   // M = รูปภาพPO. path สัมพัทธ์ เช่น ORDER_Images/{เลขที่PO}.รูปภาพPO..{ชื่อไฟล์}.jpg
+  jobImg1: 13,      // N = รูปงาน1
+  jobImg2: 14,      // O = รูปงาน2
   statusDeliver: 15,// P = สถานะส่งงาน (แสดงในตาราง, อ่านอย่างเดียว)
   process: 16,      // Q = Process (สถานะงานที่แก้ไขได้ — กำลังผลิต/ส่งซุป/.../เรียบร้อย)
   note2: 17,        // R = Note (แสดงในตาราง, อ่านอย่างเดียว)
-  update: 20, linkImages: 21, status: 22, totalTax: 23, add: 24, my: 25,
+  update: 20, status: 22, totalTax: 23, add: 24, my: 25,
   wantDate: 26, customer: 27
 };
 const ORDER_NUM_COLS = 28;
@@ -211,15 +214,15 @@ function _ordFileToBase64(file) {
   });
 }
 // อัปโหลดไฟล์ PO ไปยัง Drive ผ่าน Apps Script แล้วคืน URL
-async function _ordUploadPoFile(file) {
+async function _ordUploadPoFile(file, noPO) {
   const base64 = await _ordFileToBase64(file);
   const res = await fetch(SCRIPT_URL, {
     method: 'POST', mode: 'cors',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'uploadOrderFile', fileName: file.name, mimeType: file.type, base64 })
+    body: JSON.stringify({ action: 'uploadOrderFile', fileName: file.name, mimeType: file.type, base64, noPO: noPO || '' })
   });
   const data = await res.json();
-  if (data && data.status === 'ok') return data.url;
+  if (data && data.status === 'ok') return { url: data.url, path: data.path || '' };
   throw new Error((data && data.message) || 'upload failed');
 }
 
@@ -323,7 +326,9 @@ async function createOrder() {
     const poFile = $('ord_poFile')?.files?.[0];
     if (poFile) {
       if (statusEl) statusEl.textContent = '⏳ กำลังอัปโหลดไฟล์ PO...';
-      row[ORDER_COLS.poFile] = await _ordUploadPoFile(poFile);
+      const up = await _ordUploadPoFile(poFile, noPO);
+      row[ORDER_COLS.poFile]     = up.url;
+      row[ORDER_COLS.poFilePath] = up.path;
     }
 
     await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
@@ -687,7 +692,7 @@ function showOrderDetail(noPO) {
   const escQuo  = noQuo.replace(/'/g,"\\'");
 
   const poUrl = String(r[ORDER_COLS.poFile]||'').trim();
-  const jobImgs = _ordSplitImages(r[ORDER_COLS.linkImages]);
+  const jobImgs = [String(r[ORDER_COLS.jobImg1]||'').trim(), String(r[ORDER_COLS.jobImg2]||'').trim()];
   const shipDate = String(r[ORDER_COLS.update]||'').trim() || '—';
 
   const rowField = (icon, label, value) => `
@@ -990,6 +995,7 @@ async function saveOrderEdit() {
   row[ORDER_COLS.material]    = $('ordEdit_material').value;
   row[ORDER_COLS.note]        = $('ordEdit_note').value;
   row[ORDER_COLS.poFile]      = r[ORDER_COLS.poFile] || '';
+  row[ORDER_COLS.poFilePath]  = r[ORDER_COLS.poFilePath] || '';
 
   const saveBtn  = $('ordEdit_saveBtn');
   const statusEl = $('ordEdit_status_msg');
@@ -999,7 +1005,9 @@ async function saveOrderEdit() {
     const poFile = $('ordEdit_poFile')?.files?.[0];
     if (poFile) {
       if (statusEl) statusEl.textContent = '⏳ กำลังอัปโหลดไฟล์ PO...';
-      row[ORDER_COLS.poFile] = await _ordUploadPoFile(poFile);
+      const up = await _ordUploadPoFile(poFile, _ordEditNoPO);
+      row[ORDER_COLS.poFile]     = up.url;
+      row[ORDER_COLS.poFilePath] = up.path;
     }
 
     await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors',
@@ -1066,8 +1074,8 @@ function _trkLeadTimeCircle(r) {
   const daysLeft = Math.round((wantD - today) / msPerDay);
   const totalDays = orderD ? Math.max(1, Math.round((wantD - orderD) / msPerDay)) : Math.max(1, Math.abs(daysLeft) || 1);
   let pct = Math.max(0, Math.min(1, daysLeft / totalDays));
-  let ring = '#22c55e', numTxt = `${daysLeft}`, lbl = 'วันคงเหลือ';
-  if (daysLeft < 0) { ring = '#f87171'; numTxt = `+${Math.abs(daysLeft)}`; lbl = 'วันเลยกำหนด'; pct = 0; }
+  let ring = '#22c55e', numTxt = `${daysLeft}`, lbl = 'วันคงเหลือ', warnIcon = '';
+  if (daysLeft < 0) { ring = '#991b1b'; numTxt = `+${Math.abs(daysLeft)}`; lbl = 'วันเลยกำหนด'; pct = 1; warnIcon = '<div class="trk-circle-warn">⚠️</div>'; }
   else if (daysLeft <= 2) { ring = '#f59e0b'; }
   const offset = C * (1 - pct);
   return `
@@ -1075,6 +1083,7 @@ function _trkLeadTimeCircle(r) {
       <svg viewBox="0 0 76 76"><circle class="trk-ring-bg" cx="38" cy="38" r="${R}"/>
         <circle class="trk-ring" cx="38" cy="38" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${offset}"/></svg>
       <div class="trk-circle-txt"><div class="trk-circle-num">${numTxt}</div><div class="trk-circle-lbl">${lbl}</div></div>
+      ${warnIcon}
     </div>`;
 }
 
@@ -1114,6 +1123,10 @@ function renderTrackDashboard() {
     const cur = _ordCurrentStepIdx(r);
     if (filter === 'active' && cur === 5) return false;
     if (filter === 'done' && cur !== 5) return false;
+    if (filter.startsWith('proc:')) {
+      const want = filter.slice(5);
+      if (String(r[ORDER_COLS.process]||'').trim() !== want) return false;
+    }
     if (search) {
       const hay = [r[ORDER_COLS.noPO], r[ORDER_COLS.noQuo], r[ORDER_COLS.customer], r[ORDER_COLS.productList]]
         .map(x => String(x||'').toLowerCase()).join(' ');
@@ -1140,8 +1153,8 @@ function renderTrackDashboard() {
     const delColor  = _ordDeliverColor(r[ORDER_COLS.statusDeliver]);
 
     const poUrl = String(r[ORDER_COLS.poFile]||'').trim();
-    const jobImgs = _ordSplitImages(r[ORDER_COLS.linkImages]);
-    const img = jobImgs[0] || poUrl || '';
+    const jobImg1 = String(r[ORDER_COLS.jobImg1]||'').trim();
+    const img = jobImg1 || poUrl || '';
     const shipDate = String(r[ORDER_COLS.update]||'').trim() || '—';
     const note = g('note');
     const escPO = noPO.replace(/'/g,"\\'");
