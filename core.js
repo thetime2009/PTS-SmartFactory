@@ -77,6 +77,7 @@ const TAB_DEFS = [
   { id:'mold',      icon:'🔩', label:'แม่พิมพ์' },
   { id:'data',      icon:'🗂️', label:'DATA'     },
   { id:'order',     icon:'📦', label:'Order'    },
+  { id:'track',     icon:'🚀', label:'ติดตามงาน' },
   { id:'po',        icon:'🧾', label:'ใบสั่งซื้อ' },
   { id:'api',       icon:'🔧', label:'ตั้งค่า'  },
   { id:'mat',       icon:'🧱', label:'MAT'      },
@@ -215,6 +216,7 @@ function switchTab(name) {
   if (name === 'api')       { initCfgTheme(); renderTabManager(); }
   if (name === 'mat')       { renderMatTable('flap'); renderMatTable('mesh'); }
   if (name === 'order')     { updateOrderPreview(); fetchOrders(); }
+  if (name === 'track')     { fetchOrders(); renderTrackDashboard(); }
   if (name === 'po')        { fetchSuppliers(); fetchPurchaseOrders(); if (!_poEditingNo && !_poItems.length) _poNewForm(); }
 }
 

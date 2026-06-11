@@ -664,6 +664,12 @@ function dtShowSpecSheet(idx) {
   if (!rows || !rows[idx]) return;
   const r = rows[idx];
 
+  // ดูสเปคแล้ว ถือว่าเห็นแล้ว เคลียร์ NEW badge ของแถวนี้
+  if (_isNewItem(SEEN_KEY_DATA, r[DT.noQuo])) {
+    _addSeen(SEEN_KEY_DATA, r[DT.noQuo]);
+    dtRender();
+  }
+
   const refId    = r[DT.refId] || generateRefId();
   const revNo    = parseInt(r[DT.rev]) || 0;
   const revSuffix = revNo > 0 ? ` Rev.${revNo}` : '';

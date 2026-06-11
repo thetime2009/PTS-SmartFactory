@@ -1146,3 +1146,94 @@ select option { background: var(--sel-bg); color: var(--t1); }
     background: var(--c1); height: 60px;
   }
 }
+
+/* ══ แท็บ "ติดตามงาน" — Production Tracker Dashboard ══ */
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .track-grid { grid-template-columns: 1fr; }
+}
+.track-card {
+  background: var(--bg-card, var(--bc-div));
+  border: 1px solid var(--bc-card, var(--bc-div));
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.trk-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--bc-div);
+}
+.trk-po { font-size: .92rem; font-weight: 800; color: var(--c1); }
+.trk-quo { font-size: .74rem; color: var(--t3); margin-top: 2px; word-break: break-word; }
+.trk-badge {
+  font-size: .68rem; font-weight: 700; padding: 3px 9px;
+  border-radius: 999px; border: 1px solid; white-space: nowrap;
+}
+.trk-body { display: flex; align-items: center; gap: 10px; }
+.trk-img {
+  width: 56px; height: 56px; object-fit: cover; border-radius: 10px;
+  border: 1px solid var(--bc-div); flex-shrink: 0;
+}
+.trk-img-empty {
+  display: flex; align-items: center; justify-content: center;
+  font-size: .62rem; color: var(--t3); text-align: center;
+  border: 1px dashed var(--bc-div);
+}
+.trk-info { flex: 1; min-width: 0; }
+.trk-product { font-size: .85rem; font-weight: 700; color: var(--t1); word-break: break-word; }
+.trk-meta { font-size: .7rem; color: var(--t3); margin-top: 2px; }
+
+/* วงกลม Lead Time */
+.trk-circle { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+.trk-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.trk-ring-bg { fill: none; stroke: var(--bc-div); stroke-width: 6; }
+.trk-ring {
+  fill: none; stroke: var(--ring, #22c55e); stroke-width: 6;
+  stroke-linecap: round; transition: stroke-dashoffset .3s;
+}
+.trk-circle-txt {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+}
+.trk-circle-num { font-size: 1.05rem; font-weight: 800; color: var(--t1); line-height: 1.1; }
+.trk-circle-lbl { font-size: .56rem; color: var(--t3); line-height: 1.2; }
+
+/* แถบขั้นตอนแนวนอน */
+.trk-steps { display: flex; align-items: flex-start; }
+.trk-step { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; width: 56px; }
+.trk-step-dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; flex-shrink: 0;
+  background: rgba(148,163,184,.12); border: 2px solid #475569; color: #64748b;
+}
+.trk-step.done .trk-step-dot { background: rgba(34,197,94,.18); border-color: #22c55e; color: #4ade80; }
+.trk-step.active .trk-step-dot { background: rgba(245,158,11,.18); border-color: #f59e0b; color: var(--t1); }
+.trk-step-lbl { font-size: .6rem; text-align: center; color: var(--t3); line-height: 1.2; }
+.trk-step.active .trk-step-lbl, .trk-step.done .trk-step-lbl { color: var(--t1); font-weight: 700; }
+.trk-step-line { flex: 1; height: 2px; background: rgba(148,163,184,.25); margin-top: 12px; min-width: 8px; }
+.trk-step-line.done { background: #22c55e; }
+
+/* แถวข้อมูลวันที่ */
+.trk-dates {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  font-size: .72rem; color: var(--t1);
+  background: var(--bc-div); border-radius: 10px; padding: 8px 10px;
+}
+.trk-date-lbl { display: block; font-size: .64rem; color: var(--t3); margin-bottom: 2px; }
+
+.trk-toggle-btn {
+  width: 100%; padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--bc-card); background: var(--bc-div);
+  color: var(--t1); font-size: .76rem; font-weight: 700; cursor: pointer;
+}
+.trk-note {
+  background: var(--bc-div); border-radius: 10px; padding: 8px 10px;
+  font-size: .78rem; color: var(--t1); white-space: pre-wrap; word-break: break-word;
+  margin-top: 8px;
+}
+.trk-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }

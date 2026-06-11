@@ -409,6 +409,7 @@ async function fetchOrders() {
     _initSeenIfEmpty(SEEN_KEY_ORDER, _orderCache.map(r => r[ORDER_COLS.noPO]));
     _ordPage = 1;
     renderOrderTable();
+    if (typeof renderTrackDashboard === 'function') renderTrackDashboard();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="10" style="padding:30px;text-align:center;color:#f87171;font-size:.8rem">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
   }
@@ -1017,5 +1018,177 @@ async function saveOrderEdit() {
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
+}
+
+// ══════════════════════════════════════════════════════
+// ── แท็บ "ติดตามงาน" (Production Step Tracker Dashboard) ──
+// ══════════════════════════════════════════════════════
+
+// แปลงวันที่ (รองรับทั้ง dd/MM/yyyy พ.ศ. จาก Sheet และ yyyy-MM-dd) เป็น Date object (ค.ศ.)
+function _ordDateToJS(s) {
+  s = String(s||'').trim();
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    let y = parseInt(m[3]);
+    if (y > 2400) y -= 543;
+    return new Date(y, parseInt(m[2])-1, parseInt(m[1]));
+  }
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+  return null;
+}
+
+// ── วงกลมนับถอยหลัง Lead Time (วันนี้ → วันที่ต้องการ) ──
+function _trkLeadTimeCircle(r) {
+  const cur = _ordCurrentStepIdx(r);
+  const wantD  = _ordDateToJS(r[ORDER_COLS.wantDate]);
+  const orderD = _ordDateToJS(r[ORDER_COLS.orderDate]);
+  const today  = new Date(); today.setHours(0,0,0,0);
+
+  const R = 32, C = 2*Math.PI*R;
+
+  if (cur === 5) {
+    return `
+      <div class="trk-circle" style="--ring:#22c55e">
+        <svg viewBox="0 0 76 76"><circle class="trk-ring-bg" cx="38" cy="38" r="${R}"/>
+          <circle class="trk-ring" cx="38" cy="38" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+        <div class="trk-circle-txt"><div class="trk-circle-num" style="font-size:1.4rem">✅</div><div class="trk-circle-lbl">เสร็จสิ้น</div></div>
+      </div>`;
+  }
+  if (!wantD) {
+    return `
+      <div class="trk-circle" style="--ring:#94a3b8">
+        <svg viewBox="0 0 76 76"><circle class="trk-ring-bg" cx="38" cy="38" r="${R}"/></svg>
+        <div class="trk-circle-txt"><div class="trk-circle-num">—</div><div class="trk-circle-lbl">ไม่มีกำหนด</div></div>
+      </div>`;
+  }
+  const msPerDay = 86400000;
+  const daysLeft = Math.round((wantD - today) / msPerDay);
+  const totalDays = orderD ? Math.max(1, Math.round((wantD - orderD) / msPerDay)) : Math.max(1, Math.abs(daysLeft) || 1);
+  let pct = Math.max(0, Math.min(1, daysLeft / totalDays));
+  let ring = '#22c55e', numTxt = `${daysLeft}`, lbl = 'วันคงเหลือ';
+  if (daysLeft < 0) { ring = '#f87171'; numTxt = `+${Math.abs(daysLeft)}`; lbl = 'วันเลยกำหนด'; pct = 0; }
+  else if (daysLeft <= 2) { ring = '#f59e0b'; }
+  const offset = C * (1 - pct);
+  return `
+    <div class="trk-circle" style="--ring:${ring}">
+      <svg viewBox="0 0 76 76"><circle class="trk-ring-bg" cx="38" cy="38" r="${R}"/>
+        <circle class="trk-ring" cx="38" cy="38" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${offset}"/></svg>
+      <div class="trk-circle-txt"><div class="trk-circle-num">${numTxt}</div><div class="trk-circle-lbl">${lbl}</div></div>
+    </div>`;
+}
+
+// ── แถบขั้นตอนแนวนอน (5 ขั้นเดิม) ──
+function _trkStepsHtml(r) {
+  const cur = _ordCurrentStepIdx(r);
+  return `<div class="trk-steps">${ORDER_FLOW_STEPS.map((s,i) => {
+    const state = i < cur || cur === 5 ? 'done' : (i === cur ? 'active' : 'todo');
+    const icon  = state === 'done' ? '✓' : s.icon;
+    const isLast = i === ORDER_FLOW_STEPS.length - 1;
+    return `<div class="trk-step ${state}">
+        <div class="trk-step-dot" title="${s.label}">${icon}</div>
+        <div class="trk-step-lbl">${s.label}</div>
+      </div>${!isLast ? `<div class="trk-step-line ${i < cur || cur===5 ? 'done':''}"></div>` : ''}`;
+  }).join('')}</div>`;
+}
+
+// ── แสดง/ซ่อนรายละเอียดเพิ่มเติมในการ์ด ──
+function _trkToggle(idx) {
+  const el = $('trkDetail-' + idx);
+  const btn = $('trkToggleBtn-' + idx);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '🔽 แสดงรายละเอียด' : '🔼 ซ่อนรายละเอียด';
+}
+
+// ── เรนเดอร์แดชบอร์ดติดตามงาน ──
+function renderTrackDashboard() {
+  const wrap = $('trackBody');
+  if (!wrap) return;
+
+  const search = ($('trkSearch')?.value || '').trim().toLowerCase();
+  const filter = $('trkFilter')?.value || '';
+
+  let rows = _orderCache.filter(r => {
+    const cur = _ordCurrentStepIdx(r);
+    if (filter === 'active' && cur === 5) return false;
+    if (filter === 'done' && cur !== 5) return false;
+    if (search) {
+      const hay = [r[ORDER_COLS.noPO], r[ORDER_COLS.noQuo], r[ORDER_COLS.customer], r[ORDER_COLS.productList]]
+        .map(x => String(x||'').toLowerCase()).join(' ');
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (!rows.length) {
+    wrap.innerHTML = `<div style="padding:30px;text-align:center;color:var(--t3);font-size:.85rem">ไม่พบข้อมูล Order</div>`;
+    return;
+  }
+
+  wrap.innerHTML = rows.map((r, idx) => {
+    const g = (k) => {
+      const v = r[ORDER_COLS[k]];
+      const s = String(v ?? '').trim();
+      if (/^(true|false)$/i.test(s)) return /^true$/i.test(s) ? 'ส่งแล้ว' : '—';
+      return s || '—';
+    };
+    const noPO  = g('noPO');
+    const noQuo = g('noQuo');
+    const procColor = _ordProcessColor(r[ORDER_COLS.process]);
+    const delColor  = _ordDeliverColor(r[ORDER_COLS.statusDeliver]);
+
+    const poUrl = String(r[ORDER_COLS.poFile]||'').trim();
+    const jobImgs = _ordSplitImages(r[ORDER_COLS.linkImages]);
+    const img = jobImgs[0] || poUrl || '';
+    const shipDate = String(r[ORDER_COLS.update]||'').trim() || '—';
+    const note = g('note');
+    const escPO = noPO.replace(/'/g,"\\'");
+
+    return `
+    <div class="track-card">
+      <div class="trk-head">
+        <div style="min-width:0">
+          <div class="trk-po">PO ${noPO}</div>
+          <div class="trk-quo">Quo ${noQuo} · ${g('customer')}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <span class="trk-badge" style="background:${procColor.bg};color:${procColor.fg};border-color:${procColor.bd}">${g('process')}</span>
+          <span class="trk-badge" style="background:${delColor.bg};color:${delColor.fg};border-color:${delColor.bd}">📦 ${g('statusDeliver')}</span>
+        </div>
+      </div>
+
+      <div class="trk-body">
+        ${img
+          ? `<img class="trk-img" src="${img}" loading="lazy" onerror="this.style.display='none'">`
+          : `<div class="trk-img trk-img-empty">ไม่มีรูป</div>`}
+        <div class="trk-info">
+          <div class="trk-product">${g('productList')}</div>
+          <div class="trk-meta">📐 ${g('workType')} &nbsp;·&nbsp; 🔢 จำนวน ${g('qty')}</div>
+          <div class="trk-meta">🧱 แม่พิมพ์ ${g('mold')}</div>
+        </div>
+        ${_trkLeadTimeCircle(r)}
+      </div>
+
+      ${_trkStepsHtml(r)}
+
+      <div class="trk-dates">
+        <div><span class="trk-date-lbl">📅 วันที่สั่งซื้อ</span><span>${g('orderDate')}</span></div>
+        <div><span class="trk-date-lbl">⏰ วันที่ต้องการ</span><span>${g('wantDate')}</span></div>
+        <div><span class="trk-date-lbl">🚚 วันที่ส่งงาน</span><span>${shipDate}</span></div>
+      </div>
+
+      <button id="trkToggleBtn-${idx}" class="trk-toggle-btn btn-fx" onclick="_trkToggle(${idx})">🔽 แสดงรายละเอียด</button>
+      <div id="trkDetail-${idx}" style="display:none">
+        <div class="trk-note"><div class="trk-date-lbl">📝 หมายเหตุ</div>${note}</div>
+        <div class="trk-actions">
+          <button class="btn-fx" onclick="showOrderDetail('${escPO}')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bc-div);color:var(--t1);font-size:.78rem;font-weight:700;cursor:pointer">📋 ดูรายละเอียดเต็ม</button>
+          <button class="btn-fx" onclick="_ordQuickChangeProcess('${escPO}')" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.1);color:#d97706;font-size:.78rem;font-weight:700;cursor:pointer">🔄 เปลี่ยนสถานะ</button>
+          ${g('process') === 'เรียบร้อย' ? '' : `<button class="btn-fx" onclick="_ordMarkDelivered('${escPO}')" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.1);color:#16a34a;font-size:.78rem;font-weight:700;cursor:pointer">✈️ ส่งงาน</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
       
