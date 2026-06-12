@@ -79,6 +79,8 @@ const TAB_DEFS = [
   { id:'order',     icon:'📦', label:'Order'    },
   { id:'track',     icon:'🚀', label:'ติดตามงาน' },
   { id:'po',        icon:'🧾', label:'ใบสั่งซื้อ' },
+  { id:'cust',      icon:'👥', label:'ลูกค้า'    },
+  { id:'invoice',   icon:'📑', label:'ใบกำกับภาษี' },
   { id:'api',       icon:'🔧', label:'ตั้งค่า'  },
   { id:'mat',       icon:'🧱', label:'MAT'      },
 ];
@@ -98,7 +100,7 @@ function _saveTabCfg(order, hidden) {
 let _activeTab = 'breakdown';
 
 // แท็บย่อยที่ถูกรวมไว้ใต้ปุ่ม "เพิ่มเติม" (ลดจำนวนปุ่มในแถบแท็บ)
-const SUB_TAB_IDS = ['labor', 'mold', 'api', 'mat', 'po'];
+const SUB_TAB_IDS = ['labor', 'mold', 'api', 'mat', 'po', 'cust', 'invoice'];
 
 function renderTabBar() {
   const bar = $('mainTabBar');
@@ -233,6 +235,8 @@ function switchTab(name) {
     if (btn) btn.textContent = '⛶ เปิดเต็มจอ';
   }
   if (name === 'po')        { fetchSuppliers(); fetchPurchaseOrders(); if (!_poEditingNo && !_poItems.length) _poNewForm(); }
+  if (name === 'cust')       { fetchCustomers(); fetchOrders(); }
+  if (name === 'invoice')    { fetchCustomers(); fetchOrders(); invInit(); }
 }
 
 // ── Tab Manager UI ───────────────────────────────────

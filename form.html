@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=6.01">
+<link rel="stylesheet" href="style.css?v=6.24">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v6.01</span>
+      <span class="ph-chip ver">v6.24</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1428,6 +1428,14 @@
           </select>
         </div>
         <div>วัตถุดิบ: <b id="ord_material">—</b></div>
+        <div style="display:flex;align-items:center;gap:6px">ตะแกรงนอก:
+          <input type="text" id="ord_meshOut" placeholder="ตะแกรงนอก"
+            style="flex:1;min-width:0;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">ตะแกรงใน:
+          <input type="text" id="ord_meshIn" placeholder="ตะแกรงใน"
+            style="flex:1;min-width:0;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
+        </div>
         <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;flex:1">
           <span>หมายเหตุ:</span>
           <textarea id="ord_note" placeholder="หมายเหตุเพิ่มเติม" rows="3" style="flex:1;resize:vertical;padding:6px 8px;font-size:.78rem;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff);font-family:inherit"></textarea>
@@ -1589,6 +1597,8 @@
       <div class="field"><label>ราคา</label><input type="number" id="ordEdit_price" step="0.01"></div>
       <div class="field" style="grid-column:1/-1"><label>รายการสินค้า</label><input type="text" id="ordEdit_productList"></div>
       <div class="field"><label>วัตถุดิบ</label><input type="text" id="ordEdit_material"></div>
+      <div class="field"><label>ตะแกรงนอก</label><input type="text" id="ordEdit_meshOut"></div>
+      <div class="field"><label>ตะแกรงใน</label><input type="text" id="ordEdit_meshIn"></div>
       <div class="field" style="grid-column:1/-1"><label>แนบไฟล์ PO</label>
         <input type="file" id="ordEdit_poFile" accept="image/*,.pdf" style="display:none" onchange="_ordPoFileChanged('ordEdit')">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1840,6 +1850,164 @@
 </div><!-- end tab-po -->
 
 <!-- ══════════════════════════════════════════════════ -->
+<!-- TAB: ลูกค้า (Customers)                            -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="tab-cust" class="tab-content">
+<div style="max-width:1000px;margin:0 auto;padding:12px 8px 80px">
+  <div class="card">
+    <div class="card-header">
+      <div class="icon ic-ext">👥</div>
+      <h2>ลูกค้า</h2>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button onclick="custAddRow()"
+        style="padding:6px 16px;border-radius:8px;border:1px solid rgba(99,102,241,.4);
+        background:rgba(99,102,241,.1);color:#818cf8;font-family:'Sarabun',sans-serif;
+        font-size:.8rem;cursor:pointer">➕ เพิ่มลูกค้า</button>
+    </div>
+    <div id="custTableWrap" style="overflow-x:auto"></div>
+  </div>
+</div>
+</div><!-- end tab-cust -->
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- TAB: ใบกำกับภาษี (Tax Invoice)                     -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="tab-invoice" class="tab-content">
+<div style="max-width:100%;margin:0 auto;padding:12px 8px 80px">
+  <div class="card">
+    <div class="card-header">
+      <div class="icon ic-ext">📑</div>
+      <h2>ออกใบกำกับภาษี</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 14px;margin-bottom:14px">
+      <div class="field"><label>ลูกค้า</label>
+        <select id="inv_customer" onchange="invOnCustomerChange()">
+          <option value="">— เลือกลูกค้า —</option>
+        </select>
+      </div>
+      <div class="field"><label>ประเภทใบกำกับ</label>
+        <select id="inv_type">
+          <option value="full">เต็มรูป (Full Tax Invoice)</option>
+          <option value="short">อย่างย่อ (Abbreviated)</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="font-size:.82rem;font-weight:700;color:var(--c1);margin-bottom:8px">
+      📦 PO ที่ยังไม่ออกใบกำกับ</div>
+    <div id="invOrderListWrap" style="margin-bottom:14px"></div>
+
+    <div id="invSummaryWrap" style="background:var(--c1-05);border-radius:10px;padding:12px 14px;margin-bottom:14px"></div>
+
+    <div style="text-align:right">
+      <button onclick="invGeneratePreview()"
+        style="padding:9px 22px;border-radius:8px;border:none;background:#2563eb;
+        color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif">
+        📄 ออกใบกำกับภาษี / Preview</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-header">
+      <div class="icon ic-ext">🧾</div>
+      <h2>ใบกำกับที่ออกแล้ว</h2>
+    </div>
+    <div id="invIssuedListWrap" style="overflow-x:auto"></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-header">
+      <div class="icon ic-ext">📊</div>
+      <h2>รายงานภาษีขาย</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px 14px;margin-bottom:14px">
+      <div class="field"><label>เดือน</label>
+        <select id="invRep_month">
+          <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option>
+          <option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
+          <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option>
+          <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+        </select>
+      </div>
+      <div class="field"><label>ปี (ค.ศ.)</label>
+        <input type="number" id="invRep_year" placeholder="2026">
+      </div>
+    </div>
+    <div style="text-align:right">
+      <button onclick="invShowSalesTaxReport()"
+        style="padding:9px 22px;border-radius:8px;border:none;background:#0d9488;
+        color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif">
+        📊 ออกรายงานภาษีขาย / Preview</button>
+    </div>
+  </div>
+</div>
+</div><!-- end tab-invoice -->
+
+<!-- Invoice Edit Modal -->
+<div id="invEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;
+  align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;
+    padding:18px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">
+    <div style="font-weight:700;font-size:.95rem;color:var(--t1);margin-bottom:12px">
+      ✏️ แก้ไขใบกำกับ — <span id="invEdit_no" style="color:var(--c1)"></span>
+    </div>
+    <input type="hidden" id="invEdit_invoiceNo">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 14px;margin-bottom:14px">
+      <div class="field"><label>วันที่ออก</label><input type="date" id="invEdit_date"></div>
+      <div class="field"><label>ประเภท</label>
+        <select id="invEdit_type">
+          <option value="full">เต็มรูป</option>
+          <option value="short">อย่างย่อ</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1"><label>ลูกค้า</label>
+        <select id="invEdit_customer"></select>
+      </div>
+      <div class="field" style="grid-column:1/-1"><label>รายการ PO (คั่นด้วยจุลภาค)</label>
+        <input type="text" id="invEdit_poList"></div>
+      <div class="field"><label>มูลค่าก่อน VAT</label>
+        <input type="number" id="invEdit_subtotal" step="0.01" onchange="_invEditRecalc()"></div>
+      <div class="field"><label>VAT</label><input type="number" id="invEdit_vat" step="0.01"></div>
+      <div class="field"><label>ยอดรวม</label><input type="number" id="invEdit_total" step="0.01"></div>
+      <div class="field"><label>สถานะ</label>
+        <select id="invEdit_status">
+          <option value="ออกแล้ว">ออกแล้ว</option>
+          <option value="ยกเลิก">ยกเลิก</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="font-weight:700;font-size:.85rem;color:var(--t1);margin-bottom:8px">
+      📋 รายละเอียดรายการสินค้า (แก้ไขได้ทุกช่อง)
+    </div>
+    <div id="invEdit_itemsWrap" style="margin-bottom:10px"></div>
+    <button type="button" class="btn" onclick="invEditAddItem()" style="padding:6px 14px;font-size:.78rem;margin-bottom:14px">➕ เพิ่มรายการ</button>
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <button class="btn btn-primary" onclick="saveInvoiceEdit()" style="padding:10px 18px;font-size:.88rem">💾 บันทึก</button>
+      <button class="btn" onclick="saveInvoiceEditAndReprint()" style="padding:10px 18px;font-size:.88rem">🖨️ บันทึก + พิมพ์ใหม่</button>
+      <button class="btn" onclick="closeInvoiceEdit()" style="padding:10px 18px;font-size:.88rem">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- PO Picker Modal: เลือก PO เพื่อดึงรายละเอียดสินค้ามาเติมในแถวรายการ -->
+<div id="invPOPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;
+  align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;
+    padding:16px;max-width:460px;width:100%;max-height:80vh;display:flex;flex-direction:column">
+    <div style="font-weight:700;font-size:.9rem;color:var(--t1);margin-bottom:8px">🔍 เลือก PO เพื่อดึงรายละเอียด</div>
+    <input type="text" id="invPOPicker_search" placeholder="ค้นหา PO / ลูกค้า / ขนาด..."
+      oninput="_invRenderPOPickerList(this.value)" style="margin-bottom:10px">
+    <div id="invPOPicker_list" style="overflow-y:auto;flex:1;min-height:120px;border:1px solid var(--bc-card);border-radius:8px"></div>
+    <div style="margin-top:10px;text-align:right">
+      <button class="btn" onclick="_invClosePOPicker()" style="padding:8px 16px;font-size:.82rem">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
 <!-- BOTTOM TAB BAR                                    -->
 <!-- ══════════════════════════════════════════════════ -->
 <div class="tab-bar" id="mainTabBar">
@@ -1930,13 +2098,14 @@
   </div>
 </div>
 
-<script src="core.js?v=6.01"></script>
-<script src="data.js?v=6.01"></script>
-<script src="formcalc.js?v=6.01"></script>
-<script src="aifeatures.js?v=6.01"></script>
-<script src="theme.js?v=6.01"></script>
-<script src="order.js?v=6.01"></script>
-<script src="purchase.js?v=6.01"></script>
+<script src="core.js?v=6.24"></script>
+<script src="data.js?v=6.24"></script>
+<script src="formcalc.js?v=6.24"></script>
+<script src="aifeatures.js?v=6.24"></script>
+<script src="theme.js?v=6.24"></script>
+<script src="order.js?v=6.24"></script>
+<script src="purchase.js?v=6.24"></script>
+<script src="invoice.js?v=6.24"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2065,9 +2234,209 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260612-C',
+    ref: '#REV-20260612-Z',
     date: '2026-06-12',
     current: true,
+    items: [
+      'ตารางใบกำกับที่ออกแล้ว: เพิ่มคอลัมน์ "รายการ PO" แสดงเลข PO ที่อยู่ในใบกำกับแต่ละใบ',
+    ],
+  },
+  {
+    ref: '#REV-20260612-Y',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แท็บใบกำกับภาษี: ขยายความกว้างพื้นที่ทำงานเป็นเต็มหน้าจอ (จากเดิมจำกัด 760px)',
+    ],
+  },
+  {
+    ref: '#REV-20260612-X',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'หน้าแก้ไขใบกำกับ: เพิ่มปุ่ม "🔍 เลือก PO" ในแต่ละแถวรายการ — เปิดตัวเลือก PO จากชีต Order ค้นหาได้ เลือกแล้วดึง OD/ID/H, แบบงาน, ตะแกรงนอก/ใน, หมายเหตุ, จำนวน, ราคา/หน่วย มาเติมอัตโนมัติ (ไม่ต้องพิมพ์ PO เอง ลดความผิดพลาด)',
+    ],
+  },
+  {
+    ref: '#REV-20260612-W',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แท็บใบกำกับภาษี: หน้าแก้ไขใบกำกับที่ออกแล้ว เพิ่มตัวแก้ไขรายละเอียดสินค้าทุกช่อง (PO, OD/ID/H, แบบงาน, ตะแกรงนอก/ใน, หมายเหตุ, จำนวน, ราคา/หน่วย) เพิ่ม/ลบรายการได้',
+      'เพิ่มปุ่ม "บันทึก + พิมพ์ใหม่" เพื่อบันทึกการแก้ไขแล้วเปิดเอกสารใบกำกับใหม่ให้พิมพ์ทันที โดยไม่เปลี่ยนเลขที่เดิม',
+      'Code.gs: saveInvoiceRecord/updateInvoiceRecord บันทึก/แก้ไขรายการสินค้า (itemsJson) ของใบกำกับ',
+    ],
+  },
+  {
+    ref: '#REV-20260612-V',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แท็บใบกำกับภาษี: เพิ่มรายการ "ใบกำกับที่ออกแล้ว" พร้อมปุ่มแก้ไข — แก้ไขวันที่/ประเภท/ลูกค้า/รายการ PO/ยอดก่อนVAT/VAT/ยอดรวม/สถานะ ได้โดยไม่เปลี่ยนเลขที่ใบกำกับ',
+      'เพิ่ม Code.gs: updateInvoiceRecord สำหรับบันทึกการแก้ไขใบกำกับเดิมในชีต Invoices',
+    ],
+  },
+  {
+    ref: '#REV-20260612-U',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แก้บั๊ก getInvoices (Code.gs): คอลัมน์วันที่ในชีต Invoices ถูก Sheets แปลงเป็น Date object ทำให้รายงานภาษีขายกรองไม่เจอ — เพิ่มการแปลงกลับเป็น dd/MM/yyyy ก่อนส่งออก',
+    ],
+  },
+  {
+    ref: '#REV-20260612-T',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แก้บั๊ก: ช่องเลือกเดือน/ปีของ "รายงานภาษีขาย" ไม่ตั้งค่าเป็นเดือน/ปีปัจจุบันให้อัตโนมัติ (ค้างที่มกราคม) ทำให้รายงานว่างเปล่า',
+    ],
+  },
+  {
+    ref: '#REV-20260612-S',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'เปลี่ยนรูปแบบเลขที่ใบกำกับภาษีเป็น YYMMSSS (เช่น 2606001) ใช้เลขลำดับร่วมกันทั้งเต็มรูป/อย่างย่อในเดือนเดียวกัน',
+      'เพิ่มฟีเจอร์ "รายงานภาษีขาย" ในแท็บใบกำกับภาษี — เลือกเดือน/ปี แล้ว Preview รายงานสรุปยอดขายทั้งเดือน (รวม VAT และยอดรวม)',
+      'เพิ่ม endpoint getInvoices ใน Code.gs สำหรับดึงข้อมูลใบกำกับทั้งหมด',
+    ],
+  },
+  {
+    ref: '#REV-20260612-R',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'เพิ่มคอลัมน์ใหม่ในชีต Order: "ตะแกรงนอก" (AE) และ "ตะแกรงใน" (AF) — เพิ่มช่องกรอกในการ์ดสร้าง Order (auto-fill จาก DATA แก้ไขได้) และในฟอร์มแก้ไข Order',
+      'ใบกำกับภาษี: แสดง "ตะแกรงนอก" และ "ตะแกรงใน" เป็นรายการแยกกัน โดยดึงจากคอลัมน์ใหม่ในชีต Order',
+    ],
+  },
+  {
+    ref: '#REV-20260612-Q',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'ใบกำกับภาษี: เปลี่ยนคอลัมน์แรกจาก "เลขที่ PO" เป็น "ลำดับที่" และย้ายเลข PO ไปแสดงในช่องรายการ (PO xxxxxx)',
+      'จัดลำดับรายละเอียดในช่องรายการเป็น: แบบงาน → SIZE → ตะแกรงนอก/ใน → หมายเหตุ',
+    ],
+  },
+  {
+    ref: '#REV-20260612-P',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'ใบกำกับภาษี: เปลี่ยนรายละเอียดในช่อง "รายการ" (SIZE/รูปแบบงาน/ตะแกรงนอก-ใน/หมายเหตุ) ให้ดึงจากชีต Order ทั้งหมด ไม่ต้องพึ่งชีต DATA',
+    ],
+  },
+  {
+    ref: '#REV-20260612-O',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'ใบกำกับภาษี: เพิ่มรายละเอียดในช่อง "รายการ" — ขนาด SIZE (OD/ID/H), รูปแบบงาน, ตะแกรงนอก/ตะแกรงใน, หมายเหตุ (ดึงจากชีต DATA และ Order)',
+    ],
+  },
+  {
+    ref: '#REV-20260612-N',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'ใบกำกับภาษี: เพิ่มคอลัมน์ "จำนวน" และ "หน่วยละ (฿)" ในตารางรายการสินค้า ให้รายละเอียดครบเหมือนใบกำกับที่ใช้งานจริง',
+    ],
+  },
+  {
+    ref: '#REV-20260612-M',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แก้บัค "noPO.replace is not a function" ในแท็บใบกำกับภาษี — เลขที่ PO ในชีตเป็นตัวเลข ไม่ใช่ข้อความ ทำให้รายการ PO ไม่แสดง',
+    ],
+  },
+  {
+    ref: '#REV-20260612-L',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แก้บัค getCustomers (Code.gs): อ่านรวมแถวหัวตารางมาเป็นลูกค้าหลอกๆ ทำให้ dropdown เลือกลูกค้าใน "ใบกำกับภาษี" จับคู่ไม่ตรง (ขึ้น "กรุณาเลือกลูกค้าก่อน") — แก้ให้อ่านเริ่มจากแถว 2',
+      'เปลี่ยน dropdown เลือกลูกค้าในแท็บ "ใบกำกับภาษี" ให้ใช้ index แทน code เพื่อความแม่นยำ',
+    ],
+  },
+  {
+    ref: '#REV-20260612-K',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แก้การจับคู่ PO สำหรับออกใบกำกับ: คอลัมน์ "ลูกค้า" ใน Order เก็บเป็น "ชื่อผู้ติดต่อ" (ใช้ตอนออกใบเสนอราคา) ไม่ใช่ชื่อบริษัท — ย้าย autocomplete ไปที่ช่อง "ผู้ติดต่อ" และจับคู่ด้วยชื่อผู้ติดต่อเป็นหลัก',
+    ],
+  },
+  {
+    ref: '#REV-20260612-J',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แท็บ "ลูกค้า": ช่อง "ชื่อ/บริษัท" เปลี่ยนเป็น autocomplete — แนะนำชื่อลูกค้าจากชีต Order (คอลัมน์ลูกค้า) เพื่อให้ชื่อตรงกันเป๊ะๆ สำหรับจับคู่ออกใบกำกับ',
+      'เข้าแท็บ "ลูกค้า" จะดึงข้อมูล Order มาด้วย เพื่อให้รายการ autocomplete พร้อมใช้งาน',
+    ],
+  },
+  {
+    ref: '#REV-20260612-I',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'เพิ่มแท็บ "ลูกค้า" — เพิ่ม/แก้ไข/ลบ ข้อมูลลูกค้า (ชีต Customers)',
+      'เพิ่มแท็บ "ใบกำกับภาษี" — เลือกลูกค้า/PO ที่ยังไม่ออกใบกำกับ, เลือกเต็มรูป/อย่างย่อ, ขอเลขที่เอกสารอัตโนมัติ, พรีวิว/พิมพ์ และบันทึกลงชีต Invoices',
+      'เพิ่มคอลัมน์ invoiceNo/invoiceDate ใน Order (AC, AD) เพื่อกัน PO ออกใบกำกับซ้ำ',
+    ],
+  },
+  {
+    ref: '#REV-20260612-H',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'ระบบใบกำกับภาษี (เริ่ม): การ์ดตั้งค่าบริษัทย้ายไปเก็บที่ Google Sheet "Company" (sync ทุกอุปกรณ์)',
+      'อัปโหลดโลโก้บริษัทขึ้น Drive ผ่าน Apps Script แทนการเก็บใน localStorage',
+      'เพิ่ม backend: getCompanyInfo / saveCompanyInfo / uploadLogo / getCustomers / saveCustomer / deleteCustomer / getNextInvoiceNo / saveInvoiceRecord',
+    ],
+  },
+  {
+    ref: '#REV-20260612-G',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'การ์ดติดตามงาน: ชื่อรายการสินค้าตัวใหญ่ขึ้น เด่นขึ้น',
+      'ขั้นตอนสถานะปัจจุบัน (เช่น "กำลังผลิต") มีไอคอนกระพริบ/เรืองแสงให้สดุดตา ไม่นิ่งจนมองข้าม',
+      'คลิกรูปภาพในการ์ดเพื่อดูภาพขยายได้',
+    ],
+  },
+  {
+    ref: '#REV-20260612-F',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'แยกการตั้งค่า "คอลัมน์" และ "รีเฟรชทุก" ของหน้าติดตามงาน ระหว่างหน้าปกติกับโหมดเต็มจอ (⛶ เปิดเต็มจอ) — ปรับค่าฝั่งใดฝั่งหนึ่งจะไม่กระทบอีกฝั่ง',
+    ],
+  },
+  {
+    ref: '#REV-20260612-E',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'เพิ่มปุ่ม "📄 คัดลอกสเปก" ในป็อปอัป "รายละเอียด Order" (showOrderDetail) ด้วย — เดิมมีเฉพาะในการ์ด Track',
+    ],
+  },
+  {
+    ref: '#REV-20260612-D',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'เพิ่มปุ่ม "📄 คัดลอกสเปก" ในการ์ดรายละเอียด Order — คัดลอกสเปกงาน (สถานะ, เลขที่PO, เลขอ้างอิง, แบบงาน, รายการ, จำนวน, ตะแกรงนอก/ใน, ช่องว่างจีบเหลือ, หมายเหตุ) ลงคลิปบอร์ดแบบจัดรูปแบบพร้อมส่ง',
+      'สถานะ "เรียบร้อย" จะแสดงเป็น "เรียบร้อยพร้อมส่ง" ในสเปกที่คัดลอก',
+    ],
+  },
+  {
+    ref: '#REV-20260612-C',
+    date: '2026-06-12',
+    current: false,
     items: [
       'Report ขนาดตัด: ชิ้นส่วนที่วัตถุดิบ = "ไม่มี" จะแสดงวงกลมกากบาทสีแดง (✕) แทนขนาดตัด แทนการคำนวณตัวเลขผิดๆ',
     ],
@@ -2293,328 +2662,4 @@ const DEV_LOGS = [
     date: '2026-06-11',
     current: false,
     items: [
-      'หน้า PO: เพิ่ม feedback ตอนกดปุ่ม (เอฟเฟกต์กดของปุ่มเล็กในตาราง/รายการสินค้า)',
-      'บันทึก/ลบ PO: แสดง popup "กำลังบันทึก/กำลังลบ..." ระหว่างทำงาน และ popup ยืนยันเมื่อเสร็จชัดเจนขึ้น',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AQ',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'เพิ่มแท็บใหม่ "ใบสั่งซื้อ" (PO) — ออกใบสั่งซื้อ ผูกกับ Supplier และอ้างอิง Order',
-      'ฟอร์ม PO: รายการสินค้า/วัตถุดิบ คำนวณยอดรวม+VAT7%+สุทธิอัตโนมัติ',
-      'ตารางรายการ PO: ค้นหา, แบ่งหน้า, แก้ไข/พิมพ์/ลบ',
-      'พิมพ์ใบสั่งซื้อ A4 (เปิดหน้าต่างใหม่ + พิมพ์อัตโนมัติ)',
-      'เพิ่มไฟล์ purchase.js และเชื่อมกับ Code.gs (savePurchaseOrder, deletePurchaseOrder, getPurchaseOrders, getSuppliers, getNextPONo)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AP',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ตาราง Order: ปรับสไตล์ให้เหมือนตาราง DATA — ไม่ตัดข้อความ (ไม่มี ... ), แถบสีสลับ, ปุ่มสีสด',
-      'คอลัมน์ No.Quo ของตาราง Order เพิ่ม badge แสดงสถานะ Process กำกับไว้ด้านบน (เหมือน DATA)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AO',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ตาราง Order: เปลี่ยนค่าเริ่มต้นตัวกรอง Process — ซ่อนรายการ "เรียบร้อย" ทั้งหมด ยกเว้นรายการของเดือนนี้และเดือนที่แล้ว (อิงวันที่สั่งซื้อ)',
-      'ตาราง Order: คลิกหัวคอลัมน์เพื่อเรียงลำดับได้ (No.Quo, No.PO, ลูกค้า, วันที่สั่งซื้อ, วันที่ต้องการ, จำนวน, ราคาขาย, Process) — คลิกซ้ำสลับ ↑/↓',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AN',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ตาราง Order: ย้ายคอลัมน์ "วันที่ต้องการ" ไปหลัง "วันที่สั่งซื้อ" และ "ลูกค้า" ไปหลัง "No.PO"',
-      'เพิ่มคอลัมน์ "หมายเหตุ" (L) หลังคอลัมน์จำนวน และ "Note" (R) ต่อจากหมายเหตุ',
-      'เพิ่มไฮไลต์แถวสีเหลือง (เหมือนตาราง DATA) เมื่อวัตถุดิบ (คอลัมน์ H) เป็นสแตนเลส/SUS',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AM',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ปุ่ม "ส่งงาน": นอกจากตั้งสถานะส่งงาน = "ส่งแล้ว" แล้ว จะตั้ง Process = "เรียบร้อย" ด้วย',
-      'ปุ่ม "ส่งงาน" จะไม่แสดง ถ้า Process = "เรียบร้อย" อยู่แล้ว',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AL',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ปุ่ม "เปลี่ยนสถานะ" และ "ส่งงาน" ในการ์ดรายละเอียด Order: ไม่ปิดการ์ดระหว่างบันทึกแล้ว — แสดงผลแจ้งเตือนแบบ toast มุมจอแทน และรีเฟรชข้อมูลในการ์ดเดิมทันที',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AK',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'การ์ดรายละเอียด Order: ปุ่มเปลี่ยนสถานะ/ส่งงาน/พิมพ์/แก้ไข เมื่อทำเสร็จจะกลับมาที่การ์ดเดิม',
-      'เปลี่ยนปุ่ม "⋯" เป็น "🗑️ ลบ Order" (action เดียวกับปุ่มลบในตาราง)',
-      'ตารางแถว Order: เอาปุ่มแก้ไขและลบออก เหลือแค่ปุ่มดู (ไปทำต่อในการ์ดรายละเอียดแทน)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AJ',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ปรับลำดับ Timeline ความคืบหน้า Order เป็น: รับออเดอร์ → กำลังผลิต → กำลังส่งซุป → เตรียมส่ง (กำหนดการ=วันที่ต้องการ) → เรียบร้อย (ส่งสินค้าแล้ว)',
-      'ค่าเริ่มต้นของระบบ (process ว่าง) = กำลังผลิต (รับออเดอร์แล้ว)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AI',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'การ์ดรายละเอียด Order: เปลี่ยนพื้นหลังเป็นสีขาว',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AH',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แก้บัค: badge "NEW" ไม่แสดง — แยก badge ออกจากช่องที่ตัดข้อความ (overflow:hidden/ellipsis) ในตาราง DATA และ Order ไม่ให้ถูกซ่อน',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AG',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แก้บัค: เนื้อหาดิบของ DEV_LOGS (entry -U/-T/-S เก่า) หลุดไปแสดงเป็นข้อความท้ายหน้านอก &lt;script&gt; — ย้ายกลับเข้า array และปิดแท็ก HTML ให้ถูกต้อง',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AF',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แก้ไฟล์ form.html ที่เสียหาย (array DEV_LOGS ถูกตัดท้ายขาด ทำให้ฟังก์ชัน openDevLogs/closeDevLogs/renderDevLogs และโค้ดลงทะเบียน Service Worker หายไปทั้งหมด) — กู้คืนครบถ้วน แก้ปัญหา "Dev Log เปิดไม่ขึ้น" และ "icon NEW หาย"',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AE',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'การ์ด "ดูรายละเอียด Order" เปลี่ยนพื้นหลังเป็นสีทึบ (var(--bg-deep)) ไม่โปร่งแสง',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AD',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แก้ไฟล์ order.js ที่เสียหาย (ถูกตัดท้ายขาด) — กู้คืนฟังก์ชัน openEditOrder/closeOrderEdit/saveOrderEdit และฟังก์ชันการ์ดดูรายละเอียด Order ทั้งหมด',
-      'ปรับสีการ์ด "ดูรายละเอียด Order" ให้ใช้ตัวแปรสีตามธีมเว็บ (รองรับโหมดสว่าง/มืด)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AC',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ปรับการ์ด "ดูรายละเอียด Order" ใหม่ทั้งหมด — เพิ่ม Timeline ความคืบหน้า 5 ขั้นตอน (รับออเดอร์→ตรวจสอบข้อมูล→กำลังผลิต→QC→ส่งสินค้า) ตามสถานะ Process',
-      'เพิ่มปุ่ม Action ในการ์ด: 🔄 เปลี่ยนสถานะ (Process), ✈️ ส่งงาน (ตั้งสถานะส่งงาน+บันทึกวันที่), 🖨️ พิมพ์, ✏️ แก้ไข, ⋯ เพิ่มเติม (ลบ Order)',
-      'เพิ่มปุ่มขยายรูปภาพ (🔍) ในรูป PO/รูปงาน',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AB',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'เพิ่มปุ่ม "👁️ ดู" ในตาราง Order — เปิดการ์ดดูรายละเอียดออเดอร์ทั้งหมด (No.Quo, No.PO, ลูกค้า, แม่พิมพ์, แบบงาน, รายการสินค้า, จำนวน, วัตถุดิบ, ราคาเสนอขาย, วันที่สั่งซื้อ/ต้องการ, รูปภาพ PO/งาน, หมายเหตุ, สถานะงาน/ส่งงาน)',
-      'ปรับสัดส่วนคอลัมน์ตาราง Order รองรับปุ่มที่เพิ่มขึ้น (ปฏิบัติการ 15% → 18%)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-AA',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'เพิ่ม badge "NEW" กระพริบ กำกับแถวที่เพิ่งถูกเพิ่มใหม่ ในตาราง DATA และ Order',
-      'badge จะหายไปเมื่อกดเปิด/แก้ไขแถวนั้น (สถานะถูกจำไว้ใน localStorage)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-Z',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ตาราง Order: ปรับสัดส่วนความกว้างคอลัมน์ใหม่ทั้งหมด — เพิ่มคอลัมน์ "ปฏิบัติการ" จาก 8% เป็น 15% ให้ปุ่ม "แก้ไข/ลบ" แสดงครบไม่ถูกตัด',
-      'ลดขนาด padding ปุ่มแก้ไข/ลบในตาราง Order ให้กระชับขึ้น',
-    ],
-  },
-  {
-    ref: '#REV-20260611-Y',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แท็บ Order (เดสก์ท็อป ≥1100px): ซ่อน Summary Panel ฝั่งขวา ให้ตารางขยายเต็มความกว้างจอ — สลับแท็บอื่นจะกลับมาแสดงปกติ',
-    ],
-  },
-  {
-    ref: '#REV-20260611-X',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แท็บ Order (เดสก์ท็อป ≥1024px): ขยาย card ให้เต็มความกว้างจอเหมือนแท็บ DATA (ยกเลิก max-width:880px)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-W',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'ยกเลิกการเปลี่ยนแปลงของ #REV-20260611-V (ซ่อน Summary Panel ในแท็บ DATA) ตามคำขอผู้ใช้ — ย้อนกลับ core.js และ style.css',
-    ],
-  },
-  {
-    ref: '#REV-20260611-U',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แก้ปุ่ม "ลบ" Order ไม่ขึ้น (เคสรีดีพลอยแล้วยังไม่เห็น) — สาเหตุ: เบราว์เซอร์ cache ไฟล์ .js/.css เก่า',
-      'เพิ่ม cache-busting (?v=5.59) ให้ core.js, data.js, formcalc.js, aifeatures.js, theme.js, order.js, style.css',
-    ],
-  },
-  {
-    ref: '#REV-20260611-T',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'เพิ่มปุ่ม "🗑️ ลบ" ในแต่ละแถวของตาราง Order',
-      'กดลบ → ขึ้นป๊อปอัปยืนยัน (แสดง No.Quo / No.PO) ก่อนลบจริง',
-      'เมื่อยืนยันลบ: ลบแถวออกจากชีต Order และตั้งคอลัมน์ "สถานะ" ของแถว DATA ที่ตรงกับ No.Quo เป็น "รอสรุป"',
-    ],
-  },
-  {
-    ref: '#REV-20260611-S',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'โหมดเดสก์ท็อป (เมนูซ้าย ≥1024px): แสดงทุกแท็บแยกเป็นปุ่มเดี่ยวในเมนูซ้าย ไม่ต้องรวมกลุ่มไว้ใต้ "⋯ เพิ่มเติม" อีกต่อไป',
-      'โหมดมือถือยังคงรวมแท็บ "แรงงาน, แม่พิมพ์, ตั้งค่า, MAT" ไว้ใต้ "เพิ่มเติม" เหมือนเดิม',
-      'เพิ่มการตรวจจับ resize เพื่อสลับโหมดอัตโนมัติเมื่อข้าม breakpoint 1024px',
-    ],
-  },
-  {
-    ref: '#REV-20260611-R',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'เพิ่มแจ้งเตือนตอนบันทึก: ถ้า "ราคาเสนอขาย" ต่ำกว่า "ต้นทุนรวม/ลูก" จะขึ้นป๊อปอัปสีแดง ⚠️ พร้อมตัวเลขเทียบ และต้องกดยืนยันซ้ำว่า "ยืนยันบันทึกทั้งที่ขาดทุน"',
-    ],
-  },
-  {
-    ref: '#REV-20260611-Q',
-    date: '2026-06-11',
-    current: false,
-    items: [
-      'แก้บัค (ต่อจาก -P): การคำนวณซ้ำหลังใส่ราคาเสนอขายที่บันทึกไว้ ยังถูก calcAll() ทับกลับด้วย margin อัตโนมัติอีกรอบ เพราะ _selectedMargin ยังเป็นค่าเดิม (เช่น 40%)',
-      'แก้ให้ตั้ง _selectedMargin = 0 (โหมดกำหนดเอง) ก่อนคำนวณซ้ำ — ราคาเสนอขายที่โหลดมาจะไม่ถูกทับ และตาราง/กราฟเปรียบเทียบราคาจะตรงกับราคานี้ตั้งแต่โหลดครั้งแรก',
-    ],
-  },
-  {
-    ref: '#REV-20260611-P',
-    date: '2026-06-11',
-    items: [
-      'แก้บัค: ตอนโหลดงานเก่าเข้าฟอร์มครั้งแรก ตาราง/กราฟ "เปรียบเทียบราคา vs จำนวน" ยังคำนวณด้วย margin เดิม ไม่ได้ใช้ราคาเสนอขายที่บันทึกไว้ (เพราะ calcAll() รันก่อนใส่ราคาเสนอขายกลับเข้าช่อง)',
-      'แก้ให้คำนวณซ้ำอีกรอบหลังใส่ราคาเสนอขายที่โหลดมาแล้ว — ตาราง/กราฟ/summary panel จะตรงกับราคาเสนอขายตั้งแต่โหลดครั้งแรก',
-    ],
-  },
-  {
-    ref: '#REV-20260611-O',
-    date: '2026-06-11',
-    items: [
-      'แก้ตาราง/กราฟ "เปรียบเทียบราคา vs จำนวน" — เดิมคำนวณราคาขายด้วย margin คงที่ (+40%) ไม่สนใจค่าที่กรอกในช่อง "ราคาเสนอขาย"',
-      'ตอนนี้คำนวณ % กำไรจริงจากช่อง "ราคาเสนอขาย" เทียบกับต้นทุน/ลูกที่จำนวนปัจจุบัน แล้วใช้ % นั้นกับทุกแถว — แถวที่จำนวนตรงกับ "จำนวน" ปัจจุบัน จะใช้ราคาเสนอขายตรงๆ',
-      'พิมพ์ในช่อง "ราคาเสนอขาย" แล้วตาราง/กราฟอัปเดตทันที (interactive)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-N',
-    date: '2026-06-11',
-    items: [
-      'แบบร่าง (Drafts) เห็นเหมือนกันทุกเครื่องแล้ว — sync ขึ้น Google Sheet ใหม่ "Drafts" ผ่าน Apps Script (เดิมเก็บแค่ localStorage เห็นเฉพาะเครื่องที่บันทึก)',
-      'ตอนเปิดฟอร์ม/เปิดรายการแบบร่าง จะดึงรายการล่าสุดจากเซิร์ฟเวอร์มาแสดงอัตโนมัติ',
-      '⚠️ ต้อง Redeploy Apps Script (Code.gs) ใหม่ ไม่งั้นฟีเจอร์นี้จะไม่ทำงาน',
-    ],
-  },
-  {
-    ref: '#REV-20260611-M',
-    date: '2026-06-11',
-    items: [
-      'แก้บัค: โหลดงานเก่าที่ AY (รูปใบขอราคา) เป็นชื่อไฟล์/พาธจากระบบเดิม (เช่น "DATA_Images/xxxx.jpg") ไม่ใช่ URL ที่เปิดได้ — เดิมแสดงเป็นกล่องว่าง/ภาพแตก',
-      'ตอนนี้ถ้าตรวจพบว่าเป็นพาธเก่า จะแสดงข้อความ "ไม่พบรูป (ข้อมูลเก่า)" พร้อมชื่อไฟล์เดิม และให้แนบรูปใหม่แทนได้ (ไม่กระทบการแสดงผล Card สำหรับงานที่มีรูปจริง)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-L',
-    date: '2026-06-11',
-    items: [
-      'แก้บัค: ตอนกด "บันทึกทับแถวเดิม" ของ job เก่า ราคาเสนอขายถูกคำนวณทับเป็นราคาตาม margin อัตโนมัติ (เช่น 40%) — แก้ให้ดึงค่าจากช่อง "ราคาเสนอขาย" ตามที่กรอกไว้เสมอ ห้ามเปลี่ยน',
-      'เพิ่มแสดง "ราคาเสนอขาย" ใน popup ยืนยันก่อนบันทึก เพื่อให้ตรวจสอบก่อนกดอัปเดต',
-    ],
-  },
-  {
-    ref: '#REV-20260611-K',
-    date: '2026-06-11',
-    items: [
-      'แยก JS ทั้งหมดออกจาก form.html เป็น 6 ไฟล์ตามฟีเจอร์: core.js, data.js, formcalc.js, aifeatures.js, theme.js, order.js (โหลดตามลำดับเดิมทุกอย่าง)',
-      'form.html เหลือเฉพาะ HTML shell + Dev Logs (~2,494 บรรทัด จากเดิม ~10,836 บรรทัด)',
-    ],
-  },
-  {
-    ref: '#REV-20260611-J',
-    date: '2026-06-11',
-    items: [
-      'แยก CSS ทั้งหมดออกจาก form.html ไปไว้ที่ไฟล์ style.css ใหม่ (เชื่อมด้วย <link rel="stylesheet">)',
-      'form.html เล็กลง ~1,128 บรรทัด — เริ่มต้นแผนแยกไฟล์ตามฟีเจอร์',
-    ],
-  },
-  {
-    ref: '#REV-20260611-I',
-    date: '2026-06-11',
-    items: [
-      'ย้ายปุ่มคู่มือการใช้งาน (❓) ออกจากปุ่มลอยมุมขวาล่าง ไปไว้ในแท็บ "ตั้งค่า" ข้างปุ่ม "Dev Logs" แทน',
-      'ลบ CSS .help-fab ที่ไม่ใช้แล้ว',
-    ],
-  },
-  {
-    ref: '#REV-20260611-H',
-    date: '2026-06-11',
-    items: [
-      'ลดจำนวนปุ่มในแถบแท็บ (มือถือ/เดสก์ท็อป): รวมแท็บ "แรงงาน, แม่พิมพ์, ตั้งค่า, MAT" ไว้ใต้ปุ่ม "⋯ เพิ่มเติม" ปุ่มเดียว เหลือปุ่มหลัก 5 ปุ่ม (ฟอร์ม, คำนวณ, DATA, Order, เพิ่มเติม)',
-      'กดปุ่ม "เพิ่มเติม" จะเปิดเมนูลอยแสดงแท็บย่อยทั้ง 4 ให้เลือก ปิดอัตโนมัติเมื่อเลือกหรือคลิกนอกเมนู',
-      'ปุ่ม "เพิ่มเติม" จะ highlight เป็น active เมื่อแท็บที่เปิดอยู่เป็นหนึ่งในแท็บย่อย',
-      'ระบบจัดการแท็บ (ลำดับ/ซ่อน) ในหน้าตั้งค่ายังทำงานเหมือนเดิม — การซ่อนแท็บย่อยจะซ่อนจากเมนู "เพิ่มเติม" ด้วย',
-    ],
-  },
-  {
-    ref: '#REV-20260611-G',
-    date: '2026-06-11',
-    items: [
-      'เพิ่ม popup ยืนยันก่อนสร้าง Order จริง (แสดง No.Quo + No.PO ให้ตรวจสอบ) — หลังผ่านการตรวจสอบข้อมูลครบถ้วนและไม่ซ้ำแล้ว',
-    ],
-  },
-  {
-    ref: '#REV-20260611-F',
-    date: '2026-06-11',
-    items: [
-      'ปุ่มหลักในการ์ด "สร้าง Order" เปลี่ยนชื่อ/การทำงานอัตโนมัติ: ถ้าการ์ดยังไม่มีข้อมูลจาก DATA จะแสดง "🚀 เริ่มสร้าง Order" กดแล้วพาไปแท็บ DATA เพื่อกดปุ่ม "Order"; ถ้าการ์ดมีข้อมูลแล้ว จะแสดง "➕ สร้าง Order" กดแล้วบันทึก Order ตามเดิม',
-      'เพิ่มปุ่ม "🧹 เคลียร์การ์
+      'หน้า PO: เพิ่ม feedback ตอน�

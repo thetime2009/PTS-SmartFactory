@@ -1253,15 +1253,17 @@ body.trk-fullscreen-mode .trk-fs-toolbar {
 .trk-body { display: flex; align-items: center; gap: 10px; }
 .trk-img {
   width: 56px; height: 56px; object-fit: cover; border-radius: 10px;
-  border: 1px solid var(--bc-div); flex-shrink: 0;
+  border: 1px solid var(--bc-div); flex-shrink: 0; cursor: zoom-in;
+  transition: transform .15s;
 }
+.trk-img:hover { transform: scale(1.06); border-color: var(--c1); }
 .trk-img-empty {
   display: flex; align-items: center; justify-content: center;
   font-size: .62rem; color: var(--t3); text-align: center;
   border: 1px dashed var(--bc-div);
 }
 .trk-info { flex: 1; min-width: 0; }
-.trk-product { font-size: .85rem; font-weight: 700; color: var(--t1); word-break: break-word; }
+.trk-product { font-size: 1.05rem; font-weight: 800; color: var(--c1); word-break: break-word; letter-spacing: .3px; }
 .trk-meta { font-size: .7rem; color: var(--t3); margin-top: 2px; }
 
 /* วงกลม Lead Time */
@@ -1312,9 +1314,18 @@ body.trk-fullscreen-mode .trk-fs-toolbar {
   background: rgba(148,163,184,.12); border: 2px solid #475569; color: #64748b;
 }
 .trk-step.done .trk-step-dot { background: rgba(34,197,94,.18); border-color: #22c55e; color: #4ade80; }
-.trk-step.active .trk-step-dot { background: rgba(245,158,11,.18); border-color: #f59e0b; color: var(--t1); }
+.trk-step.active .trk-step-dot {
+  background: rgba(245,158,11,.22); border-color: #f59e0b; color: var(--t1);
+  font-size: .95rem; transform: scale(1.18);
+  animation: trk-step-active-pulse 1.4s ease-in-out infinite;
+}
+@keyframes trk-step-active-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.55); }
+  50% { box-shadow: 0 0 0 7px rgba(245,158,11,0); }
+}
 .trk-step-lbl { font-size: .6rem; text-align: center; color: var(--t3); line-height: 1.2; }
 .trk-step.active .trk-step-lbl, .trk-step.done .trk-step-lbl { color: var(--t1); font-weight: 700; }
+.trk-step.active .trk-step-lbl { color: #f59e0b; font-weight: 800; }
 .trk-step-line { flex: 1; height: 2px; background: rgba(148,163,184,.25); margin-top: 12px; min-width: 8px; }
 .trk-step-line.done { background: #22c55e; }
 

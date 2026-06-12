@@ -276,7 +276,7 @@ function buildShareCardHTML(row) {
     : (row[7]||'—');
 
   // company logo
-  const logoB64 = localStorage.getItem('ptts_logo_b64');
+  const logoB64 = _companyInfoCache && _companyInfoCache.logoUrl;
   const logoHTML = logoB64
     ? `<img src="${logoB64}" style="width:44px;height:44px;border-radius:10px;object-fit:contain;background:#fff;padding:2px;flex-shrink:0">`
     : `<div style="width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:10px;
@@ -775,6 +775,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTabBar();
   // Apply saved logo หลัง renderTabBar เพื่อให้ครบทุก element
   _applyLogoAll();
+  // โหลดข้อมูลบริษัท (ชีต Company) มา cache ไว้ใช้ทุกจุด
+  _fetchCompanyInfo();
   // เปิดโปรแกรมครั้งแรก (ไม่มีค่าบันทึกไว้) → Active แท็บ "ติดตามงาน" เสมอ
   // ครั้งต่อๆ ไป (กดรีเฟรช/เปิดใหม่) → กลับไปหน้า/แท็บเดิมที่ใช้งานอยู่
   const savedTab = localStorage.getItem('ptts_active_tab');
@@ -962,6 +964,16 @@ function closeDocExport() {
     const swapBtn = document.querySelector('.doc-bottombar .doc-tab-btn[onclick*="_docActiveTab"]');
     if (swapBtn) swapBtn.style.display = '';
   }
+  if (_invPreviewMode) {
+    _invPreviewMode = false;
+    if ($('dtabQuo'))  $('dtabQuo').style.display  = '';
+    if ($('dtabCost')) $('dtabCost').style.display = '';
+    if ($('docInv'))   $('docInv').classList.add('dp-hidden');
+    if ($('docInvRep')) $('docInvRep').classList.add('dp-hidden');
+    const swapBtn = document.querySelector('.doc-bottombar .doc-tab-btn[onclick*="_docActiveTab"]');
+    if (swapBtn) swapBtn.style.display = '';
+    if ($('invConfirmBtn')) $('invConfirmBtn').style.display = 'none';
+  }
 }
 function switchDocTab(tab) {
   _docActiveTab = tab;
@@ -985,12 +997,12 @@ function fmtDate(str) {
 }
 
 function buildDocuments() {
-  const cfg = JSON.parse(localStorage.getItem('ptts_company_cfg')||'{}');
+  const cfg = _companyInfoCache || {};
   const co = {
     name:    cfg.name    || 'บริษัท ปทิตตา ไส้กรองและวิศวกรรม จำกัด',
     nameEn:  cfg.nameEn  || 'PATITTA FILTER ENGINEERING CO., LTD.',
-    addr:    cfg.addr    || 'เลขที่ 589/12 แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
-    tel:     cfg.tel     || '02-345-6789, 081-999-8888',
+    addr:    cfg.address || 'เลขที่ 589/12 แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260',
+    tel:     cfg.phone   || '02-345-6789, 081-999-8888',
     email:   cfg.email   || 'sales@patitta-engine.co.th',
     taxId:   cfg.taxId   || '0105574001897',
   };
@@ -1341,37 +1353,86 @@ function buildDocuments() {
 }
 
 // ── Logo helpers ──────────────────────────────────────────────
-// โลโก้บริษัทเก็บเป็น base64 ใน localStorage key: ptts_logo_b64
-// ถ้าไม่มี fallback → PTS.png (ไฟล์ในโฟลเดอร์เดียวกัน)
+// โลโก้บริษัทเก็บที่ Google Sheet "Company" (key: company_logo_url, อัปโหลดขึ้น Drive)
+// cache ในตัวแปร _companyInfoCache (โหลดตอนเปิดแอป) — ถ้าไม่มี fallback → PTS.png
 // เชื่อมทุกจุด: header (.ph-logo), sidebar (.sidebar-logo), ใบเสนอราคา (buildDocuments)
 // ตั้งค่าผ่าน: ดูแบบเสนอราคา → ⚙️ ตั้งค่าบริษัท → คลิกกรอบโลโก้
 // ลบ: กด 🗑 ลบ ใน modal → กลับเป็น PTS.png อัตโนมัติ
+let _companyInfoCache = null;
+async function _fetchCompanyInfo() {
+  if (!SCRIPT_URL) return null;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getCompanyInfo', { mode: 'cors' });
+    const data = await res.json();
+    if (data && data.status === 'ok') {
+      _companyInfoCache = data.info || {};
+      _applyLogoAll();
+    }
+  } catch (e) { /* เงียบไว้ ใช้ค่า default ไปก่อน */ }
+  return _companyInfoCache;
+}
 function _getLogoSrc() {
-  return localStorage.getItem('ptts_logo_b64') || 'PTS.png';
+  return (_companyInfoCache && _companyInfoCache.logoUrl) || 'PTS.png';
 }
 function _applyLogoAll() {
   const src = _getLogoSrc();
   document.querySelectorAll('.app-logo-img').forEach(el => { el.src = src; });
 }
-function handleLogoUpload(input) {
+async function handleLogoUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    localStorage.setItem('ptts_logo_b64', e.target.result);
+  if (!SCRIPT_URL) {
+    Swal.fire({icon:'info',title:'ยังไม่ตั้งค่า URL',text:'กรุณาใส่ Apps Script URL ก่อน',background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#6366f1'});
+    input.value = '';
+    return;
+  }
+  Swal.fire({title:'กำลังอัปโหลดโลโก้...',background:'#0d1b2a',color:'#cce4ff',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const r = e.target.result || '';
+        const idx = r.indexOf('base64,');
+        resolve(idx >= 0 ? r.slice(idx + 7) : r);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'uploadLogo', fileName: file.name, mimeType: file.type, base64: result })
+    });
+    const data = await res.json();
+    if (!data || data.status !== 'ok') throw new Error((data && data.message) || 'upload failed');
+
+    // บันทึก logoUrl ลงชีต Company ด้วย
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveCompanyInfo', logoUrl: data.url }) });
+
+    if (!_companyInfoCache) _companyInfoCache = {};
+    _companyInfoCache.logoUrl = data.url;
     _refreshLogoPreview();
     _applyLogoAll();
-  };
-  reader.readAsDataURL(file);
+    Swal.close();
+  } catch (e) {
+    Swal.fire({icon:'error',title:'อัปโหลดโลโก้ไม่สำเร็จ',text:e.message,background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#dc2626'});
+  }
   input.value = '';
 }
-function deleteLogo() {
-  localStorage.removeItem('ptts_logo_b64');
+async function deleteLogo() {
+  if (SCRIPT_URL) {
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveCompanyInfo', clearLogo: true }) });
+  }
+  if (_companyInfoCache) _companyInfoCache.logoUrl = '';
   _refreshLogoPreview();
   _applyLogoAll();
 }
 function _refreshLogoPreview() {
-  const src = localStorage.getItem('ptts_logo_b64');
+  const src = _companyInfoCache && _companyInfoCache.logoUrl;
   const img = $('cfg_logoImg');
   const ph  = $('cfg_logoPlaceholder');
   const del = $('cfg_logoDelBtn');
@@ -1387,34 +1448,50 @@ function _refreshLogoPreview() {
 }
 
 // ── Company config ────────────────────────────────────────────
-// ข้อมูลบริษัทเก็บใน localStorage key: ptts_company_cfg (JSON)
-// fields: name, nameEn, addr, tel, email, taxId
-// ใช้ใน: buildDocuments() → ใบเสนอราคา + ใบจำแนกต้นทุน
+// ข้อมูลบริษัทเก็บที่ Google Sheet "Company" (sync ทุกอุปกรณ์)
+// fields: name, nameEn, address, phone, email, taxId, logoUrl
+// ใช้ใน: buildDocuments() → ใบเสนอราคา + ใบจำแนกต้นทุน + ใบกำกับภาษี
 // ตั้งค่าผ่าน: ดูแบบเสนอราคา → ⚙️ ตั้งค่าบริษัท
-function saveCompanyCfg() {
+async function saveCompanyCfg() {
+  if (!SCRIPT_URL) {
+    Swal.fire({icon:'info',title:'ยังไม่ตั้งค่า URL',text:'กรุณาใส่ Apps Script URL ก่อน',background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#6366f1'});
+    return;
+  }
   const cfg = {
-    name:   $('cfg_coName').value.trim(),
-    nameEn: $('cfg_coNameEn').value.trim(),
-    addr:   $('cfg_coAddr').value.trim(),
-    tel:    $('cfg_coTel').value.trim(),
-    email:  $('cfg_coEmail').value.trim(),
-    taxId:  $('cfg_coTaxId').value.trim(),
+    name:    $('cfg_coName').value.trim(),
+    nameEn:  $('cfg_coNameEn').value.trim(),
+    address: $('cfg_coAddr').value.trim(),
+    phone:   $('cfg_coTel').value.trim(),
+    email:   $('cfg_coEmail').value.trim(),
+    taxId:   $('cfg_coTaxId').value.trim(),
   };
-  localStorage.setItem('ptts_company_cfg', JSON.stringify(cfg));
-  closeDocCfg();
-  Swal.fire({icon:'success',title:'บันทึกข้อมูลบริษัทแล้ว ✅',background:'#0d1b2a',
-    color:'#cce4ff',timer:1400,showConfirmButton:false,toast:true,position:'top-end'});
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(Object.assign({ action: 'saveCompanyInfo' }, cfg))
+    });
+    const data = await res.json();
+    if (!data || data.status !== 'ok') throw new Error((data && data.message) || 'save failed');
+    _companyInfoCache = Object.assign({}, _companyInfoCache, cfg);
+    closeDocCfg();
+    Swal.fire({icon:'success',title:'บันทึกข้อมูลบริษัทแล้ว ✅',background:'#0d1b2a',
+      color:'#cce4ff',timer:1400,showConfirmButton:false,toast:true,position:'top-end'});
+  } catch (e) {
+    Swal.fire({icon:'error',title:'บันทึกไม่สำเร็จ',text:e.message,background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#dc2626'});
+  }
 }
-function openDocCfg() {
-  const cfg = JSON.parse(localStorage.getItem('ptts_company_cfg')||'{}');
-  $('cfg_coName').value   = cfg.name   || 'บริษัท ปทิตตา ไส้กรองและวิศวกรรม จำกัด';
-  $('cfg_coNameEn').value = cfg.nameEn || 'PATITTA FILTER ENGINEERING CO., LTD.';
-  $('cfg_coAddr').value   = cfg.addr   || 'เลขที่ 589/12 แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260';
-  $('cfg_coTel').value    = cfg.tel    || '02-345-6789, 081-999-8888';
-  $('cfg_coEmail').value  = cfg.email  || 'sales@patitta-engine.co.th';
-  $('cfg_coTaxId').value  = cfg.taxId  || '0105574001897';
-  _refreshLogoPreview();
+async function openDocCfg() {
   $('docCfgModal').style.display = 'flex';
+  if (!_companyInfoCache) await _fetchCompanyInfo();
+  const cfg = _companyInfoCache || {};
+  $('cfg_coName').value   = cfg.name    || 'บริษัท ปทิตตา ไส้กรองและวิศวกรรม จำกัด';
+  $('cfg_coNameEn').value = cfg.nameEn  || 'PATITTA FILTER ENGINEERING CO., LTD.';
+  $('cfg_coAddr').value   = cfg.address || 'เลขที่ 589/12 แขวงบางนาใต้ เขตบางนา กรุงเทพมหานคร 10260';
+  $('cfg_coTel').value    = cfg.phone   || '02-345-6789, 081-999-8888';
+  $('cfg_coEmail').value  = cfg.email   || 'sales@patitta-engine.co.th';
+  $('cfg_coTaxId').value  = cfg.taxId   || '0105574001897';
+  _refreshLogoPreview();
 }
 function closeDocCfg() { $('docCfgModal').style.display = 'none'; }
 

@@ -15,9 +15,11 @@ const ORDER_COLS = {
   process: 16,      // Q = Process (สถานะงานที่แก้ไขได้ — กำลังผลิต/ส่งซุป/.../เรียบร้อย)
   note2: 17,        // R = Note (แสดงในตาราง, อ่านอย่างเดียว)
   update: 20, status: 22, totalTax: 23, add: 24, my: 25,
-  wantDate: 26, customer: 27
+  wantDate: 26, customer: 27,
+  invoiceNo: 28, invoiceDate: 29,  // AC, AD = เลขที่/วันที่ใบกำกับภาษี
+  meshOut: 30, meshIn: 31          // AE, AF = ตะแกรงนอก/ตะแกรงใน
 };
-const ORDER_NUM_COLS = 28;
+const ORDER_NUM_COLS = 32;
 let _orderCache = [];
 let _ordEditNoPO = null;
 let _trkPage = parseInt(localStorage.getItem('ptts_trk_page')) || 1;
@@ -100,6 +102,10 @@ function updateOrderPreview() {
   // วัตถุดิบ — ดึงจาก DATA แสดงเป็น label อย่างเดียว
   if ($('ord_material')) $('ord_material').textContent = r[DT.rawMat] || '—';
 
+  // ตะแกรงนอก/ตะแกรงใน — ดึงจาก DATA มาให้อัตโนมัติ แต่แก้ไขเพิ่มเติมได้ (ไม่ทับค่าที่แก้เอง)
+  _ordAutoFill('ord_meshOut', matLabel(r[DT.meshOut]) || '');
+  _ordAutoFill('ord_meshIn',  matLabel(r[DT.meshIn])  || '');
+
   _ordUpdateCreateBtn();
 }
 // เปลี่ยนข้อความ/พฤติกรรมปุ่มหลัก ตามว่าการ์ดมีข้อมูลจาก DATA แล้วหรือยัง
@@ -142,6 +148,8 @@ function _ordResetCard() {
   if ($('ord_noPO')) $('ord_noPO').value = '';
   if ($('ord_note'))  { $('ord_note').value = ''; delete $('ord_note').dataset.autoVal; }
   if ($('ord_mold'))  { $('ord_mold').value = ''; delete $('ord_mold').dataset.autoVal; }
+  if ($('ord_meshOut')) { $('ord_meshOut').value = ''; delete $('ord_meshOut').dataset.autoVal; }
+  if ($('ord_meshIn'))  { $('ord_meshIn').value = '';  delete $('ord_meshIn').dataset.autoVal; }
   if ($('ord_workStatus')) $('ord_workStatus').value = 'ปรกติ';
   _ordSourceRow = null;
   updateOrderPreview();
@@ -319,6 +327,8 @@ async function createOrder() {
   row[ORDER_COLS.status]      = $('ord_workStatus')?.value || 'ปรกติ';
   row[ORDER_COLS.wantDate]    = _ordDateToSheet($('ord_wantDate').value || '');
   row[ORDER_COLS.customer]    = customer;
+  row[ORDER_COLS.meshOut]     = $('ord_meshOut')?.value || '';
+  row[ORDER_COLS.meshIn]      = $('ord_meshIn')?.value || '';
 
   const createBtn = $('ord_createBtn');
   const statusEl  = $('ord_createStatus');
@@ -809,6 +819,9 @@ function showOrderDetail(noPO) {
       <!-- ปุ่ม Action -->
       <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:14px;
         padding-top:10px;border-top:1px solid var(--bc-div)">
+        <button onclick="_ordCopySpec('${escPO}')"
+          style="padding:7px 12px;border-radius:8px;border:1px solid rgba(99,102,241,.35);
+          background:rgba(99,102,241,.1);color:#6366f1;font-size:.78rem;font-weight:700;cursor:pointer">📄 คัดลอกสเปก</button>
         <button onclick="_ordQuickChangeProcess('${escPO}')"
           style="padding:7px 12px;border-radius:8px;border:1px solid rgba(245,158,11,.35);
           background:rgba(245,158,11,.1);color:#d97706;font-size:.78rem;font-weight:700;cursor:pointer">🔄 เปลี่ยนสถานะ</button>
@@ -938,6 +951,57 @@ async function _ordPrintCutting(noPO) {
   printCuttingReportFromDataRow(dtRow, noPO);
 }
 
+// ── คัดลอกสเปกงานของ Order (สำหรับแจ้งฝ่ายผลิต/ลูกค้า) ──
+async function _ordCopySpec(noPO) {
+  const ord = _orderCache.find(row => String(row[ORDER_COLS.noPO]) === String(noPO));
+  if (!ord) return;
+  const g = (k) => String(ord[ORDER_COLS[k]] ?? '').trim();
+  const noQuo = g('noQuo');
+
+  // ถ้ายังไม่เคยโหลดข้อมูล DATA ให้โหลดก่อน (ต้องใช้เลขอ้างอิง/ตะแกรง/ช่องว่างจีบ)
+  if (!_dtCache || !_dtCache.length) {
+    Swal.fire({title:'⏳ กำลังโหลดข้อมูล DATA...', allowOutsideClick:false, background:'#0d1b2a', color:'#cce4ff', didOpen:()=>Swal.showLoading()});
+    await dtRefresh(false);
+    Swal.close();
+  }
+  const dtRow = (_dtCache || []).find(row => String(row[DT.noQuo] || '').trim() === noQuo);
+
+  let status = g('process') || '—';
+  if (status === 'เรียบร้อย') status = 'เรียบร้อยพร้อมส่ง';
+
+  const refId   = dtRow ? (dtRow[DT.refId] || '—') : '—';
+  const meshOut = dtRow ? matLabel(dtRow[DT.meshOut]) : '';
+  const meshIn  = dtRow ? matLabel(dtRow[DT.meshIn])  : '';
+  const gapWeld = dtRow ? String(dtRow[DT.gapWeld] || '').trim() : '';
+
+  const productList = g('productList') || '—';
+  const productLine = /mm\.?\s*$/i.test(productList) ? productList : `${productList} mm.`;
+  const qty = g('qty') || '—';
+  const note = g('note') || '-';
+
+  const lines = [
+    `สถานะ: ${status}`,
+    `เลขที่PO: ${noPO}`,
+    `เลขอ้างอิง: ${refId}`,
+    `แบบงาน: ${g('workType') || '—'}`,
+    `รายการ: ${productLine}`,
+    `จำนวน: ${qty} ลูก.`,
+    `ตะแกรงนอก: ${meshOut || '—'}`,
+    `ตะแกรงใน: ${meshIn || '—'}`,
+    `ช่องว่างจีบเหลือ: ${gapWeld ? gapWeld + ' mm.' : '—'}`,
+    `หมายเหตุ: ${note}`,
+  ];
+  const text = lines.join('\n');
+
+  const toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:1500, timerProgressBar:true });
+  const onDone = () => toast.fire({icon:'success', title:'คัดลอกสเปกแล้ว ✅'});
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onDone).catch(() => _copyFallback(text, onDone));
+  } else {
+    _copyFallback(text, onDone);
+  }
+}
+
 // ── พิมพ์การ์ดรายละเอียด Order ──
 function _ordPrintDetail(noPO) {
   const r = _orderCache.find(row => String(row[ORDER_COLS.noPO]) === String(noPO));
@@ -1006,6 +1070,8 @@ function openEditOrder(noPO) {
   $('ordEdit_price').value       = r[ORDER_COLS.price] || '';
   $('ordEdit_productList').value = r[ORDER_COLS.productList] || '';
   $('ordEdit_material').value    = r[ORDER_COLS.material] || '';
+  $('ordEdit_meshOut').value      = r[ORDER_COLS.meshOut] || '';
+  $('ordEdit_meshIn').value       = r[ORDER_COLS.meshIn] || '';
   $('ordEdit_note').value        = r[ORDER_COLS.note] || '';
   if ($('ordEdit_workStatus')) $('ordEdit_workStatus').value = r[ORDER_COLS.status] || 'ปรกติ';
   _ordClearPoFile('ordEdit');
@@ -1036,6 +1102,8 @@ async function saveOrderEdit() {
   row[ORDER_COLS.price]       = $('ordEdit_price').value;
   row[ORDER_COLS.productList] = $('ordEdit_productList').value;
   row[ORDER_COLS.material]    = $('ordEdit_material').value;
+  row[ORDER_COLS.meshOut]     = $('ordEdit_meshOut').value;
+  row[ORDER_COLS.meshIn]      = $('ordEdit_meshIn').value;
   row[ORDER_COLS.note]        = $('ordEdit_note').value;
   row[ORDER_COLS.poFile]      = r[ORDER_COLS.poFile] || '';
   row[ORDER_COLS.poFilePath]  = r[ORDER_COLS.poFilePath] || '';
@@ -1169,6 +1237,19 @@ function _trkToggle(idx) {
   if (btn) btn.textContent = open ? '🔽 แสดงรายละเอียด' : '🔼 ซ่อนรายละเอียด';
 }
 
+// ── คลิกรูปในการ์ด Track เพื่อดูภาพขยาย ──
+function _trkZoomImg(url) {
+  if (!url) return;
+  Swal.fire({
+    imageUrl: url, imageAlt: 'รูปงาน',
+    showConfirmButton: false, showCloseButton: true,
+    background: '#0d1b2a',
+    width: 'auto',
+    imageWidth: 'min(90vw, 600px)',
+    imageHeight: 'auto',
+  });
+}
+
 // ── การ์ดสรุปจำนวนงานแยกตามสถานะ (Process) ทั้ง 8 สถานะ ──
 const TRK_STATUS_DEFS = [
   { key:'รอConfirm',                icon:'⏳', label:'รอ Confirm',          color:'#94a3b8' },
@@ -1227,13 +1308,22 @@ function toggleTrackFullscreen() {
   window.open(url, '_blank');
 }
 
-// จำนวนคอลัมน์ของการ์ดติดตามงาน (1-4) — ปรับได้จากแถบตั้งค่าโหมดเต็มจอ
+// โหมดเต็มจอ (เปิดผ่าน toggleTrackFullscreen ด้วย ?track=full) ใช้ key การตั้งค่าแยกจากหน้าปกติ
+// เพื่อไม่ให้การปรับคอลัมน์/รีเฟรชในแท็บเต็มจอ ไปกระทบหน้าติดตามงานปกติ (และกลับกัน)
+function _trkIsFullMode() {
+  return new URLSearchParams(location.search).get('track') === 'full';
+}
+function _trkKey(base) {
+  return _trkIsFullMode() ? base + '_full' : base;
+}
+
+// จำนวนคอลัมน์ของการ์ดติดตามงาน (1-4) — ปรับได้จากแถบตั้งค่า (แยกค่าระหว่างหน้าปกติ/เต็มจอ)
 function _trkGetCols() {
-  return parseInt(localStorage.getItem('ptts_trk_cols')) || 2;
+  return parseInt(localStorage.getItem(_trkKey('ptts_trk_cols'))) || 2;
 }
 function _trkSetCols(n) {
   n = Math.max(1, Math.min(4, parseInt(n) || 2));
-  localStorage.setItem('ptts_trk_cols', n);
+  localStorage.setItem(_trkKey('ptts_trk_cols'), n);
   document.documentElement.style.setProperty('--trk-cols', n);
 }
 function _trkApplyColsUI() {
@@ -1243,14 +1333,14 @@ function _trkApplyColsUI() {
   if (sel) sel.value = String(n);
 }
 
-// อัตรารีเฟรชอัตโนมัติ (นาที) — ปรับได้จากแถบตั้งค่าโหมดเต็มจอ
+// อัตรารีเฟรชอัตโนมัติ (นาที) — ปรับได้จากแถบตั้งค่า (แยกค่าระหว่างหน้าปกติ/เต็มจอ)
 function _trkGetRefreshMin() {
-  const v = parseInt(localStorage.getItem('ptts_trk_refresh_min')) || TRK_REFRESH_DEFAULT_MIN;
+  const v = parseInt(localStorage.getItem(_trkKey('ptts_trk_refresh_min'))) || TRK_REFRESH_DEFAULT_MIN;
   return Math.max(TRK_REFRESH_MIN_MIN, v); // บังคับขั้นต่ำเสมอ แม้ค่าเก่าใน localStorage จะต่ำกว่า
 }
 function _trkSetRefresh(min) {
   min = Math.max(TRK_REFRESH_MIN_MIN, parseInt(min) || TRK_REFRESH_DEFAULT_MIN);
-  localStorage.setItem('ptts_trk_refresh_min', min);
+  localStorage.setItem(_trkKey('ptts_trk_refresh_min'), min);
   if (_trkAutoRefreshTimer) _startTrkAutoRefresh(); // restart ด้วยค่าใหม่
 }
 function _trkApplyRefreshUI() {
@@ -1383,7 +1473,7 @@ function renderTrackDashboard() {
 
       <div class="trk-body">
         ${img
-          ? `<img class="trk-img" src="${img}" loading="lazy" onerror="this.style.display='none'">`
+          ? `<img class="trk-img" src="${img}" loading="lazy" onerror="this.style.display='none'" onclick="_trkZoomImg('${img.replace(/'/g,"\\'")}')">`
           : `<div class="trk-img trk-img-empty">ไม่มีรูป</div>`}
         <div class="trk-info">
           <div class="trk-product">${g('productList')}</div>
@@ -1408,6 +1498,7 @@ function renderTrackDashboard() {
           <button class="btn-fx" onclick="showOrderDetail('${escPO}')" style="padding:7px 12px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bc-div);color:var(--t1);font-size:.78rem;font-weight:700;cursor:pointer">📋 ดูรายละเอียดเต็ม</button>
           <button class="btn-fx" onclick="_ordQuickChangeProcess('${escPO}')" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.1);color:#d97706;font-size:.78rem;font-weight:700;cursor:pointer">🔄 เปลี่ยนสถานะ</button>
           ${g('process') === 'เรียบร้อย' ? '' : `<button class="btn-fx" onclick="_ordMarkDelivered('${escPO}')" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.1);color:#16a34a;font-size:.78rem;font-weight:700;cursor:pointer">✈️ ส่งงาน</button>`}
+          <button class="btn-fx" onclick="_ordCopySpec('${escPO}')" style="padding:7px 12px;border-radius:8px;border:1px solid rgba(99,102,241,.35);background:rgba(99,102,241,.1);color:#6366f1;font-size:.78rem;font-weight:700;cursor:pointer">📄 คัดลอกสเปก</button>
         </div>
       </div>
     </div>`;
