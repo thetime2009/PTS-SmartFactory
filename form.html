@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=6.27">
+<link rel="stylesheet" href="style.css?v=6.28">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v6.27</span>
+      <span class="ph-chip ver">v6.28</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2098,14 +2098,14 @@
   </div>
 </div>
 
-<script src="core.js?v=6.27"></script>
-<script src="data.js?v=6.27"></script>
-<script src="formcalc.js?v=6.27"></script>
-<script src="aifeatures.js?v=6.27"></script>
-<script src="theme.js?v=6.27"></script>
-<script src="order.js?v=6.27"></script>
-<script src="purchase.js?v=6.27"></script>
-<script src="invoice.js?v=6.27"></script>
+<script src="core.js?v=6.28"></script>
+<script src="data.js?v=6.28"></script>
+<script src="formcalc.js?v=6.28"></script>
+<script src="aifeatures.js?v=6.28"></script>
+<script src="theme.js?v=6.28"></script>
+<script src="order.js?v=6.28"></script>
+<script src="purchase.js?v=6.28"></script>
+<script src="invoice.js?v=6.28"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2234,9 +2234,17 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260612-AC',
+    ref: '#REV-20260612-AD',
     date: '2026-06-12',
     current: true,
+    items: [
+      'Code.gs: ลบใบกำกับ (deleteInvoiceRecord) ตอนนี้จะเคลียร์คอลัมน์ AC (เลขที่ใบกำกับ) และ AD (วันที่ออกใบกำกับ) ในชีต Order ของ PO ที่เกี่ยวข้องด้วย',
+    ],
+  },
+  {
+    ref: '#REV-20260612-AC',
+    date: '2026-06-12',
+    current: false,
     items: [
       'หน้าแก้ไขใบกำกับ: ขยาย modal เป็นเต็มจอ (max-width 1200px) และจัดเรียงช่องรายการสินค้าให้กว้างขึ้น ดูง่าย ลดโอกาสแก้ผิดซ้ำ',
     ],
