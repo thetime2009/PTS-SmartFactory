@@ -297,6 +297,19 @@ function _invUpdateSummary() {
     </div>`;
 }
 
+// ── ตรวจสอบ PO ที่เลือก ว่าซ้ำกับใบกำกับที่ออกไปแล้วหรือไม่ ──
+// คืนรายการ {po, invoiceNo} ของ PO ที่พบว่าซ้ำ (เคยอยู่ในใบกำกับอื่นมาก่อน)
+function _invFindDuplicatePOs(selectedPOs) {
+  const dups = [];
+  (_invIssuedCache || []).forEach(inv => {
+    const poList = String(inv.poList || '').split(',').map(s => s.trim()).filter(Boolean);
+    poList.forEach(po => {
+      if (selectedPOs.has(po)) dups.push({ po, invoiceNo: inv.invoiceNo });
+    });
+  });
+  return dups;
+}
+
 // ── ออกใบกำกับภาษี: ขอเลขที่เอกสาร → แสดง preview ────────
 async function invGeneratePreview() {
   if (!_invSelectedPOs.size) {
@@ -307,6 +320,24 @@ async function invGeneratePreview() {
     Swal.fire({icon:'info',title:'ยังไม่ตั้งค่า URL',text:'กรุณาใส่ Apps Script URL ก่อน',background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#6366f1'});
     return;
   }
+
+  // ── ตรวจสอบ PO ซ้ำกับใบกำกับที่ออกไปแล้ว ──
+  const dups = _invFindDuplicatePOs(_invSelectedPOs);
+  if (dups.length) {
+    const list = dups.map(d => `PO ${d.po} → อยู่ในใบกำกับ ${d.invoiceNo} แล้ว`).join('<br>');
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'พบ PO ซ้ำกับใบกำกับที่ออกไปแล้ว',
+      html: list,
+      showCancelButton: true,
+      confirmButtonText: 'ออกใบกำกับต่อ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#f59e0b',
+      background: '#0d1b2a', color: '#cce4ff'
+    });
+    if (!result.isConfirmed) return;
+  }
+
   const type = $('inv_type')?.value === 'short' ? 'short' : 'full';
   const idx = $('inv_customer')?.value ?? '';
   const cust = idx !== '' ? _custCache[parseInt(idx,10)] : null;
@@ -638,10 +669,13 @@ function renderIssuedInvoiceList() {
       <td style="padding:6px 8px;font-size:.78rem;color:var(--t3)">${poText}</td>
       <td style="padding:6px 8px;font-size:.78rem;color:var(--t3)">${inv.type}</td>
       <td style="padding:6px 8px;font-size:.78rem;color:#34d399;text-align:right;white-space:nowrap">${fmtB(inv.total)} ฿</td>
-      <td style="padding:6px 8px;text-align:center">
+      <td style="padding:6px 8px;text-align:center;white-space:nowrap">
         <button onclick="openEditInvoice('${inv.invoiceNo.replace(/'/g,"\\'")}')"
           style="padding:3px 10px;border-radius:6px;border:1px solid rgba(99,102,241,.4);background:transparent;
-          color:#818cf8;font-family:Sarabun,sans-serif;font-size:.75rem;cursor:pointer">✏️ แก้ไข</button>
+          color:#818cf8;font-family:Sarabun,sans-serif;font-size:.75rem;cursor:pointer;margin-right:4px">✏️ แก้ไข</button>
+        <button onclick="deleteIssuedInvoice('${inv.invoiceNo.replace(/'/g,"\\'")}')"
+          style="padding:3px 10px;border-radius:6px;border:1px solid rgba(220,38,38,.4);background:transparent;
+          color:#f87171;font-family:Sarabun,sans-serif;font-size:.75rem;cursor:pointer">🗑️ ลบ</button>
       </td>
     </tr>`;
   }).join('');
@@ -655,11 +689,42 @@ function renderIssuedInvoiceList() {
           <th style="padding:6px 8px;text-align:left;color:var(--t2);font-weight:600;font-size:.75rem">รายการ PO</th>
           <th style="padding:6px 8px;text-align:left;color:var(--t2);font-weight:600;font-size:.75rem">ประเภท</th>
           <th style="padding:6px 8px;text-align:right;color:var(--t2);font-weight:600;font-size:.75rem">ยอดรวม</th>
-          <th style="padding:6px 8px;width:80px"></th>
+          <th style="padding:6px 8px;width:130px"></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+// ── ลบใบกำกับที่ออกแล้ว (พร้อมยืนยัน) ──
+async function deleteIssuedInvoice(invoiceNo) {
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: `ลบใบกำกับ ${invoiceNo}?`,
+    text: 'การลบนี้ไม่สามารถย้อนกลับได้',
+    showCancelButton: true,
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#dc2626',
+    background: '#0d1b2a', color: '#cce4ff'
+  });
+  if (!result.isConfirmed) return;
+
+  if (!SCRIPT_URL) return;
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({ action: 'deleteInvoiceRecord', invoiceNo })
+    });
+    const out = await res.json();
+    if (!out || out.status !== 'ok') throw new Error((out && out.message) || 'delete failed');
+    await fetchIssuedInvoices();
+    Swal.fire({icon:'success',title:`ลบใบกำกับ ${invoiceNo} แล้ว ✅`,background:'#0d1b2a',color:'#cce4ff',
+      timer:1500,showConfirmButton:false,toast:true,position:'top-end'});
+  } catch (e) {
+    Swal.fire({icon:'error',title:'ลบไม่สำเร็จ',text:e.message,background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#dc2626'});
+  }
 }
 
 // แปลงวันที่ dd/MM/yyyy <-> yyyy-MM-dd (สำหรับ <input type="date">)
@@ -676,23 +741,23 @@ function _invDateFromInput(d) {
 function _invItemRowHtml(it) {
   it = it || {};
   const esc = s => String(s==null?'':s).replace(/"/g,'&quot;');
-  return `<div class="inv-item-row" style="border:1px solid var(--bc-card);border-radius:8px;padding:8px;margin-bottom:8px;
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:6px">
-    <div class="field" style="grid-column:1/-1;display:flex;gap:6px;align-items:flex-end">
+  return `<div class="inv-item-row" style="border:1px solid var(--bc-card);border-radius:8px;padding:10px;margin-bottom:10px;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px 10px">
+    <div class="field" style="grid-column:span 2;display:flex;gap:6px;align-items:flex-end">
       <div style="flex:1"><label>PO</label><input type="text" class="ii-po" value="${esc(it.poNo)}"></div>
       <button type="button" class="btn" onclick="_invOpenPOPicker(this)" style="padding:7px 10px;font-size:.74rem;white-space:nowrap">🔍 เลือก PO</button>
     </div>
     <div class="field"><label>OD</label><input type="text" class="ii-od" value="${esc(it.od)}"></div>
     <div class="field"><label>ID</label><input type="text" class="ii-id" value="${esc(it.id)}"></div>
     <div class="field"><label>H</label><input type="text" class="ii-h" value="${esc(it.h)}"></div>
-    <div class="field" style="grid-column:1/-1"><label>แบบงาน</label><input type="text" class="ii-worktype" value="${esc(it.workType)}"></div>
+    <div class="field" style="grid-column:span 2"><label>แบบงาน</label><input type="text" class="ii-worktype" value="${esc(it.workType)}"></div>
     <div class="field"><label>ตะแกรงนอก</label><input type="text" class="ii-meshout" value="${esc(it.meshOut)}"></div>
     <div class="field"><label>ตะแกรงใน</label><input type="text" class="ii-meshin" value="${esc(it.meshIn)}"></div>
-    <div class="field" style="grid-column:1/-1"><label>หมายเหตุ</label><input type="text" class="ii-note" value="${esc(it.note)}"></div>
+    <div class="field" style="grid-column:span 2"><label>หมายเหตุ</label><input type="text" class="ii-note" value="${esc(it.note)}"></div>
     <div class="field"><label>จำนวน</label><input type="number" class="ii-qty" step="any" value="${it.qty??''}"></div>
     <div class="field" style="grid-column:span 2"><label>ราคา/หน่วย (ก่อน VAT)</label><input type="number" class="ii-price" step="0.01" value="${it.priceExVat??''}"></div>
-    <div style="grid-column:1/-1;text-align:right">
-      <button type="button" class="btn" onclick="this.closest('.inv-item-row').remove()" style="padding:3px 10px;font-size:.72rem">🗑️ ลบรายการ</button>
+    <div style="display:flex;align-items:flex-end">
+      <button type="button" class="btn" onclick="this.closest('.inv-item-row').remove()" style="padding:7px 10px;font-size:.74rem;width:100%">🗑️ ลบรายการ</button>
     </div>
   </div>`;
 }
@@ -835,6 +900,23 @@ async function saveInvoiceEdit(thenReprint) {
   const poList = $('invEdit_poList').value.split(',').map(s=>s.trim()).filter(Boolean);
   const orig = _invIssuedCache.find(x => x.invoiceNo === invoiceNo) || {};
   const items = _invCollectEditItems();
+
+  // ── ตรวจสอบ PO ซ้ำกับใบกำกับอื่น (ไม่รวมใบนี้เอง) ──
+  const dups = _invFindDuplicatePOs(new Set(poList)).filter(d => d.invoiceNo !== invoiceNo);
+  if (dups.length) {
+    const list = dups.map(d => `PO ${d.po} → อยู่ในใบกำกับ ${d.invoiceNo} แล้ว`).join('<br>');
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'พบ PO ซ้ำกับใบกำกับอื่น',
+      html: list,
+      showCancelButton: true,
+      confirmButtonText: 'บันทึกต่อ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#f59e0b',
+      background: '#0d1b2a', color: '#cce4ff'
+    });
+    if (!result.isConfirmed) return false;
+  }
   const data = {
     action: 'updateInvoiceRecord',
     invoiceNo,

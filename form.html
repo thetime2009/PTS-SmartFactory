@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=6.24">
+<link rel="stylesheet" href="style.css?v=6.27">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v6.24</span>
+      <span class="ph-chip ver">v6.27</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1948,7 +1948,7 @@
 <div id="invEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;
   align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;
-    padding:18px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">
+    padding:18px;max-width:1200px;width:100%;max-height:95vh;overflow-y:auto">
     <div style="font-weight:700;font-size:.95rem;color:var(--t1);margin-bottom:12px">
       ✏️ แก้ไขใบกำกับ — <span id="invEdit_no" style="color:var(--c1)"></span>
     </div>
@@ -2098,14 +2098,14 @@
   </div>
 </div>
 
-<script src="core.js?v=6.24"></script>
-<script src="data.js?v=6.24"></script>
-<script src="formcalc.js?v=6.24"></script>
-<script src="aifeatures.js?v=6.24"></script>
-<script src="theme.js?v=6.24"></script>
-<script src="order.js?v=6.24"></script>
-<script src="purchase.js?v=6.24"></script>
-<script src="invoice.js?v=6.24"></script>
+<script src="core.js?v=6.27"></script>
+<script src="data.js?v=6.27"></script>
+<script src="formcalc.js?v=6.27"></script>
+<script src="aifeatures.js?v=6.27"></script>
+<script src="theme.js?v=6.27"></script>
+<script src="order.js?v=6.27"></script>
+<script src="purchase.js?v=6.27"></script>
+<script src="invoice.js?v=6.27"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2234,9 +2234,34 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260612-Z',
+    ref: '#REV-20260612-AC',
     date: '2026-06-12',
     current: true,
+    items: [
+      'หน้าแก้ไขใบกำกับ: ขยาย modal เป็นเต็มจอ (max-width 1200px) และจัดเรียงช่องรายการสินค้าให้กว้างขึ้น ดูง่าย ลดโอกาสแก้ผิดซ้ำ',
+    ],
+  },
+  {
+    ref: '#REV-20260612-AB',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'ออกใบกำกับ: ตรวจสอบ PO ซ้ำกับใบกำกับที่ออกไปแล้ว (คอลัมน์ "รายการ PO") — แจ้งเตือนพร้อมรายละเอียดว่า PO ไหนซ้ำกับใบกำกับเลขที่ใด ก่อนยืนยันออก/บันทึก',
+    ],
+  },
+  {
+    ref: '#REV-20260612-AA',
+    date: '2026-06-12',
+    current: false,
+    items: [
+      'ตารางใบกำกับที่ออกแล้ว: เพิ่มปุ่ม "🗑️ ลบ" พร้อมยืนยันก่อนลบ',
+      'Code.gs: เพิ่ม action deleteInvoiceRecord สำหรับลบแถวใบกำกับออกจากชีต Invoices',
+    ],
+  },
+  {
+    ref: '#REV-20260612-Z',
+    date: '2026-06-12',
+    current: false,
     items: [
       'ตารางใบกำกับที่ออกแล้ว: เพิ่มคอลัมน์ "รายการ PO" แสดงเลข PO ที่อยู่ในใบกำกับแต่ละใบ',
     ],
