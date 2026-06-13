@@ -242,7 +242,7 @@ function invInit() {
     _invRepInited = true;
     const now = new Date();
     if ($('invRep_month')) $('invRep_month').value = String(now.getMonth() + 1);
-    if ($('invRep_year'))  $('invRep_year').value  = String(now.getFullYear());
+    if ($('invRep_year'))  $('invRep_year').value  = String(now.getFullYear() + 543);
   }
   fetchIssuedInvoices();
 }
@@ -693,6 +693,15 @@ function _invReprintInvoice(inv, itemsArr) {
 // ══════════════════════════════════════════════════════
 let _invIssuedCache = [];
 
+// ── คลิกเลขที่ PO ในรายการใบกำกับที่ออกแล้ว -> ไปแท็บ Order พร้อมกรองด้วยเลข PO นั้น ──
+function _invGoToOrderPO(po) {
+  switchTab('order');
+  if ($('ordSearch')) {
+    $('ordSearch').value = po;
+    if (typeof renderOrderTable === 'function') renderOrderTable();
+  }
+}
+
 async function fetchIssuedInvoices() {
   if (!SCRIPT_URL) { renderIssuedInvoiceList(); return; }
   const wrap = $('invIssuedListWrap');
@@ -719,7 +728,11 @@ function renderIssuedInvoiceList() {
   const rows = _invIssuedCache.map(inv => {
     const cust = _custCache.find(c => c.code === inv.customerCode) || {};
     const poList = (inv.items || []).map(it => it.poNo).filter(Boolean);
-    const poText = poList.length ? poList.join(', ') : (inv.poList ? (Array.isArray(inv.poList) ? inv.poList.join(', ') : inv.poList) : '-');
+    const poArr  = poList.length ? poList : (inv.poList ? (Array.isArray(inv.poList) ? inv.poList : String(inv.poList).split(',').map(s=>s.trim()).filter(Boolean)) : []);
+    const poText = poArr.length
+      ? poArr.map(po => `<a href="javascript:void(0)" onclick="_invGoToOrderPO('${String(po).replace(/'/g,"\\'")}')"
+          style="color:#818cf8;text-decoration:underline;cursor:pointer">${po}</a>`).join(', ')
+      : '-';
     return `<tr style="border-bottom:1px solid var(--bc-card)">
       <td style="padding:6px 8px;font-weight:700;color:var(--c1);white-space:nowrap">${inv.invoiceNo}</td>
       <td style="padding:6px 8px;font-size:.78rem;color:var(--t2);white-space:nowrap">${inv.date}</td>
@@ -1157,9 +1170,9 @@ function _invRepShowPreview(list, month, year) {
       <td style="padding:6px 8px;text-align:center">${idx+1}</td>
       <td style="padding:6px 8px;text-align:center;white-space:nowrap">${inv.date}</td>
       <td style="padding:6px 8px;text-align:center;white-space:nowrap">${inv.invoiceNo}</td>
-      <td style="padding:6px 8px">${cust.name||''}</td>
+      <td style="padding:6px 8px;white-space:nowrap">${cust.name||''}</td>
       <td style="padding:6px 8px;text-align:center;white-space:nowrap">${cust.taxId||''}</td>
-      <td style="padding:6px 8px;text-align:center;font-size:.7rem">${isBranch ? `สาขา ${cust.branch}` : 'สำนักงานใหญ่'}</td>
+      <td style="padding:6px 8px;text-align:center;font-size:.7rem">${isBranch ? `สาขา ${cust.branch}<br>(Branch ${cust.branch})` : 'สำนักงานใหญ่<br>(Head office)'}</td>
       <td style="padding:6px 8px;text-align:right">${fmtB(inv.subtotal)}</td>
       <td style="padding:6px 8px;text-align:right">${fmtB(inv.vat)}</td>
       <td style="padding:6px 8px;text-align:right">${fmtB(inv.total)}</td>
@@ -1167,7 +1180,7 @@ function _invRepShowPreview(list, month, year) {
   }).join('');
 
   const html = `
-<div class="doc-paper" style="overflow:hidden">
+<div class="doc-paper" style="overflow:hidden;max-width:1180px">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;
     padding:22px 28px 14px;border-bottom:3px solid #0d9488;gap:12px;flex-wrap:wrap">
     <div>
@@ -1187,11 +1200,11 @@ function _invRepShowPreview(list, month, year) {
   <div style="padding:14px 28px">
     <table style="width:100%;border-collapse:collapse;font-size:.74rem">
       <thead>
-        <tr style="background:#0d9488;color:#fff">
+        <tr style="background:#e0f2f1;color:#0f4f49;border-bottom:2px solid #0d9488;-webkit-print-color-adjust:exact;print-color-adjust:exact">
           <th style="padding:6px 8px;text-align:center;border-radius:4px 0 0 0">ลำดับ</th>
           <th style="padding:6px 8px;text-align:center">วัน เดือน ปี</th>
           <th style="padding:6px 8px;text-align:center">เลขที่ใบกำกับ</th>
-          <th style="padding:6px 8px;text-align:left">บริษัทที่ขายไป</th>
+          <th style="padding:6px 8px;text-align:left;white-space:nowrap">บริษัทร้านค้า</th>
           <th style="padding:6px 8px;text-align:center">เลขประจำตัวผู้เสียภาษี</th>
           <th style="padding:6px 8px;text-align:center">สำนักงานใหญ่/สาขา</th>
           <th style="padding:6px 8px;text-align:right">มูลค่าก่อน VAT (฿)</th>
@@ -1201,7 +1214,7 @@ function _invRepShowPreview(list, month, year) {
       </thead>
       <tbody>${rows || `<tr><td colspan="9" style="padding:18px;text-align:center;color:#999">ไม่มีใบกำกับในเดือนนี้</td></tr>`}</tbody>
       <tfoot>
-        <tr style="background:#0f766e;color:#fff">
+        <tr style="background:#e0f2f1;color:#0f4f49;border-top:2px solid #0d9488;-webkit-print-color-adjust:exact;print-color-adjust:exact">
           <td colspan="6" style="padding:8px;text-align:right;font-weight:700;border-radius:0 0 0 4px">สรุปยอดขาย ณ สิ้นเดือน</td>
           <td style="padding:8px;text-align:right;font-weight:800">${fmtB(sumSubtotal)}</td>
           <td style="padding:8px;text-align:right;font-weight:800">${fmtB(sumVat)}</td>

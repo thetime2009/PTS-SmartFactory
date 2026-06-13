@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=6.76">
+<link rel="stylesheet" href="style.css?v=6.83">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v6.76</span>
+      <span class="ph-chip ver">v6.83</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1645,11 +1645,14 @@
     </div>
     <div style="position:relative;margin-bottom:10px">
       <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:.85rem">🔍</span>
-      <input id="ordSearch" type="text" placeholder="ค้นหา No.Quo, No.PO, ลูกค้า, รายการสินค้า…"
+      <input id="ordSearch" type="text" placeholder="ค้นหา No.Quo, No.PO, ลูกค้า, รายการสินค้า… (ใส่ได้หลายคำ คั่นด้วยเว้นวรรค/คอมมา)"
         style="width:100%;box-sizing:border-box;padding:10px 12px 10px 36px;border-radius:10px;
                border:1px solid var(--bc-input);background:var(--bg-input);
                color:var(--t1);font-size:.8rem;font-family:Sarabun,sans-serif;outline:none"
         oninput="_ordPage=1; renderOrderTable()">
+    </div>
+    <div style="font-size:.7rem;color:var(--t3);margin:-4px 0 10px">
+      💡 ใส่ได้หลายคำพร้อมกัน คั่นด้วย เว้นวรรค หรือ คอมมา (,) — เช่น "2605169, 2605170 0587"
     </div>
     <!-- ── ตัวกรองแบบละเอียด ── -->
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">
@@ -2124,8 +2127,8 @@
           <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
         </select>
       </div>
-      <div class="field"><label>ปี (ค.ศ.)</label>
-        <input type="number" id="invRep_year" placeholder="2026">
+      <div class="field"><label>ปี (พ.ศ.)</label>
+        <input type="number" id="invRep_year" placeholder="2569">
       </div>
     </div>
     <div style="text-align:right">
@@ -2308,14 +2311,14 @@
   </div>
 </div>
 
-<script src="core.js?v=6.76"></script>
-<script src="data.js?v=6.76"></script>
-<script src="formcalc.js?v=6.76"></script>
-<script src="aifeatures.js?v=6.76"></script>
-<script src="theme.js?v=6.76"></script>
-<script src="order.js?v=6.76"></script>
-<script src="purchase.js?v=6.76"></script>
-<script src="invoice.js?v=6.76"></script>
+<script src="core.js?v=6.83"></script>
+<script src="data.js?v=6.83"></script>
+<script src="formcalc.js?v=6.83"></script>
+<script src="aifeatures.js?v=6.83"></script>
+<script src="theme.js?v=6.83"></script>
+<script src="order.js?v=6.83"></script>
+<script src="purchase.js?v=6.83"></script>
+<script src="invoice.js?v=6.83"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2444,9 +2447,67 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260613-O',
+    ref: '#REV-20260613-V',
     date: '2026-06-13',
     current: true,
+    items: [
+      'ใบกำกับที่ออกแล้ว: เลขที่ PO ในคอลัมน์ "รายการ PO" คลิกได้ — เด้งไปแท็บ Order พร้อมกรองด้วยเลข PO นั้นทันที',
+    ],
+  },
+  {
+    ref: '#REV-20260613-U',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'รายงานภาษีขาย: คอลัมน์ "สำนักงานใหญ่/สาขา" เพิ่มภาษาอังกฤษกำกับ — "สำนักงานใหญ่ (Head office)" / "สาขา X (Branch X)"',
+    ],
+  },
+  {
+    ref: '#REV-20260613-T',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'รายงานภาษีขาย: แก้สีหัวตาราง/แถวสรุปยอด ที่เป็นตัวอักษรขาวบนพื้นเข้ม ทำให้พิมพ์ขาวดำแล้วมองไม่เห็น — เปลี่ยนเป็นพื้นอ่อน ตัวอักษรเข้ม อ่านได้ทั้งสีและขาวดำ',
+    ],
+  },
+  {
+    ref: '#REV-20260613-S',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'รายงานภาษีขาย: เปลี่ยนหัวคอลัมน์ "บริษัทที่ขายไป" → "บริษัทร้านค้า" และไม่ตัดคำชื่อบริษัท (1 แถว/รายการ) พร้อมขยายความกว้างหน้าเอกสาร',
+      'รายงานภาษีขาย: เปลี่ยนช่องกรอกปีจาก ค.ศ. เป็น พ.ศ. (ให้ตรงกับวันที่ในชีตซึ่งเก็บเป็น พ.ศ.) แก้ปัญหากรองรายงานไม่ตรงปี',
+    ],
+  },
+  {
+    ref: '#REV-20260613-R',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'แก้บั๊กวันที่เพี้ยนตอนแก้ไข Order (เช่น 19/5/3112): _ordDateToInput ไม่ได้แปลง พ.ศ.→ค.ศ. ก่อนใส่ใน input type=date ทำให้ตอนบันทึก _ordDateToSheet บวก 543 ซ้ำซ้อน — แก้ให้แปลง พ.ศ.→ค.ศ. ก่อนแสดงในฟอร์มแก้ไข',
+    ],
+  },
+  {
+    ref: '#REV-20260613-Q',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'หน้าต่างแก้ไข Order: กดบันทึกแล้วเพิ่ม popup "กำลังบันทึก.../กรุณารอสักครู่" ระหว่างรอบันทึกและรีโหลดข้อมูล',
+    ],
+  },
+  {
+    ref: '#REV-20260613-P',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'แท็บ Order > การ์ด "รายการ Order": ช่องค้นหารองรับใส่หลายคำพร้อมกัน (คั่นด้วยเว้นวรรค/คอมมา)',
+      'เพิ่มคำอธิบายวิธีใช้งานช่องค้นหา',
+    ],
+  },
+  {
+    ref: '#REV-20260613-O',
+    date: '2026-06-13',
+    current: false,
     items: [
       'แท็บ ใบกำกับภาษี > ออกใบกำกับ: ช่องค้นหาเลขที่ PO รองรับใส่หลายเลขพร้อมกัน (คั่นด้วยเว้นวรรค/คอมมา)',
       'เพิ่มคำอธิบายวิธีใช้งานช่องค้นหา PO',
@@ -2660,59 +2721,4 @@ const DEV_LOGS = [
   },
   {
     ref: '#REV-20260612-BA',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'แท็บ Order: เพิ่มการ์ด "สร้าง Order ทั่วไป (สินค้า/บริการอื่นๆ)" สำหรับงานที่ไม่ใช่สเปคไส้กรอง (ไม่ต้องผูกกับใบเสนอราคา)',
-      'กรอกลูกค้า/No.PO/วันที่/รายการ/จำนวน/หน่วย/ราคา/ไฟล์ PO ได้เอง แล้วกดสร้าง Order เข้าระบบติดตามงานได้ทันที',
-      'รองรับรายชื่อลูกค้าจาก datalist (โหลดอัตโนมัติเมื่อเข้าแท็บ Order)',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AZ',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'หน้าแก้ไขใบกำกับภาษี: เพิ่มปุ่ม "👁️ View" เพื่อดูตัวอย่างเอกสารก่อนพิมพ์ โดยไม่ต้องบันทึกก่อน',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AY',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'ใบกำกับภาษี: แสดง "ชื่อรายการวัตถุดิบ" ของตะแกรงนอก/ตะแกรงในแทนรหัสวัตถุดิบ (เช่น L-3-1.0) ในรายละเอียดสินค้า',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AX',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'เปลี่ยนความหมายการ์ดสรุป "BackOrder" เป็น "BackOrder (เลยกำหนดส่ง)" — นับออเดอร์ที่วันที่ต้องการ (wantDate) ผ่านมาแล้วและยังไม่เรียบร้อย/ส่งแล้ว แทนการนับจากสถานะ Process',
-      'เพิ่มแอนิเมชันกระพริบสีแดงให้การ์ด BackOrder เมื่อมีรายการเลยกำหนดส่ง (count > 0) เพื่อเตือนความสำคัญ',
-      'เอา "BackOrder" ออกจากตัวเลือกเปลี่ยนสถานะ Process (ไม่ใช่สถานะที่ตั้งเองได้แล้ว)',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AW',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'แก้คำสะกด "ส่งซุป" → "ส่งชุป" ให้ตรงกับสถานะจริงในชีต Order ทั้งหมด (การ์ดสรุป, ตัวเลือกเปลี่ยนสถานะ, Timeline, ตัวกรอง) — แก้ปัญหาออเดอร์ "ส่งชุป" 1 รายการตกไปอยู่การ์ด "อื่นๆ"',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AV',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'เพิ่มการ์ดสรุป "❔ อื่นๆ (ค่าไม่ตรงสถานะ)" — กันกรณี Process มีค่าแต่ไม่ตรงกับการ์ดใดเลย (เช่น พิมพ์ผิด/เว้นวรรค) จะถูกนับในการ์ดนี้ ทำให้ยอดรวมการ์ดตรงกับจำนวน Order ทั้งหมดเสมอ คลิกดูได้ว่าเป็นแถวไหน',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AU',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'เพิ่มการ์ดสรุป "❓ ยังไม่ระบุสถาน�
+    

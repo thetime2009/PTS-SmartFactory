@@ -34,7 +34,11 @@ function _todayStr() {
 function _ordDateToInput(s) {
   s = String(s||'').trim();
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  if (m) {
+    let yyyy = parseInt(m[3]);
+    if (yyyy > 2400) yyyy -= 543; // พ.ศ. -> ค.ศ. (กันบันทึกซ้ำเป็น 3112)
+    return yyyy + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
+  }
   return s;
 }
 function _ordDateToSheet(s) {
@@ -924,11 +928,15 @@ function renderOrderTable() {
     const el = $('ordSortIcon_' + col);
     if (el) el.textContent = (_ordSortCol === col) ? (_ordSortDir === 1 ? ' ▲' : ' ▼') : '';
   });
-  const q = ($('ordSearch')?.value || '').trim().toLowerCase();
+  const qTerms = ($('ordSearch')?.value || '').toLowerCase()
+    .split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
   let rows = _orderCache;
-  if (q) {
-    rows = rows.filter(r => [r[ORDER_COLS.noQuo], r[ORDER_COLS.noPO], r[ORDER_COLS.customer], r[ORDER_COLS.productList]]
-      .some(v => String(v||'').toLowerCase().includes(q)));
+  if (qTerms.length) {
+    rows = rows.filter(r => {
+      const fields = [r[ORDER_COLS.noQuo], r[ORDER_COLS.noPO], r[ORDER_COLS.customer], r[ORDER_COLS.productList]]
+        .map(v => String(v||'').toLowerCase());
+      return qTerms.some(term => fields.some(v => v.includes(term)));
+    });
   }
 
   // ── ตัวกรอง: สถานะงาน (ค่าเริ่มต้น = ซ่อนรายการ "เรียบร้อย" ยกเว้นเดือนนี้/เดือนที่แล้ว) ──
@@ -1531,6 +1539,13 @@ async function saveOrderEdit() {
   const statusEl = $('ordEdit_status_msg');
   if (saveBtn) saveBtn.disabled = true;
 
+  Swal.fire({
+    title: 'กำลังบันทึก...', html: 'กรุณารอสักครู่',
+    background:'#0d1b2a', color:'#cce4ff',
+    allowOutsideClick:false, allowEscapeKey:false, showConfirmButton:false,
+    didOpen: () => Swal.showLoading(),
+  });
+
   try {
     const poFile = $('ordEdit_poFile')?.files?.[0];
     if (poFile) {
@@ -1544,11 +1559,11 @@ async function saveOrderEdit() {
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'updateOrder', noPO: _ordEditNoPO, row }) });
 
-    Swal.fire({icon:'success',title:'บันทึกแล้ว ✅',background:'#0d1b2a',color:'#cce4ff',
-      confirmButtonColor:'#6366f1', timer:1300, showConfirmButton:false});
     if (statusEl) statusEl.textContent = '';
     closeOrderEdit();
     await fetchOrders();
+    Swal.fire({icon:'success',title:'บันทึกแล้ว ✅',background:'#0d1b2a',color:'#cce4ff',
+      confirmButtonColor:'#6366f1', timer:1300, showConfirmButton:false});
     setTimeout(() => showOrderDetail(editingNoPO), 900);
   } catch (err) {
     Swal.fire({icon:'error',title:'เกิดข้อผิดพลาด',text:'บันทึกไม่สำเร็จ',background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#6366f1'});
