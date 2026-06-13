@@ -266,13 +266,21 @@ function renderInvOrderList() {
   // คอลัมน์ "ลูกค้า" ใน Order เก็บค่า "ชื่อผู้ติดต่อ" (ตอนออกใบเสนอราคา) ไม่ใช่ชื่อบริษัท
   // จึงจับคู่ด้วย cust.contact เป็นหลัก (เผื่อกรณีกรอกชื่อบริษัทไว้ในช่องนั้นด้วย จึงเทียบ cust.name ด้วย)
   const matchKeys = [cust.contact, cust.name].map(s => (s||'').trim()).filter(Boolean);
-  const rows = _orderCache.filter(r =>
+  let rows = _orderCache.filter(r =>
     matchKeys.includes(String(r[ORDER_COLS.customer]||'').trim()) &&
     !String(r[ORDER_COLS.invoiceNo]||'').trim()
   );
+  const poFilterTerms = ($('invPOFilter')?.value || '').toLowerCase()
+    .split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+  if (poFilterTerms.length) {
+    rows = rows.filter(r => {
+      const noPO = String(r[ORDER_COLS.noPO]||'').toLowerCase();
+      return poFilterTerms.some(term => noPO.includes(term));
+    });
+  }
   if (!rows.length) {
     wrap.innerHTML = `<div style="text-align:center;padding:20px;color:var(--t3);font-size:.82rem">
-      ไม่มี PO ที่ยังไม่ออกใบกำกับสำหรับลูกค้านี้</div>`;
+      ${poFilterTerms.length ? 'ไม่พบ PO ที่ตรงกับคำค้นหา' : 'ไม่มี PO ที่ยังไม่ออกใบกำกับสำหรับลูกค้านี้'}</div>`;
     _invUpdateSummary();
     return;
   }
@@ -280,6 +288,8 @@ function renderInvOrderList() {
     const noPO  = String(r[ORDER_COLS.noPO] || '');
     const prod  = r[ORDER_COLS.productList] || '';
     const date  = r[ORDER_COLS.orderDate] || '';
+    const qty   = String(r[ORDER_COLS.qty] || '').trim();
+    const note  = String(r[ORDER_COLS.note] || '').trim();
     const total = _invOrderTotal(r);
     const checked = _invSelectedPOs.has(noPO) ? 'checked' : '';
     return `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;
@@ -289,12 +299,18 @@ function renderInvOrderList() {
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;color:var(--c1);font-size:.85rem">${noPO}</div>
         <div style="font-size:.76rem;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prod}</div>
-        <div style="font-size:.7rem;color:var(--t3)">วันที่: ${date}</div>
+        <div style="font-size:.7rem;color:var(--t3)">วันที่: ${date}${qty ? ' · จำนวน: '+qty : ''}</div>
+        ${note ? `<div style="font-size:.7rem;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">หมายเหตุ: ${note}</div>` : ''}
       </div>
       <div style="font-weight:700;color:#34d399;font-size:.85rem;white-space:nowrap">${fmtB(total)} ฿</div>
     </label>`;
   }).join('');
   _invUpdateSummary();
+}
+
+function _invClearPOFilter() {
+  if ($('invPOFilter')) $('invPOFilter').value = '';
+  renderInvOrderList();
 }
 
 function _invToggleRow(noPO, checked) {
@@ -312,7 +328,9 @@ function _invUpdateSummary() {
   });
   const subtotal = total / 1.07;
   const vat = total - subtotal;
+  const poListStr = Array.from(_invSelectedPOs).join(', ');
   sumEl.innerHTML = `
+    ${poListStr ? `<div style="font-size:.74rem;color:var(--t3);margin-bottom:6px;word-break:break-all">PO ที่เลือก: ${poListStr}</div>` : ''}
     <div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--t2);margin-bottom:3px">
       <span>เลือก ${_invSelectedPOs.size} PO — รวมก่อน VAT</span><span>${fmtB(subtotal)} ฿</span>
     </div>
@@ -591,6 +609,12 @@ async function invConfirmIssue() {
     showCancelButton:true, cancelButtonText:'ยกเลิก', cancelButtonColor:'#374151',
   }).then(async r => {
     if (!r.isConfirmed) return;
+    Swal.fire({
+      title: 'กำลังออกใบกำกับ...', html: 'กรุณารอสักครู่',
+      background:'#0d1b2a', color:'#cce4ff',
+      allowOutsideClick:false, allowEscapeKey:false, showConfirmButton:false,
+      didOpen: () => Swal.showLoading(),
+    });
     try {
       const res = await fetch(SCRIPT_URL, {
         method:'POST', mode:'cors',
@@ -599,13 +623,15 @@ async function invConfirmIssue() {
       });
       const out = await res.json();
       if (!out || out.status !== 'ok') throw new Error((out && out.message) || 'save failed');
-      Swal.fire({icon:'success',title:`ออกใบกำกับ ${out.invoiceNo} สำเร็จ ✅`,background:'#0d1b2a',color:'#cce4ff',
-        timer:1800,showConfirmButton:false,toast:true,position:'top-end'});
       _invSelectedPOs.clear();
       _invPreviewData = null;
       closeDocExport();
+      if ($('invPOFilter')) $('invPOFilter').value = '';
       await fetchOrders();
       renderInvOrderList();
+      fetchIssuedInvoices();
+      Swal.fire({icon:'success',title:`ออกใบกำกับ ${out.invoiceNo} สำเร็จ ✅`,background:'#0d1b2a',color:'#cce4ff',
+        timer:1800,showConfirmButton:false,toast:true,position:'top-end'});
     } catch (e) {
       Swal.fire({icon:'error',title:'ออกใบกำกับไม่สำเร็จ',text:e.message,background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#dc2626'});
     }

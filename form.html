@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=6.69">
+<link rel="stylesheet" href="style.css?v=6.76">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v6.69</span>
+      <span class="ph-chip ver">v6.76</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2064,6 +2064,18 @@
 
     <div style="font-size:.82rem;font-weight:700;color:var(--c1);margin-bottom:8px">
       📦 PO ที่ยังไม่ออกใบกำกับ</div>
+    <div class="field" style="margin-bottom:10px"><label>ค้นหาเลขที่ PO</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="invPOFilter" placeholder="พิมพ์เลขที่ PO เพื่อกรอง เช่น 2606027, 2606031" oninput="renderInvOrderList()" style="flex:1">
+        <button type="button" onclick="_invClearPOFilter()"
+          style="padding:0 14px;border-radius:8px;border:1px solid var(--bc-input);
+          background:var(--bg-input);color:var(--t2);font-family:'Sarabun',sans-serif;
+          font-size:.8rem;cursor:pointer;white-space:nowrap">✖ ล้างการกรอง</button>
+      </div>
+      <div style="font-size:.7rem;color:var(--t3);margin-top:4px">
+        💡 ใส่ได้หลายเลข PO พร้อมกัน คั่นด้วย เว้นวรรค หรือ คอมมา (,) — เช่น "2606027, 2606031 2606035"
+      </div>
+    </div>
     <div id="invOrderListWrap" style="margin-bottom:14px"></div>
 
     <div id="invSummaryWrap" style="background:var(--c1-05);border-radius:10px;padding:12px 14px;margin-bottom:14px"></div>
@@ -2296,14 +2308,14 @@
   </div>
 </div>
 
-<script src="core.js?v=6.69"></script>
-<script src="data.js?v=6.69"></script>
-<script src="formcalc.js?v=6.69"></script>
-<script src="aifeatures.js?v=6.69"></script>
-<script src="theme.js?v=6.69"></script>
-<script src="order.js?v=6.69"></script>
-<script src="purchase.js?v=6.69"></script>
-<script src="invoice.js?v=6.69"></script>
+<script src="core.js?v=6.76"></script>
+<script src="data.js?v=6.76"></script>
+<script src="formcalc.js?v=6.76"></script>
+<script src="aifeatures.js?v=6.76"></script>
+<script src="theme.js?v=6.76"></script>
+<script src="order.js?v=6.76"></script>
+<script src="purchase.js?v=6.76"></script>
+<script src="invoice.js?v=6.76"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2432,9 +2444,68 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260613-H',
+    ref: '#REV-20260613-O',
     date: '2026-06-13',
     current: true,
+    items: [
+      'แท็บ ใบกำกับภาษี > ออกใบกำกับ: ช่องค้นหาเลขที่ PO รองรับใส่หลายเลขพร้อมกัน (คั่นด้วยเว้นวรรค/คอมมา)',
+      'เพิ่มคำอธิบายวิธีใช้งานช่องค้นหา PO',
+    ],
+  },
+  {
+    ref: '#REV-20260613-N',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'กดยืนยันออกใบกำกับ: เพิ่ม popup "กำลังออกใบกำกับ.../กรุณารอสักครู่" ระหว่างรอบันทึกและรีโหลดข้อมูล',
+    ],
+  },
+  {
+    ref: '#REV-20260613-M',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'แท็บ ใบกำกับภาษี > ออกใบกำกับ: เพิ่มปุ่ม "✖ ล้างการกรอง" ข้างช่องค้นหาเลขที่ PO',
+      'ออกใบกำกับสำเร็จ + รีโหลดข้อมูลแล้ว ให้ล้างช่องค้นหาเลขที่ PO อัตโนมัติ',
+    ],
+  },
+  {
+    ref: '#REV-20260613-L',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'แท็บ ใบกำกับภาษี > ออกใบกำกับ: เพิ่มแสดงรายการเลขที่ PO ที่กำลังเลือกในสรุปยอด',
+    ],
+  },
+  {
+    ref: '#REV-20260613-K',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'ออกใบกำกับภาษีสำเร็จ: ให้รีโหลดการ์ด "ใบกำกับที่ออกแล้ว" อัตโนมัติ (เดิมต้องกดรีเฟรชเอง)',
+    ],
+  },
+  {
+    ref: '#REV-20260613-J',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'เปลี่ยนชื่อแท็บ "ฟอร์ม" เป็น "BreakDown"',
+    ],
+  },
+  {
+    ref: '#REV-20260613-I',
+    date: '2026-06-13',
+    current: false,
+    items: [
+      'แท็บ ใบกำกับภาษี > ออกใบกำกับ: เพิ่มช่องค้นหา/กรองตามเลขที่ PO ในรายการ "PO ที่ยังไม่ออกใบกำกับ"',
+      'เพิ่มแสดง "จำนวน" และ "หมายเหตุ" ในแต่ละรายการ PO',
+    ],
+  },
+  {
+    ref: '#REV-20260613-H',
+    date: '2026-06-13',
+    current: false,
     items: [
       'แท็บ ใบกำกับภาษี: แบ่งเป็น 3 sub-tab เลือกหัวแท็บได้ — "ออกใบกำกับ", "เพิ่มลูกค้า" (ย้ายมาจากแท็บ ลูกค้า เดิม), "รายงานภาษีขาย" (การ์ด "ใบกำกับที่ออกแล้ว" ยังแสดงด้านล่างเสมอ)',
       'ลบแท็บ "ลูกค้า" แยกเดิมออก เนื่องจากรวมเข้ากับแท็บ ใบกำกับภาษี แล้ว',
@@ -2644,61 +2715,4 @@ const DEV_LOGS = [
     date: '2026-06-12',
     current: false,
     items: [
-      'เพิ่มการ์ดสรุป "❓ ยังไม่ระบุสถานะ" ในหน้าติดตามสถานะงาน — สำหรับตรวจสอบว่ามี Order ไหนยังไม่ตั้งค่า Process บ้าง',
-      'เพิ่มการ์ดสรุป "⏪ BackOrder" และเพิ่มเป็นตัวเลือกในเมนูเปลี่ยนสถานะงาน (Process) แบบเร็ว',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AT',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'แก้บั๊กยอดรวมการ์ดสรุป "ติดตามสถานะงาน" ขาดไป 1 รายการ — Order ที่ Process เป็นค่าว่าง/ไม่ตรงกับการ์ดใดเลย จะถูกนับเป็น "กำลังผลิต" (ค่าเริ่มต้นเดียวกับ Timeline) ทำให้ยอดรวมการ์ดตรงกับจำนวน Order ทั้งหมด',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AS',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'หน้าติดตามงานโหมดเต็มจอ: เพิ่มปุ่ม "✕ ปิดหน้านี้" แทนปุ่ม "เปิดเต็มจอ" (สำหรับมือถือที่ไม่มีปุ่มปิดแท็บ) — กดแล้วพยายามปิดแท็บ ถ้าปิดไม่ได้จะกลับไปหน้าติดตามสถานะปกติ',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AR',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'แก้บั๊ก: ปุ่ม "เปิดเต็มจอ" ตอนกดจากหน้าที่เปิดเต็มจออยู่แล้ว สร้าง URL ผิด (form.html&track=full ไม่มี ? นำหน้า) ทำให้เปิดไม่ได้ (เข้าถึงไฟล์ไม่ได้)',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AQ',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'หน้า "ติดตามสถานะงาน" เพิ่มสถานะกำลังโหลด (กรณีโหลดข้อมูล Order ช้า/ผิดพลาด แสดงข้อความตรงพื้นที่การ์ด) และเพิ่มปุ่ม "🔄 รีเฟรช" คู่กับปุ่ม "เปิดเต็มจอ"',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AP',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'แก้บั๊ก: รายการ "PO ที่ยังไม่ออกใบกำกับ" และยอดสรุปขึ้น 0.00 ฿ ทุกรายการ — เพราะคอลัมน์ยอดรวม (totalTax) ของ Order บางแถวยังไม่มีค่า จึงคำนวณสำรองจาก จำนวน × ราคา × VAT 7% (ฟังก์ชัน _invOrderTotal ใช้ร่วมกันทั้งรายการ/สรุป/สร้างใบกำกับ)',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AO',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'แก้บั๊ก: การ์ด "ติดตามสถานะงาน" โชว์การ์ด PO ว่างๆ (PO —, Quo —) — เกิดจากแถวเปล่าท้ายชีต Order ที่ getLastRow() นับรวมมาด้วย จึงกรองแถวที่ไม่มีเลข PO ออกก่อนแสดงผล',
-    ],
-  },
-  {
-    ref: '#REV-20260612-AN',
-    date: '2026-06-12',
-    current: false,
-    items: [
-      'แก้บั๊กการ์ดสรุป "ติดตามสถานะงาน": ออเดอร์ที่�
+      'เพิ่มการ์ดสรุป "❓ ยังไม่ระบุสถาน�

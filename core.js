@@ -98,7 +98,7 @@ function saveScriptUrl() {
 // ── TAB SWITCHING ────────────────────────────────────
 // ── Tab Config System ────────────────────────────────
 const TAB_DEFS = [
-  { id:'breakdown', icon:'📋', label:'ฟอร์ม'    },
+  { id:'breakdown', icon:'📋', label:'BreakDown'    },
   { id:'calc',      icon:'🔢', label:'คำนวณ'    },
   { id:'labor',     icon:'👷', label:'แรงงาน'  },
   { id:'mold',      icon:'🔩', label:'แม่พิมพ์' },
