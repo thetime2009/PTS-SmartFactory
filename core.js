@@ -151,7 +151,7 @@ const TAB_DEFS = [
 
 // รายการเมนูแบบเดี่ยว (ไม่อยู่ในกลุ่ม) — แสดงไว้บนสุด เหนือกลุ่มฝ่ายขาย
 const TOP_SIDEBAR_ITEMS = [
-  { tab:'track', label:'แดชบอร์ด', icon:'📊' },
+  { tab:'track', label:'แดชบอร์ด', icon:'📊', view:'full' },
 ];
 
 const GROUP_DEFS = [
@@ -174,7 +174,7 @@ const GROUP_DEFS = [
     { ph:true, label:'WorkOrder', icon:'📋' },
     { tab:'calc', label:'คำนวณตัดเหล็ก' },
     { tab:'mold' },
-    { tab:'track' },
+    { tab:'track', view:'reduced' },
     { ph:true, label:'Inspection', icon:'🔍' },
     { ph:true, label:'WI', icon:'📄' },
   ]},
@@ -205,10 +205,14 @@ function _placeholderAlert(label) {
 
 // แท็บย่อยที่กำลังเปิดอยู่ (ใช้ไฮไลต์เมนูย่อยใน sidebar เช่น ใบกำกับภาษี / เพิ่มลูกค้า / รายงานภาษีขาย / ใบวางบิล)
 let _activeSubTab = null;
-function _sbGoto(tab, subTab) {
+// โหมดแสดงผลของหน้าติดตามงาน/แดชบอร์ด ('full' = แดชบอร์ด แสดงทุกการ์ดสรุป, 'reduced' = ติดตามงาน ซ่อนการ์ดที่ไม่จำเป็น)
+let _trkViewMode = 'full';
+function _sbGoto(tab, subTab, view) {
   _activeSubTab = subTab || null;
+  if (tab === 'track' && view) _trkViewMode = view;
   switchTab(tab);
   if (subTab && typeof _invSubTabSwitch === 'function') _invSubTabSwitch(subTab);
+  if (tab === 'track' && typeof renderTrackDashboard === 'function') renderTrackDashboard();
   renderTabBar();
 }
 
@@ -254,7 +258,8 @@ function renderTabBar() {
       const label = it.label || def.label;
       const icon  = it.icon  || def.icon;
       const isActive = it.tab === _activeTab && (it.subTab||null) === (_activeSubTab||null);
-      const click = it.subTab ? `_sbGoto('${it.tab}','${it.subTab}')` : `_sbGoto('${it.tab}',null)`;
+      const viewArg = it.view ? `,'${it.view}'` : '';
+      const click = it.subTab ? `_sbGoto('${it.tab}','${it.subTab}'${viewArg})` : `_sbGoto('${it.tab}',null${viewArg})`;
       return `<button type="button" class="tab-btn sb-top-item${isActive?' active':''}" data-tab="${it.tab}" onclick="${click}">
         <span class="t-icon">${icon}</span><span class="t-label">${label}</span>
       </button>`;
@@ -272,7 +277,8 @@ function renderTabBar() {
         const label = it.label || def.label;
         const icon  = it.icon  || def.icon;
         const isActive = it.tab === _activeTab && (it.subTab||null) === (_activeSubTab||null);
-        const click = it.subTab ? `_sbGoto('${it.tab}','${it.subTab}')` : `_sbGoto('${it.tab}',null)`;
+        const viewArg = it.view ? `,'${it.view}'` : '';
+        const click = it.subTab ? `_sbGoto('${it.tab}','${it.subTab}'${viewArg})` : `_sbGoto('${it.tab}',null${viewArg})`;
         return `<button type="button" class="tab-btn${isActive?' active':''}" id="tbtn-${it.tab}" data-tab="${it.tab}" onclick="${click}">
           <span class="t-icon">${icon}</span><span class="t-label">${label}</span>
         </button>`;

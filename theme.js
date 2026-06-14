@@ -777,10 +777,8 @@ document.addEventListener('DOMContentLoaded', () => {
   _applyLogoAll();
   // โหลดข้อมูลบริษัท (ชีต Company) มา cache ไว้ใช้ทุกจุด
   _fetchCompanyInfo();
-  // เปิดโปรแกรมครั้งแรก (ไม่มีค่าบันทึกไว้) → Active แท็บ "ติดตามงาน" เสมอ
-  // ครั้งต่อๆ ไป (กดรีเฟรช/เปิดใหม่) → กลับไปหน้า/แท็บเดิมที่ใช้งานอยู่
-  const savedTab = localStorage.getItem('ptts_active_tab');
-  switchTab(savedTab || 'track');
+  // ทุกครั้งที่เปิดโปรแกรมใหม่ (รีเฟรช/เปิดแท็บใหม่) → เริ่มที่แท็บ "ติดตามงาน/แดชบอร์ด" เสมอ
+  switchTab('track');
 
   // เปิดจากปุ่ม "เปิดเต็มจอ" (?track=full) → แท็บใหม่นี้แสดงเฉพาะติดตามงานแบบเต็มจอ
   if (new URLSearchParams(location.search).get('track') === 'full') {
@@ -996,6 +994,73 @@ function switchDocTab(tab) {
 }
 function printDoc() {
   window.print();
+}
+
+// ── หาเอกสารที่กำลังแสดงอยู่ใน docExportOverlay (สำหรับบันทึก/แชร์ภาพ) ──
+function _getActiveDocEl() {
+  const ids = ['docPlating','docInv','docInvRep','docBill','docGenQuo','docCost','docQuo'];
+  for (const id of ids) {
+    const el = $(id);
+    if (el && !el.classList.contains('dp-hidden') && el.innerHTML.trim()) return el;
+  }
+  return $('docQuo');
+}
+
+async function _captureActiveDoc() {
+  const el = _getActiveDocEl();
+  if (!el) return null;
+  if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e) {} }
+  await new Promise(r => setTimeout(r, 80));
+  const imgs = el.querySelectorAll('img');
+  await Promise.all(Array.from(imgs).map(im => {
+    if (im.complete && im.naturalWidth > 0) return Promise.resolve();
+    return new Promise(res => {
+      im.addEventListener('load', res, { once:true });
+      im.addEventListener('error', res, { once:true });
+      setTimeout(res, 1500);
+    });
+  }));
+  return html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, allowTaint:true, logging:false });
+}
+
+// ── บันทึกเอกสารที่แสดงอยู่เป็นไฟล์ภาพ PNG ──
+async function saveDocAsImage() {
+  try {
+    const canvas = await _captureActiveDoc();
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `PTS-doc-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    Swal.fire({icon:'warning',title:'ไม่สามารถบันทึกภาพได้',text:e.message,
+      background:'#0d1b2a',color:'#cce4ff',timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+  }
+}
+
+// ── แชร์เอกสารที่แสดงอยู่เป็นภาพ ผ่าน Web Share API (LINE/Telegram/อื่นๆ บนมือถือ) ──
+async function shareDocImage() {
+  try {
+    const canvas = await _captureActiveDoc();
+    if (!canvas) return;
+    const fileName = `PTS-doc-${Date.now()}.png`;
+    canvas.toBlob(async blob => {
+      const file = new File([blob], fileName, { type:'image/png' });
+      if (navigator.canShare && navigator.canShare({ files:[file] })) {
+        try { await navigator.share({ files:[file], title:'เอกสาร PTS' }); return; } catch(e) { /* ผู้ใช้กดยกเลิก */ }
+      }
+      // เครื่อง/เบราว์เซอร์ไม่รองรับ Web Share API → ดาวน์โหลดแทน
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      Swal.fire({icon:'info',title:'บันทึกภาพแล้ว',text:'อุปกรณ์นี้แชร์โดยตรงไม่ได้ กรุณาส่งไฟล์ภาพที่บันทึกไว้ให้ลูกค้าทาง LINE/Telegram',
+        background:'#0d1b2a',color:'#cce4ff',timer:3500,showConfirmButton:false,toast:true,position:'top-end'});
+    }, 'image/png');
+  } catch(e) {
+    Swal.fire({icon:'warning',title:'ไม่สามารถแชร์ภาพได้',text:e.message,
+      background:'#0d1b2a',color:'#cce4ff',timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+  }
 }
 
 function fmtB(n, dec=2) {

@@ -519,6 +519,11 @@ select option { background: var(--sel-bg); color: var(--t1); }
 }
 .dp-hidden { display: none !important; }
 
+/* ── เดสก์ท็อป: ขยายกระดาษเอกสารให้กว้างขึ้น ไม่ให้รายการตัดคำ ── */
+@media (min-width: 1024px) {
+  .doc-paper { max-width: 1100px; }
+}
+
 /* ── Print ─────────────────────────────────────────────────── */
 @media print {
   body > *:not(#docExportOverlay) { display: none !important; }
@@ -527,7 +532,15 @@ select option { background: var(--sel-bg); color: var(--t1); }
   .doc-topbar, .doc-bottombar, .no-print { display: none !important; }
   .doc-body { background: white !important; padding: 0 !important;
     overflow: visible !important; }
-  .doc-paper { box-shadow: none !important; border-radius: 0 !important; }
+  .doc-paper {
+    box-shadow: none !important; border-radius: 0 !important;
+    max-width: 100% !important; font-size: 1.15em;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .doc-paper, .doc-paper * {
+    color: #000 !important;
+  }
+  .doc-paper th { color: #fff !important; }
   .dp-hidden { display: block !important; }
 }
 
@@ -932,6 +945,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
   #tab-mat       > div[style*="max-width"],
   #tab-order     > div[style*="max-width"],
   #tab-po        > div[style*="max-width"],
+  #tab-track     > div[style*="max-width"],
   #tab-data      > div[style*="max-width"] { max-width: 100% !important; }
 }
 
@@ -1075,7 +1089,13 @@ select option { background: var(--sel-bg); color: var(--t1); }
     margin-bottom: 6px; border-radius: 10px;
   }
   .sb-top-item .t-icon { font-size: 1.2rem; }
-  .sb-top-item.active { color: var(--c1); background: var(--c1-10); }
+  .sb-top-item.active {
+    color: #fff; background: var(--c1);
+    box-shadow: 0 2px 8px var(--c1-20, rgba(0,0,0,.25));
+  }
+  .sb-top-item.active .t-label,
+  .sb-top-item.active .t-icon { color: #fff; }
+  .sb-top-item.active .t-icon { filter: drop-shadow(0 0 2px rgba(255,255,255,.6)); }
 
   /* ── Sidebar Group Menu (เปิด-ปิด submenu ตามแผนก) ── */
   .sb-group { margin-bottom: 6px; }

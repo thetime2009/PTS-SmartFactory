@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v7.42</span>
+      <span class="ph-chip ver">v7.51</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1814,7 +1814,7 @@
   <div class="card">
     <div class="card-header">
       <div class="icon ic-ext">🚀</div>
-      <h2 style="flex:1">ติดตามสถานะงาน</h2>
+      <h2 id="trkPageTitle" style="flex:1">ติดตามสถานะงาน</h2>
       <button onclick="fetchOrders()" style="margin-right:8px;padding:6px 12px;border-radius:8px;border:1px solid rgba(52,211,153,.3);
         background:rgba(52,211,153,.1);color:#6ecfad;font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif">
         🔄 รีเฟรช
@@ -2508,15 +2508,15 @@
   </div>
 </div>
 
-<script src="core.js?v=7.42"></script>
-<script src="data.js?v=7.42"></script>
-<script src="formcalc.js?v=7.42"></script>
-<script src="aifeatures.js?v=7.42"></script>
-<script src="theme.js?v=7.42"></script>
-<script src="order.js?v=7.42"></script>
-<script src="purchase.js?v=7.42"></script>
-<script src="invoice.js?v=7.42"></script>
-<script src="plating.js?v=7.42"></script>
+<script src="core.js?v=7.51"></script>
+<script src="data.js?v=7.51"></script>
+<script src="formcalc.js?v=7.51"></script>
+<script src="aifeatures.js?v=7.51"></script>
+<script src="theme.js?v=7.51"></script>
+<script src="order.js?v=7.51"></script>
+<script src="purchase.js?v=7.51"></script>
+<script src="invoice.js?v=7.51"></script>
+<script src="plating.js?v=7.51"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2545,6 +2545,16 @@
       <button class="doc-tab-btn" onclick="switchDocTab(_docActiveTab==='quo'?'cost':'quo')"
         style="color:#94a3b8">
         ⇄ สลับเอกสาร</button>
+      <button onclick="saveDocAsImage()"
+        style="padding:8px 18px;border-radius:8px;border:none;background:#0ea5e9;
+          color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;
+          font-family:'Sarabun',sans-serif">
+        📷 บันทึกภาพ</button>
+      <button onclick="shareDocImage()"
+        style="padding:8px 18px;border-radius:8px;border:none;background:#06c755;
+          color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;
+          font-family:'Sarabun',sans-serif">
+        📤 ส่ง LINE / Telegram</button>
       <button onclick="printDoc()"
         style="padding:8px 18px;border-radius:8px;border:none;background:#10b981;
           color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;
@@ -2645,9 +2655,83 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260614-Y',
+    ref: '#REV-20260614-AH',
     date: '2026-06-14',
     current: true,
+    items: [
+      'หน้าพรีวิวเอกสาร: ขยายความกว้างกระดาษเอกสารบนเดสก์ท็อป (จาก 800px เป็น 1100px) ไม่ให้รายการตัดข้อความ',
+      'แก้ตัวอักษรตอนพิมพ์/บันทึก PDF ให้ชัดขึ้น: ขยายขนาดตัวอักษร และเปลี่ยนสีตัวอักษรจางเป็นสีดำทั้งหมด',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AG',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'หน้าพรีวิวเอกสาร (ใบส่งชุบ ฯลฯ): เพิ่มปุ่ม "บันทึกภาพ" (บันทึกเป็นไฟล์ PNG) และปุ่ม "ส่ง LINE / Telegram" (เปิดเมนูแชร์ของมือถือเพื่อส่งภาพให้ลูกค้าได้ทันที)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AF',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แก้ปัญหาคอลัมน์การ์ดยังเป็น 2 บนเดสก์ท็อป: ย้ายค่าที่เคยตั้งไว้เป็น 2 (ค่าเริ่มต้นเดิม) เป็น 3 ให้อัตโนมัติครั้งเดียว',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AE',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แท็บ "ติดตามงาน"/"แดชบอร์ด": ค่าเริ่มต้นจำนวนคอลัมน์การ์ดบนเดสก์ท็อป (≥1024px) เป็น 3 คอลัมน์ (มือถือ/แท็บเล็ตยังเป็น 2 เหมือนเดิม) — มีผลเฉพาะกรณียังไม่เคยปรับค่าเอง',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AD',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แท็บ "ติดตามงาน" และ "แดชบอร์ด" (ใช้หน้าเดียวกัน): ขยายการ์ดให้เต็มพื้นที่บนเดสก์ท็อป (max-width:100% เหมือนแท็บอื่น)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AC',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แท็บ "แดชบอร์ด": เปลี่ยนหัวข้อการ์ดเป็น "แดชบอร์ดสถานะงาน" (แท็บ "ติดตามงาน" ยังใช้ชื่อเดิม "ติดตามสถานะงาน")',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AB',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แท็บ "ติดตามงาน": ซ่อนการ์ดสรุป "ยังไม่ระบุสถานะ", "รอ Confirm", "ส่งยังไม่ครบ", "อื่นๆ (ค่าไม่ตรงสถานะ)" ให้เหลือเฉพาะการ์ดที่จำเป็น (แท็บ "แดชบอร์ด" ยังแสดงครบทุกการ์ดเหมือนเดิม)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AA',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แก้ปุ่ม "แดชบอร์ด" เมื่อ active: ตัวหนังสือ/ไอคอนเป็นสีขาว (เดิมถูก .t-label ทับเป็นสีเทา)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-Z',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'Sidebar: ปุ่ม "แดชบอร์ด" เมื่อ active เน้นชัดเจนขึ้น (พื้นหลังสีเข้ม ตัวอักษรขาว)',
+      'ทุกครั้งที่เปิดโปรแกรมใหม่/รีเฟรช → เริ่มที่แท็บ "แดชบอร์ด/ติดตามงาน" เสมอ (ไม่กลับไปแท็บเดิมที่บันทึกไว้)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-Y',
+    date: '2026-06-14',
+    current: false,
     items: [
       'Sidebar: ย้ายเมนู "แดชบอร์ด" ออกมาเป็นเมนูเดี่ยวด้านบนสุด เหนือกลุ่ม "ฝ่ายขาย" (ยังใช้หน้าเดียวกับ "ติดตามงาน")',
     ],

@@ -1884,12 +1884,22 @@ function _trkIsOverdue(r) {
   return wantD < today;
 }
 
+// การ์ดสรุปที่ซ่อนในแท็บ "ติดตามงาน" (โหมด reduced) — แสดงครบเฉพาะแท็บ "แดชบอร์ด" (โหมด full)
+const TRK_REDUCED_HIDE_KEYS = ['', 'รอConfirm', 'ส่งยังไม่ครบ', '__other__'];
+
 function _trkRenderSummary() {
   const wrap = $('trkSummary');
   if (!wrap) return;
   const curFilter = $('trkFilter')?.value || '';
+  const reduced = (typeof _trkViewMode !== 'undefined') && _trkViewMode === 'reduced';
+
+  // หัวข้อการ์ด: แท็บ "แดชบอร์ด" (full) → "แดชบอร์ดสถานะงาน", แท็บ "ติดตามงาน" (reduced) → "ติดตามสถานะงาน"
+  const titleEl = $('trkPageTitle');
+  if (titleEl) titleEl.textContent = reduced ? 'ติดตามสถานะงาน' : 'แดชบอร์ดสถานะงาน';
+
   wrap.innerHTML = TRK_SUM_GROUPS.map(g => {
-    const defs = TRK_STATUS_DEFS.filter(s => s.group === g.key);
+    let defs = TRK_STATUS_DEFS.filter(s => s.group === g.key);
+    if (reduced) defs = defs.filter(s => !TRK_REDUCED_HIDE_KEYS.includes(s.key));
     if (!defs.length) return '';
     const cards = defs.map(s => {
       const isBackOrder = s.key === 'BackOrder';
@@ -1967,8 +1977,21 @@ function _trkKey(base) {
 }
 
 // จำนวนคอลัมน์ของการ์ดติดตามงาน (1-4) — ปรับได้จากแถบตั้งค่า (แยกค่าระหว่างหน้าปกติ/เต็มจอ)
+// ค่าเริ่มต้น: เดสก์ท็อป (≥1024px) = 3 คอลัมน์, มือถือ/แท็บเล็ต = 2 คอลัมน์
+// หมายเหตุ: ผู้ใช้ที่เคยตั้งค่าไว้เป็น 2 จากค่าเริ่มต้นเดิม จะถูกย้ายเป็น 3 ครั้งเดียว (เดสก์ท็อปเท่านั้น)
 function _trkGetCols() {
-  return parseInt(localStorage.getItem(_trkKey('ptts_trk_cols'))) || 2;
+  const key = _trkKey('ptts_trk_cols');
+  const migKey = key + '_mig3';
+  let saved = parseInt(localStorage.getItem(key));
+  if (window.innerWidth >= 1024 && !localStorage.getItem(migKey)) {
+    localStorage.setItem(migKey, '1');
+    if (!saved || saved === 2) {
+      saved = 3;
+      localStorage.setItem(key, '3');
+    }
+  }
+  if (saved) return saved;
+  return window.innerWidth >= 1024 ? 3 : 2;
 }
 function _trkSetCols(n) {
   n = Math.max(1, Math.min(4, parseInt(n) || 2));
