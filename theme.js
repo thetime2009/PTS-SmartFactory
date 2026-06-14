@@ -1089,8 +1089,25 @@ function _openImageInNewTab(win, dataUrl, fileName) {
   }
 }
 
+// ── แสดงข้อความแจ้งเตือน: ใช้ Swal ถ้ามี ไม่มีก็ alert() (กันเงียบสนิทบนมือถือ) ──
+function _notifyErr(title, msg) {
+  try {
+    if (typeof Swal !== 'undefined' && Swal && typeof Swal.fire === 'function') {
+      Swal.fire({icon:'warning',title:title,text:msg,
+        background:'#0d1b2a',color:'#cce4ff',timer:3500,showConfirmButton:false,toast:true,position:'top-end'});
+      return;
+    }
+  } catch(e) {}
+  try { alert(title + (msg ? ('\n' + msg) : '')); } catch(e) {}
+}
+
 // ── บันทึกเอกสารที่แสดงอยู่เป็นไฟล์ภาพ PNG ──
 async function saveDocAsImage() {
+  // เช็คก่อนว่าโหลดไลบรารี html2canvas สำเร็จหรือไม่ (กันปุ่มกดไม่ตอบสนองเงียบๆบนมือถือ)
+  if (typeof html2canvas !== 'function') {
+    _notifyErr('โหลดไลบรารีไม่สำเร็จ', 'อินเทอร์เน็ต/เครือข่ายอาจบล็อก html2canvas ลองเช็คการเชื่อมต่อแล้วโหลดหน้าใหม่');
+    return;
+  }
   // เปิดแท็บเปล่าไว้ก่อน (ขณะยังมี user-gesture) เผื่อต้องใช้แสดงภาพบนมือถือ
   let win = null;
   try { win = window.open('', '_blank'); } catch(e) {}
@@ -1121,14 +1138,17 @@ async function saveDocAsImage() {
     }
   } catch(e) {
     if (win && !win.closed) { try { win.close(); } catch(_) {} }
-    Swal.fire({icon:'warning',title:'ไม่สามารถบันทึกภาพได้',text:e.message,
-      background:'#0d1b2a',color:'#cce4ff',timer:3000,showConfirmButton:false,toast:true,position:'top-end'});
+    _notifyErr('ไม่สามารถบันทึกภาพได้', e && e.message);
   }
 }
 
 // ── แชร์เอกสารที่แสดงอยู่เป็นภาพ ผ่าน Web Share API (LINE/Telegram/อื่นๆ บนมือถือ) ──
 // ── ทำงานเหมือนปุ่ม "ส่งรูป" ใน Quotation (shareCardImage) เป๊ะๆ: capture → blob → Web Share API ──
 async function shareDocImage() {
+  if (typeof html2canvas !== 'function') {
+    _notifyErr('โหลดไลบรารีไม่สำเร็จ', 'อินเทอร์เน็ต/เครือข่ายอาจบล็อก html2canvas ลองเช็คการเชื่อมต่อแล้วโหลดหน้าใหม่');
+    return;
+  }
   try {
     const canvas = await _captureActiveDoc();
     if (!canvas) return;
@@ -1137,6 +1157,7 @@ async function shareDocImage() {
     // ใช้ Web Share API พร้อม files (mobile native share sheet → เลือก Telegram/LINE ได้)
     if (navigator.canShare && navigator.share) {
       canvas.toBlob(async blob => {
+        if (!blob) { _notifyErr('ไม่สามารถแชร์รูปได้', 'สร้างไฟล์ภาพไม่สำเร็จ'); return; }
         const file = new File([blob], fileName, { type: 'image/png' });
         if (navigator.canShare({ files: [file] })) {
           try {
@@ -1158,8 +1179,7 @@ async function shareDocImage() {
       link.click();
     }
   } catch(e) {
-    Swal.fire({icon:'warning',title:'ไม่สามารถแชร์รูปได้',text:e.message,
-      background:'#0d1b2a',color:'#cce4ff',timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    _notifyErr('ไม่สามารถแชร์รูปได้', e && e.message);
   }
 }
 
