@@ -1040,7 +1040,12 @@ async function _captureActiveDoc(opts) {
       setTimeout(res, 1500);
     });
   }));
-  const baseOpts = { backgroundColor:'#ffffff', scale:2, useCORS:true, allowTaint:true, logging:false };
+  // บังคับ capture ที่ความกว้างระดับเดสก์ท็อป (1300px) เสมอ ไม่ว่าหน้าจอจริงจะเล็กแค่ไหน
+  // เพื่อให้ตารางแสดงครบทุกคอลัมน์ (ไม่ตัด/ห่อ) เหมือนพรีวิวบนเดสก์ท็อป
+  const baseOpts = {
+    backgroundColor:'#ffffff', scale:2, useCORS:true, allowTaint:true, logging:false,
+    windowWidth: 1300, windowHeight: Math.max(el.scrollHeight, window.innerHeight),
+  };
   let canvas = await html2canvas(el, Object.assign({}, baseOpts, opts||{}));
   // กัน canvas ถูก taint จากรูปโลโก้ข้ามโดเมน (ไม่มี CORS header) → ถ้า taint ให้ capture ใหม่โดยข้ามรูปภาพ
   if (!opts || !opts.ignoreElements) {

@@ -36,7 +36,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v7.56</span>
+      <span class="ph-chip ver">v7.57</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2508,15 +2508,15 @@
   </div>
 </div>
 
-<script src="core.js?v=7.56"></script>
-<script src="data.js?v=7.56"></script>
-<script src="formcalc.js?v=7.56"></script>
-<script src="aifeatures.js?v=7.56"></script>
-<script src="theme.js?v=7.56"></script>
-<script src="order.js?v=7.56"></script>
-<script src="purchase.js?v=7.56"></script>
-<script src="invoice.js?v=7.56"></script>
-<script src="plating.js?v=7.56"></script>
+<script src="core.js?v=7.57"></script>
+<script src="data.js?v=7.57"></script>
+<script src="formcalc.js?v=7.57"></script>
+<script src="aifeatures.js?v=7.57"></script>
+<script src="theme.js?v=7.57"></script>
+<script src="order.js?v=7.57"></script>
+<script src="purchase.js?v=7.57"></script>
+<script src="invoice.js?v=7.57"></script>
+<script src="plating.js?v=7.57"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2655,9 +2655,17 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260614-AM',
+    ref: '#REV-20260614-AN',
     date: '2026-06-14',
     current: true,
+    items: [
+      'แก้รูปที่บันทึก/แชร์จากหน้าพรีวิวเอกสารบนมือถือ: เดิมตารางถูกตัดคอลัมน์ (จอเล็ก) ตอนนี้บังคับ capture ที่ความกว้างระดับเดสก์ท็อป (1300px) ให้แสดงครบทุกคอลัมน์เหมือนพรีวิวเดสก์ท็อป',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AM',
+    date: '2026-06-14',
+    current: false,
     items: [
       'แก้ปุ่ม "ส่ง LINE / Telegram" หน้าพรีวิวเอกสารยังแชร์ไม่ได้: ถ้าโลโก้บริษัทเป็นรูปข้ามโดเมนทำให้ canvas ถูก taint จนแชร์/บันทึกล้มเหลว ตอนนี้จับ capture ใหม่โดยข้ามรูปโลโก้อัตโนมัติ',
     ],
