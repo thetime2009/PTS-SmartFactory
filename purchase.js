@@ -384,14 +384,22 @@ function _poPrint(poNo) {
   <html><head><title>ใบสั่งซื้อ ${poNo}</title>
   <style>
     @page { size: A4; margin: 12mm; }
-    * { box-sizing: border-box; }
-    body{font-family:'Sarabun',Tahoma,sans-serif;color:#1e293b;font-size:12px;margin:0}
-    .wrap{display:flex;gap:16px;align-items:flex-start}
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    body{font-family:'Sarabun',Tahoma,sans-serif;color:#1e293b;font-size:12px;margin:0;background:#e2e8f0}
+    .wrap{display:flex;gap:16px;align-items:flex-start;max-width:1000px;margin:0 auto;
+      background:#fff;padding:16px;box-shadow:0 0 12px rgba(0,0,0,.08)}
+    @media print {
+      body{background:#fff}
+      .wrap{max-width:none;margin:0;padding:0;box-shadow:none}
+      .sidebar{background:#16335c !important;color:#dce8ff !important}
+    }
     .main{flex:1;min-width:0}
     .sidebar{width:190px;flex-shrink:0;background:#16335c;color:#dce8ff;border-radius:14px;padding:14px}
     .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid #16335c}
-    .brand{display:flex;gap:10px}
-    .brand img{width:54px;height:auto}
+    .brand{display:flex;gap:12px;align-items:flex-start}
+    .brand .logo-box{width:56px;height:56px;flex-shrink:0;border-radius:8px;overflow:hidden;
+      display:flex;align-items:center;justify-content:center}
+    .brand .logo-box img{width:100%;height:100%;object-fit:contain}
     .brand .name-th{font-weight:700;font-size:14px;color:#16335c}
     .brand .name-en{font-size:10.5px;color:#2563eb;font-weight:700;margin:2px 0 4px}
     .brand .info div{font-size:10px;color:#475569;margin-top:2px}
@@ -429,7 +437,7 @@ function _poPrint(poNo) {
     <div class="main">
       <div class="header">
         <div class="brand">
-          <img src="${PTS_LOGO_B64}">
+          <div class="logo-box"><img src="${_getLogoSrc ? _getLogoSrc() : PTS_LOGO_B64}"></div>
           <div>
             <div class="name-th">${PTS_COMPANY.nameTh}</div>
             <div class="name-en">${PTS_COMPANY.nameEn}</div>

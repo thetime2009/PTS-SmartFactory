@@ -37,7 +37,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v7.63</span>
+      <span class="ph-chip ver">v7.66</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2509,15 +2509,15 @@
   </div>
 </div>
 
-<script src="core.js?v=7.63"></script>
-<script src="data.js?v=7.63"></script>
-<script src="formcalc.js?v=7.63"></script>
-<script src="aifeatures.js?v=7.63"></script>
-<script src="theme.js?v=7.63"></script>
-<script src="order.js?v=7.63"></script>
-<script src="purchase.js?v=7.63"></script>
-<script src="invoice.js?v=7.63"></script>
-<script src="plating.js?v=7.63"></script>
+<script src="core.js?v=7.66"></script>
+<script src="data.js?v=7.66"></script>
+<script src="formcalc.js?v=7.66"></script>
+<script src="aifeatures.js?v=7.66"></script>
+<script src="theme.js?v=7.66"></script>
+<script src="order.js?v=7.66"></script>
+<script src="purchase.js?v=7.66"></script>
+<script src="invoice.js?v=7.66"></script>
+<script src="plating.js?v=7.66"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2656,9 +2656,33 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260614-AT',
+    ref: '#REV-20260614-AW',
     date: '2026-06-14',
     current: true,
+    items: [
+      'แก้ "ใบสั่งซื้อ" ตอนพิมพ์/บันทึก PDF: กล่องข้อมูลด้านขวา (สถานะ/วันที่/ผู้ติดต่อ) เป็นพื้นหลังสีน้ำเงินตัวอักษรขาว แต่ตอนพิมพ์พื้นหลังหายไปทำให้ตัวอักษรขาวกลืนกับกระดาษ มองไม่เห็น — บังคับให้พิมพ์พื้นหลัง/สีตัวอักษรของกล่องนี้เสมอ (print-color-adjust:exact)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AV',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แก้หน้า "ใบสั่งซื้อ" (Purchase Order) ที่เปิดแท็บใหม่: เดิมเนื้อหายืดเต็มความกว้างจอจนตัวอักษรเล็กมาก อ่านไม่รู้เรื่อง — จำกัดความกว้างเอกสารไว้ที่ 1000px จัดกลางจอ มีพื้นหลังเทาคั่น (ตอนพิมพ์/PDF ยังเต็มหน้ากระดาษ A4 เหมือนเดิม)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AU',
+    date: '2026-06-14',
+    current: false,
+    items: [
+      'แก้หัวกระดาษ "ใบสั่งซื้อ" (Purchase Order): โลโก้บริษัทถูกบีบ/เบี้ยวเกินไป — เปลี่ยนเป็นใส่โลโก้ในกรอบสี่เหลี่ยม 56x56px แบบ object-fit:contain (เหมือนเอกสารใบอื่นๆ) และใช้โลโก้ที่ตั้งค่าไว้ (_getLogoSrc) ถ้ามี',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AT',
+    date: '2026-06-14',
+    current: false,
     items: [
       'เพิ่มระบบ Service Worker auto-update: เมื่อเปิดโปรแกรมแล้วมีเวอร์ชันใหม่บน GitHub จะดาวน์โหลด+สลับและรีโหลดหน้าให้อัตโนมัติ ไม่ต้องกดปุ่ม "คืนค่าฟอร์ม" เอง (ใช้ sw.js ที่มีอยู่แล้ว แต่ form.html ยังไม่เคยลงทะเบียนใช้งาน)',
       'แก้บั๊กเดิม: ปุ่ม "Dev Logs" (ประวัติการแก้ไขงาน) กดแล้วไม่ขึ้นป็อปอัพ เพราะไฟล์ form.html ถูกตัดท้ายขาดหายไป (ฟังก์ชัน openDevLogs/closeDevLogs และตัวแสดงรายการ DEV_LOGS ไม่ได้ถูกสร้างไว้เลย) — เพิ่มฟังก์ชันที่หายไปและปิด script/body/html ให้ครบ',
