@@ -748,45 +748,70 @@ async function sharePlatingShareCard() {
     _notifyErr('ไม่สามารถแชร์รูปได้', 'ไม่พบข้อมูลใบส่งชุบ กรุณากดสร้าง/แสดงเอกสารใหม่อีกครั้ง');
     return;
   }
-  // เปิดแท็บเปล่าไว้ก่อน (ขณะยังมี user-gesture) เผื่อต้องใช้แสดงภาพให้แตะค้างบันทึก/แชร์บนมือถือ
-  let win = null;
-  try { win = window.open('', '_blank'); } catch(e) {}
+  const hasSwal = typeof Swal !== 'undefined' && Swal && typeof Swal.fire === 'function';
   try {
+    if (hasSwal) {
+      Swal.fire({
+        title: 'กำลังสร้างรูป...', allowOutsideClick: false, showConfirmButton: false,
+        background: '#0d1b2a', color: '#cce4ff',
+        didOpen: () => Swal.showLoading()
+      });
+    }
     const canvas = await _platingShareCardAsImage();
-    if (!canvas) { if (win && !win.closed) win.close(); return; }
+    if (!canvas) { if (hasSwal) Swal.close(); return; }
     const fileName = `PTS-${_platingShareData.platingNo || 'plating'}.png`;
     const dataUrl = canvas.toDataURL('image/png');
 
-    // ลองใช้ Web Share API พร้อมไฟล์ก่อน (mobile native share sheet → เลือก LINE/Telegram ได้)
-    if (navigator.canShare && navigator.share) {
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      if (blob) {
-        const file = new File([blob], fileName, { type: 'image/png' });
-        if (navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file] });
-            if (win && !win.closed) { try { win.close(); } catch(e) {} }
-            return;
-          } catch(e) {
-            // ผู้ใช้กดยกเลิก (AbortError) → ปิดแท็บเปล่าทิ้ง ไม่ต้อง fallback ต่อ
-            if (e && e.name === 'AbortError') {
-              if (win && !win.closed) { try { win.close(); } catch(_) {} }
-              return;
-            }
-            // แชร์ไม่สำเร็จด้วยเหตุอื่น → ไปต่อที่ fallback ด้านล่าง (เปิดรูปในแท็บใหม่)
-          }
-        }
-      }
+    // แสดงรูปในป็อปอัพ ให้แตะค้างที่รูปเพื่อ "บันทึกรูปภาพ"/"แชร์" ได้ทันที (ไม่ต้องเปิดแท็บใหม่)
+    const canShareFiles = !!(navigator.canShare && navigator.share);
+    const btnStyle = 'padding:9px 16px;border-radius:8px;border:none;color:#fff;font-size:.82rem;' +
+      'font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif';
+    const shareBtnHtml = canShareFiles
+      ? `<button id="platingShareBtn" style="${btnStyle}background:#06c755">📤 แชร์ไปยัง LINE/Telegram</button>`
+      : '';
+
+    if (!hasSwal) {
+      // ไม่มี Swal → เปิดรูปในแท็บใหม่เป็นทางเลือกสุดท้าย
+      window.open(dataUrl, '_blank');
+      return;
     }
 
-    // fallback: เปิดภาพในแท็บใหม่ ให้แตะค้างที่รูปแล้วเลือก "บันทึกรูปภาพ"/"แชร์"
-    if (win && !win.closed) {
-      _openImageInNewTab(win, dataUrl, fileName);
-    } else {
-      window.open(dataUrl, '_blank');
-    }
+    Swal.fire({
+      html: `
+        <div style="text-align:center">
+          <img src="${dataUrl}" style="width:100%;border-radius:8px;border:1px solid #2a3f5f">
+          <div style="font-size:.74rem;color:#94a3b8;margin:10px 0">
+            แตะค้างที่รูป แล้วเลือก "บันทึกรูปภาพ" หรือ "แชร์" เพื่อส่งให้ลูกค้าได้เลย</div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px">
+            <button id="platingDownloadBtn" style="${btnStyle}background:#0ea5e9">📥 บันทึกรูป</button>
+            ${shareBtnHtml}
+          </div>
+        </div>`,
+      background: '#0d1b2a', color: '#cce4ff',
+      showConfirmButton: true, confirmButtonText: 'ปิด', confirmButtonColor: '#334155',
+      width: 420,
+      didOpen: () => {
+        const dlBtn = document.getElementById('platingDownloadBtn');
+        if (dlBtn) dlBtn.onclick = () => {
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = dataUrl;
+          link.click();
+        };
+        const shBtn = document.getElementById('platingShareBtn');
+        if (shBtn) shBtn.onclick = () => {
+          canvas.toBlob(async blob => {
+            if (!blob) return;
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) {
+              try { await navigator.share({ files: [file] }); } catch(e) { /* user cancelled */ }
+            }
+          }, 'image/png');
+        };
+      }
+    });
   } catch(e) {
-    if (win && !win.closed) { try { win.close(); } catch(_) {} }
+    if (hasSwal) Swal.close();
     _notifyErr('ไม่สามารถแชร์รูปได้', e && e.message);
   }
 }

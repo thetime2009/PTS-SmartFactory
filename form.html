@@ -37,7 +37,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v7.61</span>
+      <span class="ph-chip ver">v7.62</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2509,15 +2509,15 @@
   </div>
 </div>
 
-<script src="core.js?v=7.61"></script>
-<script src="data.js?v=7.61"></script>
-<script src="formcalc.js?v=7.61"></script>
-<script src="aifeatures.js?v=7.61"></script>
-<script src="theme.js?v=7.61"></script>
-<script src="order.js?v=7.61"></script>
-<script src="purchase.js?v=7.61"></script>
-<script src="invoice.js?v=7.61"></script>
-<script src="plating.js?v=7.61"></script>
+<script src="core.js?v=7.62"></script>
+<script src="data.js?v=7.62"></script>
+<script src="formcalc.js?v=7.62"></script>
+<script src="aifeatures.js?v=7.62"></script>
+<script src="theme.js?v=7.62"></script>
+<script src="order.js?v=7.62"></script>
+<script src="purchase.js?v=7.62"></script>
+<script src="invoice.js?v=7.62"></script>
+<script src="plating.js?v=7.62"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2656,9 +2656,17 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260614-AR',
+    ref: '#REV-20260614-AS',
     date: '2026-06-14',
     current: true,
+    items: [
+      'แก้ปุ่ม "ส่ง LINE/Telegram" ใบส่งชุบ ที่เปิดแท็บใหม่แล้วเป็นหน้าว่างบนมือถือ: เปลี่ยนวิธีทั้งหมด ไม่เปิดแท็บใหม่อีกต่อไป แต่แสดงรูปการ์ดในป็อปอัพหน้าเดิม ให้แตะค้างที่รูปเพื่อบันทึก/แชร์ได้เลย พร้อมปุ่ม "บันทึกรูป" และ "แชร์ไปยัง LINE/Telegram" (ถ้ามือถือรองรับ)',
+    ],
+  },
+  {
+    ref: '#REV-20260614-AR',
+    date: '2026-06-14',
+    current: false,
     items: [
       'แก้ปุ่ม "ส่ง LINE/Telegram" ใบส่งชุบ เปิดแท็บใหม่แล้วเป็นหน้าว่าง: เดิมถ้า navigator.share ล้มเหลว/ไม่รองรับ จะปิดแท็บเปล่าทิ้งโดยไม่แสดงรูป ตอนนี้แก้ให้แสดงรูปในแท็บที่เปิดไว้เสมอ (ยกเว้นผู้ใช้กดยกเลิกการแชร์เอง)',
     ],
