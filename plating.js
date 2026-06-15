@@ -596,12 +596,14 @@ function _platingBuildDocHtml({ platingNo, dateStr, supplier, items }) {
 
   <div style="display:flex;gap:12px;padding:10px 28px 28px;flex-wrap:wrap">
     <div style="flex:1;text-align:center;min-width:160px">
-      <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้ส่งสินค้า / Sent by</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="margin-top:35px;border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้ส่งสินค้า / Sent by</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
     <div style="flex:1;text-align:center;min-width:160px">
-      <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้รับสินค้า (ร้านชุบ) / Received by</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="margin-top:35px;border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้รับสินค้า (ร้านชุบ) / Received by</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
   </div>
 </div>`;
@@ -1287,8 +1289,10 @@ function _platingBuildDetailReportHtml(list, fromIso, toIso, supplierCode) {
   });
 
   let grandTotal = 0;
+  let grandQty = 0;
   const rows = Array.from(groups.values()).map((g, idx) => {
     grandTotal += g.amount;
+    grandQty += g.qty;
     const unitPrice = g.qty ? (g.amount / g.qty) : 0;
     const platingNosTxt = Array.from(g.platingNos).join(', ');
     return `
@@ -1350,7 +1354,9 @@ function _platingBuildDetailReportHtml(list, fromIso, toIso, supplierCode) {
       <tbody>${rows}</tbody>
       <tfoot>
         <tr>
-          <td colspan="4" style="padding:9px 10px;text-align:right;font-weight:700;border-top:2px solid #2563eb">รวมทั้งสิ้น</td>
+          <td colspan="2" style="padding:9px 10px;text-align:right;font-weight:700;border-top:2px solid #2563eb">รวมทั้งสิ้น</td>
+          <td style="padding:9px 10px;text-align:center;font-weight:700;border-top:2px solid #2563eb;color:#2563eb">${grandQty ? grandQty : '-'} Set</td>
+          <td style="padding:9px 10px;border-top:2px solid #2563eb"></td>
           <td style="padding:9px 10px;text-align:right;font-weight:700;border-top:2px solid #2563eb;color:#2563eb">${fmtB(grandTotal)}</td>
         </tr>
       </tfoot>

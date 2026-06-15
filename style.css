@@ -539,8 +539,28 @@ select option { background: var(--sel-bg); color: var(--t1); }
   }
   .doc-paper, .doc-paper * {
     color: #000 !important;
+    -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
   }
-  .doc-paper th { color: #fff !important; }
+  /* แถว/เซลล์ที่ตั้งสีตัวอักษรขาวไว้ (หัวตาราง, แถวยอดรวม ฯลฯ) ให้คงเป็นสีขาวตอนพิมพ์ ไม่ถูกบังคับเป็นดำ */
+  .doc-paper [style*="color:#fff"], .doc-paper [style*="color: #fff"],
+  .doc-paper [style*="color:#ffffff"], .doc-paper [style*="color: #ffffff"] {
+    color: #fff !important;
+  }
+  /* หัว-ท้ายตาราง (พื้นน้ำเงินเข้ม/กรมท่า+ตัวอักษรขาว) ตอนพิมพ์ B&W ให้เปลี่ยนเป็นพื้นเทาอ่อน+ตัวอักษรเข้ม อ่านง่ายและไม่เปลืองหมึก */
+  .doc-paper [style*="background:#2563eb"],
+  .doc-paper [style*="background:#1d4ed8"],
+  .doc-paper [style*="background:#1e3a5f"] {
+    background: #e8ecf2 !important;
+    border-color: #b8c4d6 !important;
+  }
+  .doc-paper [style*="background:#2563eb"],
+  .doc-paper [style*="background:#2563eb"] *,
+  .doc-paper [style*="background:#1d4ed8"],
+  .doc-paper [style*="background:#1d4ed8"] *,
+  .doc-paper [style*="background:#1e3a5f"],
+  .doc-paper [style*="background:#1e3a5f"] * {
+    color: #1a2232 !important;
+  }
   .dp-hidden { display: block !important; }
 }
 

@@ -1723,12 +1723,14 @@ function buildDocuments() {
         <div style="flex:1;text-align:center">
           <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">
             อนุมัติ ผู้จัดการฝ่ายขาย</div>
-          <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+          <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+          <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
         </div>
         <div style="flex:1;text-align:center">
           <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">
             อนุมัติ ผู้จัดการฝ่ายผลิต</div>
-          <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+          <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+          <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
         </div>
       </div>
     </div>

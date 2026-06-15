@@ -554,12 +554,14 @@ function _invBuildDocHtml({ invoiceNo, isFull, cust, dateStr, itemRows, subtotal
 
   <div style="display:flex;gap:12px;padding:24px 28px 28px;flex-wrap:wrap">
     <div style="flex:1;text-align:center;min-width:160px">
-      <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้รับเงิน / Received by</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="margin-top:35px;border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้รับเงิน / Received by</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
     <div style="flex:1;text-align:center;min-width:160px">
-      <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้มีอำนาจลงนาม / Authorized signature</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="margin-top:35px;border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้มีอำนาจลงนาม / Authorized signature</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
   </div>
 </div>`;
@@ -730,33 +732,35 @@ let _invCurrentDocData = null;
 const _INV_OVERLAY_DEFAULT_POS = {
   companyLogo:     {x:15, y:6},
   companyLogoSize: {x:25, y:15},
-  companyName:   {x:45,  y:7},
-  companyNameEn: {x:45,  y:12},
-  companyAddr:   {x:45,  y:17},
-  companyAddrEn: {x:45,  y:22},
-  companyTax:    {x:45,  y:27},
-  custTaxId:   {x:18,  y:44},
-  custName:    {x:18,  y:50},
-  custAddr:    {x:18,  y:56},
-  invoiceNo:   {x:178, y:30},
-  date:        {x:178, y:38},
-  poNo:        {x:178, y:46},
-  itemNo:      {x:12,  y:80},
-  itemDesc:    {x:24,  y:80},
-  itemQty:     {x:128, y:80},
-  itemPrice:   {x:150, y:80},
-  itemTotal:   {x:178, y:80},
+  companyName:   {x:45,  y:7,  size:13, bold:true},
+  companyNameEn: {x:45,  y:12, size:11, bold:true},
+  companyAddr:   {x:45,  y:17, size:10, bold:false},
+  companyAddrEn: {x:45,  y:22, size:10, bold:false},
+  companyTax:    {x:45,  y:27, size:10, bold:false},
+  companyContact:{x:45,  y:32, size:10, bold:false},
+  custTaxId:   {x:18,  y:44, size:10, bold:false},
+  custName:    {x:18,  y:50, size:10, bold:false},
+  custAddr:    {x:18,  y:56, size:10, bold:false},
+  invoiceNo:   {x:178, y:30, size:10, bold:false},
+  date:        {x:178, y:38, size:10, bold:false},
+  poNo:        {x:178, y:46, size:10, bold:false},
+  itemNo:      {x:12,  y:80, size:10, bold:false},
+  itemDesc:    {x:24,  y:80, size:8.5, bold:false},
+  itemQty:     {x:128, y:80, size:10, bold:false},
+  itemPrice:   {x:150, y:80, size:10, bold:false},
+  itemTotal:   {x:178, y:80, size:10, bold:false},
   rowHeight:   {x:7,   y:0},
-  amountWords: {x:18,  y:238},
-  subtotal:    {x:178, y:238},
-  vat:         {x:178, y:246},
-  total:       {x:178, y:254},
+  amountWords: {x:18,  y:238, size:10, bold:false},
+  subtotal:    {x:178, y:238, size:10, bold:false},
+  vat:         {x:178, y:246, size:10, bold:false},
+  total:       {x:178, y:254, size:10, bold:false},
 };
 const _INV_OVERLAY_FIELD_LABELS = {
   companyLogo:'ตำแหน่งโลโก้ (มุมซ้ายบน)', companyLogoSize:'ขนาดโลโก้ (กว้าง x สูง มม.)',
   companyName:'ชื่อบริษัทเรา (ไทย)', companyNameEn:'ชื่อบริษัทเรา (อังกฤษ)',
   companyAddr:'ที่อยู่บริษัทเรา (ไทย)', companyAddrEn:'ที่อยู่บริษัทเรา (อังกฤษ)',
-  companyTax:'เลขผู้เสียภาษี/เบอร์โทร/อีเมล์บริษัทเรา',
+  companyTax:'เลขประจำตัวผู้เสียภาษีอากรบริษัทเรา',
+  companyContact:'เบอร์โทร/อีเมล์บริษัทเรา',
   custName:'ชื่อลูกค้า', custAddr:'ที่อยู่ลูกค้า', custTaxId:'เลขผู้เสียภาษีลูกค้า',
   invoiceNo:'เลขที่ใบกำกับ', date:'วันที่', poNo:'เลขที่ PO/เอกสาร',
   itemNo:'ลำดับ (แถวแรก)', itemDesc:'รายละเอียดสินค้า (แถวแรก)', itemQty:'จำนวน+หน่วย (แถวแรก)',
@@ -864,7 +868,9 @@ function _invPrintOverlay(data) {
   const addField = (key, text, extraStyle) => {
     const p = pos[key];
     if (!p || text === '' || text == null) return;
-    html += `<div style="position:absolute;left:${p.x}mm;top:${p.y}mm;font-size:10pt;white-space:nowrap;${extraStyle||''}">${text}</div>`;
+    const sz = p.size || 10;
+    const fw = p.bold ? 800 : 400;
+    html += `<div style="position:absolute;left:${p.x}mm;top:${p.y}mm;font-size:${sz}pt;font-weight:${fw};white-space:nowrap;${extraStyle||''}">${text}</div>`;
   };
 
   const co = _companyInfoCache || {};
@@ -873,23 +879,28 @@ function _invPrintOverlay(data) {
     const lp = pos.companyLogo, ls = pos.companyLogoSize;
     html += `<img src="${logoSrc}" style="position:absolute;left:${lp.x}mm;top:${lp.y}mm;width:${ls.x}mm;height:${ls.y}mm;object-fit:contain">`;
   }
-  addField('companyName', co.name || '', 'font-size:13pt;font-weight:800;padding-bottom:0.8mm;border-bottom:0.5mm solid #2563eb;');
-  addField('companyNameEn', co.nameEn || '', 'font-size:11pt;font-weight:700;');
+  addField('companyName', co.name || '', 'padding-bottom:0.8mm;border-bottom:1mm solid #2563eb;');
+  addField('companyNameEn', co.nameEn || '');
   addField('companyAddr', co.address || '');
   addField('companyAddrEn', co.addressEn || '');
-  const coTaxLine = [co.taxId ? ('เลขผู้เสียภาษี: ' + co.taxId) : '', co.phone ? ('โทร: ' + co.phone) : '', co.email ? ('อีเมล์: ' + co.email) : ''].filter(Boolean).join('  ');
+  const coTaxLine = co.taxId ? ('เลขประจำตัวผู้เสียภาษีอากร : ' + co.taxId) : '';
   addField('companyTax', coTaxLine);
+  const coContactLine = [co.phone ? ('โทร: ' + co.phone) : '', co.email ? ('อีเมล์: ' + co.email) : ''].filter(Boolean).join('  ');
+  addField('companyContact', coContactLine);
 
   addField('custName', cust.name || '');
   addField('custAddr', cust.address || '');
-  if (isFull && cust.taxId) addField('custTaxId', 'เลขผู้เสียภาษี: ' + cust.taxId);
+  if (isFull && cust.taxId) addField('custTaxId', cust.taxId);
   addField('invoiceNo', invoiceNo || '');
   addField('date', dateStr || '');
   addField('poNo', poText || '');
 
   let _ovY = pos.itemNo.y;
+  // เพดานความสูงของพื้นที่รายการสินค้า — ไม่ให้แถวสุดท้ายล้นลงไปทับ/เกินพื้นที่ "จำนวนเงินเป็นตัวอักษร"
+  // (กันไม่ให้เนื้อหารวมทั้งหน้าเกิน 297มม. ซึ่งจะทำให้เบราว์เซอร์ auto-scale ตอนพิมพ์ จนตำแหน่ง X/Y ที่ตั้งไว้คงที่ดูเหมือน "ขยับ")
+  const _ovMaxY = pos.amountWords.y - 10;
   (itemsArr || []).forEach((it, idx) => {
-    const y = _ovY;
+    const y = Math.min(_ovY, _ovMaxY);
     const qty = parseFloat(it.qty) || 0;
     const priceExVat = parseFloat(it.priceExVat) || 0;
     const lineTotal = (it.lineTotal != null && it.lineTotal !== '') ? (parseFloat(it.lineTotal)||0) : (qty * priceExVat * 1.07);
@@ -903,13 +914,13 @@ function _invPrintOverlay(data) {
     if (it.meshIn) descLines.push(`ตะแกรงใน: ${matLabel(it.meshIn)}`);
     if (it.note) descLines.push(it.note);
     descLines.forEach((l,i) => {
-      html += `<div style="position:absolute;left:${pos.itemDesc.x}mm;top:${y + i*4}mm;font-size:8.5pt;white-space:nowrap">${l}</div>`;
+      html += `<div style="position:absolute;left:${pos.itemDesc.x}mm;top:${y + i*4}mm;width:${Math.max(20, (pos.itemQty.x - pos.itemDesc.x - 2))}mm;font-size:${pos.itemDesc.size||8.5}pt;font-weight:${pos.itemDesc.bold?800:400};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l}</div>`;
     });
 
-    html += `<div style="position:absolute;left:${pos.itemNo.x}mm;top:${y}mm;font-size:10pt">${idx+1}</div>`;
-    html += `<div style="position:absolute;left:${pos.itemQty.x}mm;top:${y}mm;font-size:10pt;white-space:nowrap">${qty ? fmtB(qty, qty%1?2:0)+' '+(it.unit||'EA') : ''}</div>`;
-    html += `<div style="position:absolute;left:${pos.itemPrice.x}mm;top:${y}mm;font-size:10pt;text-align:right;white-space:nowrap">${fmtB(unitPrice)}</div>`;
-    html += `<div style="position:absolute;left:${pos.itemTotal.x}mm;top:${y}mm;font-size:10pt;text-align:right;white-space:nowrap">${fmtB(amount)}</div>`;
+    html += `<div style="position:absolute;left:${pos.itemNo.x}mm;top:${y}mm;font-size:${pos.itemNo.size||10}pt;font-weight:${pos.itemNo.bold?800:400}">${idx+1}</div>`;
+    html += `<div style="position:absolute;left:${pos.itemQty.x}mm;top:${y}mm;font-size:${pos.itemQty.size||10}pt;font-weight:${pos.itemQty.bold?800:400};white-space:nowrap">${qty ? fmtB(qty, qty%1?2:0)+' '+(it.unit||'EA') : ''}</div>`;
+    html += `<div style="position:absolute;left:${pos.itemPrice.x}mm;top:${y}mm;font-size:${pos.itemPrice.size||10}pt;font-weight:${pos.itemPrice.bold?800:400};text-align:right;white-space:nowrap">${fmtB(unitPrice)}</div>`;
+    html += `<div style="position:absolute;left:${pos.itemTotal.x}mm;top:${y}mm;font-size:${pos.itemTotal.size||10}pt;font-weight:${pos.itemTotal.bold?800:400};text-align:right;white-space:nowrap">${fmtB(amount)}</div>`;
 
     // เว้นระยะแถวถัดไปตามจำนวนบรรทัดรายละเอียด (กันทับกัน) อย่างน้อย rowH
     _ovY += Math.max(rowH, descLines.length * 4 + 3);
@@ -952,13 +963,18 @@ function _invOverlaySettings() {
   const pos = _invOverlayGetPos();
   const rows = Object.keys(_INV_OVERLAY_DEFAULT_POS).map(k => {
     const label = _INV_OVERLAY_FIELD_LABELS[k] || k;
+    const hasTextStyle = (pos[k].size !== undefined);
     if (k === 'rowHeight') {
       return `<tr><td style="padding:3px 8px;text-align:left;color:#cce4ff">${label}</td>
-        <td colspan="2" style="padding:3px"><input type="number" step="0.5" id="ovp_${k}_x" value="${pos[k].x}" style="width:60px;font-family:Sarabun,sans-serif"></td></tr>`;
+        <td colspan="4" style="padding:3px"><input type="number" step="0.5" id="ovp_${k}_x" value="${pos[k].x}" style="width:60px;font-family:Sarabun,sans-serif"></td></tr>`;
     }
-    return `<tr><td style="padding:3px 8px;text-align:left;color:#cce4ff">${label}</td>
-      <td style="padding:3px;color:#8b8aaa">X:<input type="number" step="0.5" id="ovp_${k}_x" value="${pos[k].x}" style="width:55px;font-family:Sarabun,sans-serif;margin-left:4px"></td>
-      <td style="padding:3px;color:#8b8aaa">Y:<input type="number" step="0.5" id="ovp_${k}_y" value="${pos[k].y}" style="width:55px;font-family:Sarabun,sans-serif;margin-left:4px"></td></tr>`;
+    const styleCells = hasTextStyle ? `
+      <td style="padding:3px;color:#8b8aaa">Size:<input type="number" step="0.5" id="ovp_${k}_size" value="${pos[k].size}" style="width:64px;font-size:1rem;padding:4px;font-family:Sarabun,sans-serif;margin-left:4px"></td>
+      <td style="padding:3px;color:#8b8aaa">หนา:<input type="checkbox" id="ovp_${k}_bold" ${pos[k].bold ? 'checked' : ''} style="width:18px;height:18px;margin-left:4px;vertical-align:middle"></td>` :
+      `<td colspan="2"></td>`;
+    return `<tr><td style="padding:3px 8px;text-align:left;color:#cce4ff;white-space:nowrap">${label}</td>
+      <td style="padding:3px;color:#8b8aaa">X:<input type="number" step="0.5" id="ovp_${k}_x" value="${pos[k].x}" style="width:64px;font-size:1rem;padding:4px;font-family:Sarabun,sans-serif;margin-left:4px"></td>
+      <td style="padding:3px;color:#8b8aaa">Y:<input type="number" step="0.5" id="ovp_${k}_y" value="${pos[k].y}" style="width:64px;font-size:1rem;padding:4px;font-family:Sarabun,sans-serif;margin-left:4px"></td>${styleCells}</tr>`;
   }).join('');
 
   Swal.fire({
@@ -967,9 +983,10 @@ function _invOverlaySettings() {
       <div style="font-size:.76rem;color:#8b8aaa;margin-bottom:8px;line-height:1.5">
         ระบุตำแหน่ง X/Y เป็นมิลลิเมตร นับจากมุมบนซ้ายของกระดาษ A4 (210×297 มม.)<br>
         พิมพ์ทดสอบแล้ววางทับฟอร์มจริงเพื่อเทียบตำแหน่ง จากนั้นปรับค่าทีละน้อยจนตรง</div>
-      <table style="font-size:.8rem;width:100%"><tbody>${rows}</tbody></table>
+      <table style="font-size:.8rem;width:100%;border-collapse:collapse"><tbody>${rows}</tbody></table>
     </div>`,
-    width: 480,
+    width: 'min(680px, 95vw)',
+    heightAuto: false,
     background:'#0d1b2a', color:'#cce4ff',
     showCancelButton:true, showDenyButton:true,
     confirmButtonText:'💾 บันทึก', confirmButtonColor:'#2563eb',
@@ -980,7 +997,11 @@ function _invOverlaySettings() {
       Object.keys(_INV_OVERLAY_DEFAULT_POS).forEach(k => {
         const xEl = document.getElementById(`ovp_${k}_x`);
         const yEl = document.getElementById(`ovp_${k}_y`);
+        const sizeEl = document.getElementById(`ovp_${k}_size`);
+        const boldEl = document.getElementById(`ovp_${k}_bold`);
         newPos[k] = { x: parseFloat(xEl.value)||0, y: yEl ? (parseFloat(yEl.value)||0) : 0 };
+        if (sizeEl) newPos[k].size = parseFloat(sizeEl.value)||10;
+        if (boldEl) newPos[k].bold = boldEl.checked;
       });
       return newPos;
     }
@@ -1871,13 +1892,15 @@ function _billBuildDocHtml({ billNo, billDateStr, payTerm, cust, items, wht }) {
 
   <div style="display:flex;gap:12px;padding:10px 28px 28px;flex-wrap:wrap">
     <div style="flex:1;text-align:center;min-width:160px">
-      <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้รับวางบิล / Received by</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="margin-top:35px;border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้รับวางบิล / Received by</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
     <div style="flex:1;text-align:center;min-width:160px">
-      <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">
+      <div style="margin-top:35px;border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">
         ผู้มีอำนาจลงนาม / Authorized signature<br>ในนาม ${co.name||''}</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
   </div>
 </div>`;

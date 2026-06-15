@@ -1767,15 +1767,18 @@ function _renderWorkOrderHtml(d) {
   <div style="display:flex;gap:12px;padding-top:28px;flex-wrap:wrap">
     <div style="flex:1;text-align:center;min-width:140px">
       <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้สั่งงาน</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
     <div style="flex:1;text-align:center;min-width:140px">
       <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้ตรวจสอบ / QC</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
     <div style="flex:1;text-align:center;min-width:140px">
       <div style="border-top:1px solid #bbb;padding-top:5px;font-size:.7rem;color:#555">ผู้อนุมัติ</div>
-      <div style="font-size:.65rem;color:#aaa;margin-top:2px">( ______________ )</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:4px">(<span style="display:inline-block;min-width:150px;border-bottom:1px solid #999;height:1px"></span>)</div>
+      <div style="font-size:.65rem;color:#aaa;margin-top:10px">วันที่ ......../......../........</div>
     </div>
   </div>
 </body></html>`;
