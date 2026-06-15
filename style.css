@@ -1480,7 +1480,7 @@ body.trk-fullscreen-mode .trk-fs-toolbar {
 }
 .trk-task-row {
   padding: 8px 6px; border-bottom: 1px dashed rgba(99,102,241,.25);
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
   border-radius: 8px; transition: background .2s, transform .2s;
   animation: trkRowFadeIn .45s ease-out backwards;
 }

@@ -19,7 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=7.38">
+<link rel="stylesheet" href="style.css?v=7.39">
 </head>
 <body>
 
@@ -37,7 +37,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v8.53</span>
+      <span class="ph-chip ver">v8.57</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2659,15 +2659,15 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="core.js?v=8.53"></script>
-<script src="data.js?v=8.53"></script>
-<script src="formcalc.js?v=8.53"></script>
-<script src="aifeatures.js?v=8.53"></script>
-<script src="theme.js?v=8.53"></script>
-<script src="order.js?v=8.53"></script>
-<script src="purchase.js?v=8.53"></script>
-<script src="invoice.js?v=8.53"></script>
-<script src="plating.js?v=8.53"></script>
+<script src="core.js?v=8.57"></script>
+<script src="data.js?v=8.57"></script>
+<script src="formcalc.js?v=8.57"></script>
+<script src="aifeatures.js?v=8.57"></script>
+<script src="theme.js?v=8.57"></script>
+<script src="order.js?v=8.57"></script>
+<script src="purchase.js?v=8.57"></script>
+<script src="invoice.js?v=8.57"></script>
+<script src="plating.js?v=8.57"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2810,9 +2810,41 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260615-AM',
+    ref: '#REV-20260615-AQ',
     date: '2026-06-15',
     current: true,
+    items: [
+      '"รายละเอียด Order": ปรับลำดับคอลัมน์ใหม่ — ซ้าย: ข้อมูลหลัก + หมายเหตุ/Note, กลาง: รูปภาพ, ขวา: ความคืบหน้า (Timeline)',
+    ],
+  },
+  {
+    ref: '#REV-20260615-AP',
+    date: '2026-06-15',
+    current: false,
+    items: [
+      '"รายละเอียด Order": ปรับเป็นจัดวางแนวนอน 3 คอลัมน์ (ข้อมูลหลัก | หมายเหตุ+Timeline | รูปภาพ) ลดความสูงของการ์ดไม่ให้เลยจอ และขยายความกว้างหน้าต่างเป็น 96vw (สูงสุด 1180px)',
+    ],
+  },
+  {
+    ref: '#REV-20260615-AO',
+    date: '2026-06-15',
+    current: false,
+    items: [
+      '"รายละเอียด Order": จัดหน้าใหม่ — คอลัมน์ขวาแสดงรูปภาพ PO ขนาดใหญ่ (มองชัดเจน, ไม่ครอป) พร้อมรูปงาน 1/2 ด้านล่าง, คอลัมน์ซ้ายรวมข้อมูลหลัก/หมายเหตุ/Timeline',
+    ],
+  },
+  {
+    ref: '#REV-20260615-AN',
+    date: '2026-06-15',
+    current: false,
+    items: [
+      '"List tasks": คลิกที่แถวรายการ → เปิดหน้ารายละเอียด Order ของ PO นั้น และ mark ว่าเห็นแล้ว ป้าย "NEW" หายทันที',
+    ],
+  },
+  {
+    ref: '#REV-20260615-AM',
+    date: '2026-06-15',
+    current: false,
     items: [
       '"List tasks": เพิ่มความเคลื่อนไหวสวยๆ — แถวรายการ fade-in ทยอยขึ้นทีละแถว, hover เลื่อน+ไฮไลต์, เส้นแสงวิ่งบนหัวคอลัมน์, กรอบกล่องเรืองแสงเบาๆ',
     ],

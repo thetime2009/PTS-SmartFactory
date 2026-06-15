@@ -1317,18 +1317,36 @@ function showOrderDetail(noPO) {
       </div>
     </div>`;
 
-  const imgCard = (label, url) => `
+  const imgCard = (label, url, h) => {
+    const height = h || 90;
+    return `
     <div style="text-align:center">
       <div style="font-size:.68rem;color:var(--t3);margin-bottom:4px">${label}</div>
       ${url
         ? `<div style="position:relative">
-             <img src="${url}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--bc-card)">
+             <img src="${url}" style="width:100%;height:${height}px;object-fit:cover;border-radius:8px;border:1px solid var(--bc-card)">
              <button onclick="_ordZoomImage('${String(url).replace(/'/g,"\\'")}','${label.replace(/'/g,"\\'")}')"
                style="position:absolute;bottom:5px;right:5px;width:24px;height:24px;border-radius:50%;border:none;
                background:rgba(0,0,0,.55);color:#fff;font-size:.78rem;cursor:pointer;display:flex;align-items:center;justify-content:center">🔍</button>
            </div>`
-        : `<div style="width:100%;height:90px;border-radius:8px;border:1px dashed var(--bc-card);
+        : `<div style="width:100%;height:${height}px;border-radius:8px;border:1px dashed var(--bc-card);
              display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:.7rem">ไม่มีรูป</div>`}
+    </div>`;
+  };
+
+  // รูป PO ขนาดใหญ่ — ใช้ object-fit:contain ให้เห็นรายละเอียดทั้งภาพ ไม่ถูกครอป
+  const imgCardLarge = (label, url) => `
+    <div style="text-align:center">
+      <div style="font-size:.7rem;font-weight:700;color:var(--c1);margin-bottom:6px">${label}</div>
+      ${url
+        ? `<div style="position:relative;background:var(--bc-div);border-radius:10px">
+             <img src="${url}" style="width:100%;height:280px;object-fit:contain;border-radius:10px;border:1px solid var(--bc-card)">
+             <button onclick="_ordZoomImage('${String(url).replace(/'/g,"\\'")}','${label.replace(/'/g,"\\'")}')"
+               style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:50%;border:none;
+               background:rgba(0,0,0,.55);color:#fff;font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center">🔍</button>
+           </div>`
+        : `<div style="width:100%;height:280px;border-radius:10px;border:1px dashed var(--bc-card);
+             display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:.75rem">ไม่มีรูป</div>`}
     </div>`;
 
   const html = `
@@ -1349,13 +1367,12 @@ function showOrderDetail(noPO) {
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start">
-        <!-- ── คอลัมน์ซ้าย: รายละเอียด ── -->
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:16px;align-items:start">
+        <!-- ── คอลัมน์ 1: ข้อมูลหลัก ── -->
         <div>
-          <!-- ข้อมูลหลัก -->
           <div style="font-size:.7rem;font-weight:700;color:var(--c1);margin-bottom:2px">📋 ข้อมูลหลัก</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;background:var(--bc-div);
-            border-radius:10px;padding:6px 12px;margin-bottom:12px">
+            border-radius:10px;padding:6px 12px">
             ${rowField('📅','วันที่สั่งซื้อ', g('orderDate'))}
             ${rowField('🚚','วันที่ส่งงาน', shipDate)}
             ${rowField('⏰','วันที่ต้องการ', g('wantDate'))}
@@ -1372,27 +1389,31 @@ function showOrderDetail(noPO) {
             ${rowField('💰','ราคาเสนอขาย', price ? price.toLocaleString('th-TH',{minimumFractionDigits:2}) + ' บาท' : '—')}
           </div>
 
-          <!-- รูปภาพ -->
-          <div style="font-size:.7rem;font-weight:700;color:var(--c1);margin-bottom:6px">🖼️ รูปภาพ</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-            ${imgCard('รูปภาพ PO.', poUrl)}
-            ${imgCard('รูปงาน 1', jobImgs[0]||'')}
-            ${imgCard('รูปงาน 2', jobImgs[1]||'')}
-          </div>
-
           <!-- หมายเหตุ / Note -->
-          <div style="font-size:.7rem;font-weight:700;color:var(--c1);margin-bottom:6px">📝 หมายเหตุ / Note</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+          <div style="font-size:.7rem;font-weight:700;color:var(--c1);margin:10px 0 6px">📝 หมายเหตุ / Note</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div style="background:var(--bc-div);border-radius:10px;padding:10px 12px;
-              font-size:.8rem;color:var(--t1);white-space:pre-wrap;word-break:break-word;min-height:48px">
+              font-size:.8rem;color:var(--t1);white-space:pre-wrap;word-break:break-word;min-height:40px">
               <div style="font-size:.66rem;color:var(--t3);margin-bottom:3px">หมายเหตุ</div>${g('note')}</div>
             <div style="background:var(--bc-div);border-radius:10px;padding:10px 12px;
-              font-size:.8rem;color:var(--t1);white-space:pre-wrap;word-break:break-word;min-height:48px">
+              font-size:.8rem;color:var(--t1);white-space:pre-wrap;word-break:break-word;min-height:40px">
               <div style="font-size:.66rem;color:var(--t3);margin-bottom:3px">Note</div>—</div>
           </div>
         </div>
 
-        <!-- ── คอลัมน์ขวา: Timeline ── -->
+        <!-- ── คอลัมน์ 2: รูปภาพ (PO ใหญ่ + รูปงาน) ── -->
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--c1);margin-bottom:6px">🖼️ รูปภาพ</div>
+          <div style="margin-bottom:10px">
+            ${imgCardLarge('รูปภาพ PO.', poUrl)}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${imgCard('รูปงาน 1', jobImgs[0]||'', 100)}
+            ${imgCard('รูปงาน 2', jobImgs[1]||'', 100)}
+          </div>
+        </div>
+
+        <!-- ── คอลัมน์ 3: ความคืบหน้า (Timeline) ── -->
         <div>
           <div style="font-size:.7rem;font-weight:700;color:var(--c1);margin-bottom:8px">📈 ความคืบหน้า (Timeline)</div>
           <div style="background:var(--bc-div);border-radius:10px;padding:12px 12px 0 12px">
@@ -1427,7 +1448,7 @@ function showOrderDetail(noPO) {
 
   Swal.fire({
     title: '📋 รายละเอียด Order',
-    html, width: 880,
+    html, width: 'min(96vw, 1180px)',
     background: '#ffffff', color: '#1e293b',
     showConfirmButton: true,
     confirmButtonText: '✕ ปิด', confirmButtonColor: '#475569'
@@ -2332,6 +2353,12 @@ const TRK_TASKLIST_GROUPS = [
 ];
 
 // รวมยอด "จำนวน" ของแต่ละ "รายการสินค้า" แยกตามสถานะ Process (กำลังผลิต / ส่งชุป)
+// คลิกแถวใน List tasks → เปิดรายละเอียด Order (และ mark ว่าเห็นแล้ว ป้าย NEW หายทันที)
+function _trkTaskRowClick(noPO) {
+  if (typeof showOrderDetail === 'function') showOrderDetail(noPO);
+  _trkRenderTaskList();
+}
+
 function _trkRenderTaskList() {
   const wrap = $('trkTaskList');
   if (!wrap) return;
@@ -2346,7 +2373,7 @@ function _trkRenderTaskList() {
           const customer = String(r[ORDER_COLS.customer] || '').trim() || '—';
           const noPO = r[ORDER_COLS.noPO];
           const isNewRow = _isNewItem(SEEN_KEY_ORDER, noPO);
-          return `<div class="trk-task-row">
+          return `<div class="trk-task-row" onclick="_trkTaskRowClick('${String(noPO).replace(/'/g,"\\'")}')">
               <div class="trk-task-circle">${_trkLeadTimeCircle(r)}</div>
               <div class="trk-task-info">
                 <div class="trk-task-main">${name} = ${qty.toLocaleString('th-TH')} <span class="trk-task-unit">ลูก</span>${_newBadge(isNewRow)}</div>
