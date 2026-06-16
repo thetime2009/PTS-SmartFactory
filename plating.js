@@ -248,6 +248,7 @@ function _platingRenderOrderList() {
     // qtyCell: ถ้าไม่มีวัสดุนี้ ('matKey' ใน p เป็น false) แสดง ❌ / ถ้ามีให้เป็นช่องกรอกจำนวนแก้ไขได้
     const qtyCell = (hasMat, metaKey) => hasMat
       ? `<input type="number" step="1" min="0" value="${meta[metaKey] || ''}" placeholder="0"
+          data-pqtype="${metaKey}" data-nopo="${noPO.replace(/"/g,'&quot;')}"
           oninput="_platingSetOrderMeta('${noPO}','${metaKey}',this.value)"
           style="width:64px;padding:6px;border-radius:6px;border:1px solid var(--bc-input);background:var(--bg-input);color:var(--t1);font-family:Sarabun,sans-serif;font-size:.8rem;text-align:center">`
       : `<span style="color:#ef4444;font-weight:700">❌</span>`;
@@ -261,6 +262,7 @@ function _platingRenderOrderList() {
       _platingOrderMeta[noPO] = {
         price: lastPrice, status: lastPrice > 0 ? 'งานเก่า' : 'งานใหม่',
         priceFromMemory: !!memPrice,
+        platingQty: qtyNum,   // จำนวนที่จะส่งชุบ (แก้ไขได้ โดยไม่กระทบ Order)
         topQty:     p.top     ? qtyNum : 0,
         botQty:     p.bot     ? qtyNum : 0,
         meshOutQty: p.meshOut ? qtyNum : 0,
@@ -278,7 +280,13 @@ function _platingRenderOrderList() {
           style="color:#60a5fa;text-decoration:underline;cursor:pointer">${noPO}</a>
       </td>
       <td style="padding:6px 8px">${product}</td>
-      <td style="padding:6px 8px;text-align:center">${qty}</td>
+      <td style="padding:6px 8px;text-align:center">
+        <input type="number" step="1" min="0"
+          value="${meta.platingQty !== undefined ? meta.platingQty : (parseFloat(qty)||0)}"
+          placeholder="${qty}" title="จำนวนที่จะส่งชุบ (ไม่กระทบยอด Order)"
+          oninput="_platingSetMainQty('${noPO}',this.value,this)"
+          style="width:64px;padding:5px;border-radius:6px;border:1px solid rgba(250,204,21,.4);background:rgba(250,204,21,.08);color:var(--t1);font-family:Sarabun,sans-serif;font-size:.8rem;text-align:center">
+      </td>
       <td style="padding:6px 8px;text-align:center;font-size:.74rem;white-space:nowrap">${workType}</td>
       <td style="padding:6px 8px;text-align:center">${qtyCell(p.top, 'topQty')}</td>
       <td style="padding:6px 8px;text-align:center">${qtyCell(p.bot, 'botQty')}</td>
@@ -373,6 +381,26 @@ function _platingSetOrderMeta(noPO, field, value) {
   if (['price','topQty','botQty','meshOutQty','meshInQty'].includes(field)) value = parseFloat(value) || 0;
   _platingOrderMeta[noPO][field] = value;
   if (field === 'price') _platingOrderMeta[noPO].priceFromMemory = false; // ผู้ใช้แก้ราคาเอง ไม่ใช่จากความจำแล้ว
+}
+
+// ── เปลี่ยนจำนวนที่จะส่งชุบ (ไม่กระทบ Order qty) → ส่งต่อไปยัง part qty ทุกอัน ──
+function _platingSetMainQty(noPO, val, el) {
+  const qty = parseFloat(val) || 0;
+  _platingSetOrderMeta(noPO, 'platingQty', qty);
+  // อัปเดต topQty/botQty/meshOutQty/meshInQty ทุกตัวที่ "มี" (ไม่ใช่ 0 จากการที่ไม่มีวัสดุ)
+  // ดูว่า meta นั้นๆ ไม่ได้เป็น 0 เพราะ "ไม่มี" (❌) — check จาก presence ใน ORDER_COLS
+  const m = _platingOrderMeta[noPO];
+  if (!m) return;
+  ['topQty','botQty','meshOutQty','meshInQty'].forEach(k => {
+    if (m[k] !== undefined) _platingSetOrderMeta(noPO, k, qty);
+  });
+  // อัปเดต DOM inputs ในแถวเดียวกัน
+  if (el) {
+    const tr = el.closest('tr');
+    if (tr) {
+      tr.querySelectorAll('input[data-pqtype]').forEach(inp => { inp.value = qty; });
+    }
+  }
 }
 
 // ── จัดการรายการเพิ่มเอง (ไม่ผูกกับ Order) ──
@@ -1048,10 +1076,12 @@ function renderPlatingHistory() {
       <td style="padding:6px 8px;text-align:center">${poHtml}</td>
       <td style="padding:6px 8px;text-align:center">${itemCount}</td>
       <td style="padding:6px 8px;text-align:right">${total ? fmtB(total) : '-'}</td>
-      <td style="padding:6px 8px;text-align:center">
-        <button onclick="_platingReprint(${realIdx})" style="padding:5px 12px;border-radius:6px;border:none;
+      <td style="padding:6px 8px;text-align:center;white-space:nowrap">
+        <button onclick="_platingReprint(${realIdx})" style="padding:5px 10px;border-radius:6px;border:none;
           background:#2563eb;color:#fff;font-size:.74rem;cursor:pointer;font-family:Sarabun,sans-serif">🖨️ พิมพ์ซ้ำ</button>
-        <button onclick="guardClick(this, () => _platingCancel(${realIdx}), 'กำลังยกเลิก...')" style="padding:5px 12px;border-radius:6px;border:none;margin-left:4px;
+        <button onclick="_platingEdit(${realIdx})" style="padding:5px 10px;border-radius:6px;border:none;margin-left:4px;
+          background:#0891b2;color:#fff;font-size:.74rem;cursor:pointer;font-family:Sarabun,sans-serif">✏️ แก้ไข</button>
+        <button onclick="guardClick(this, () => _platingCancel(${realIdx}), 'กำลังยกเลิก...')" style="padding:5px 10px;border-radius:6px;border:none;margin-left:4px;
           background:#dc2626;color:#fff;font-size:.74rem;cursor:pointer;font-family:Sarabun,sans-serif">🗑️ ยกเลิก</button>
       </td>
     </tr>`;
@@ -1116,6 +1146,107 @@ async function _platingCancel(idx) {
       timer:1800,showConfirmButton:false,toast:true,position:'top-end'});
   } catch (e) {
     Swal.fire({icon:'error',title:'ยกเลิกไม่สำเร็จ',text:e.message,background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#dc2626'});
+  }
+}
+
+// ── แก้ไขใบส่งชุบในประวัติ ──
+async function _platingEdit(idx) {
+  const p = _platingHistCache[idx];
+  if (!p) return;
+
+  // แปลงวันที่ dd/MM/yyyy → yyyy-MM-dd สำหรับ input[type=date]
+  let dateISO = '';
+  if (p.date) {
+    const m = p.date.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) dateISO = `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  }
+
+  const supplierOpts = (_supplierCache || []).map(s =>
+    `<option value="${s.code}"${s.code===p.supplierCode?' selected':''}>${s.name}</option>`
+  ).join('');
+
+  const itemRows = (p.items || []).map((it, i) => `
+    <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+      <td style="padding:5px 6px;font-size:.78rem;color:#94a3b8">${it.description||'-'}</td>
+      <td style="padding:5px 4px;text-align:center">
+        <input type="number" id="plt_eq_qty_${i}" value="${parseFloat(it.qty)||0}" min="0" step="1"
+          style="width:58px;padding:4px 6px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#cce4ff;text-align:center;font-family:Sarabun,sans-serif;font-size:.8rem">
+      </td>
+      <td style="padding:5px 4px;text-align:center">
+        <input type="number" id="plt_eq_price_${i}" value="${parseFloat(it.price)||0}" min="0" step="0.01"
+          style="width:72px;padding:4px 6px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#cce4ff;text-align:center;font-family:Sarabun,sans-serif;font-size:.8rem">
+      </td>
+      <td style="padding:5px 6px;text-align:center;font-size:.75rem;color:#94a3b8">${it.status||'-'}</td>
+    </tr>`).join('');
+
+  const { isConfirmed, value: formData } = await Swal.fire({
+    title: `✏️ แก้ไขใบส่งชุบ ${p.platingNo}`,
+    background: '#0d1b2a', color: '#cce4ff',
+    width: 'min(96vw,640px)',
+    html: `
+      <div style="text-align:left;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:10px">
+          <label style="flex:1;font-size:.8rem;color:#94a3b8">วันที่ออกใบ<br>
+            <input type="date" id="plt_eq_date" value="${dateISO}"
+              style="width:100%;margin-top:4px;padding:7px 10px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-family:Sarabun,sans-serif;font-size:.85rem">
+          </label>
+          <label style="flex:1;font-size:.8rem;color:#94a3b8">ร้านชุบ<br>
+            <select id="plt_eq_supplier"
+              style="width:100%;margin-top:4px;padding:7px 10px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-family:Sarabun,sans-serif;font-size:.85rem">
+              ${supplierOpts}
+            </select>
+          </label>
+        </div>
+        <div>
+          <div style="font-size:.8rem;font-weight:600;color:#60a5fa;margin-bottom:6px">รายการสินค้า</div>
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="border-bottom:1px solid rgba(255,255,255,.1)">
+                <th style="padding:5px 6px;text-align:left;font-size:.74rem;color:#64748b">รายการ</th>
+                <th style="padding:5px 4px;text-align:center;font-size:.74rem;color:#64748b">จำนวน</th>
+                <th style="padding:5px 4px;text-align:center;font-size:.74rem;color:#64748b">ราคา/หน่วย</th>
+                <th style="padding:5px 6px;text-align:center;font-size:.74rem;color:#64748b">ประเภท</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+        </div>
+      </div>`,
+    showCancelButton: true,
+    confirmButtonText: '💾 บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#0891b2',
+    preConfirm: () => {
+      const dateVal = document.getElementById('plt_eq_date').value;
+      const supplierCode = document.getElementById('plt_eq_supplier').value;
+      const items = (p.items || []).map((it, i) => ({
+        ...it,
+        qty:   parseFloat(document.getElementById(`plt_eq_qty_${i}`)?.value)   || 0,
+        price: parseFloat(document.getElementById(`plt_eq_price_${i}`)?.value) || 0,
+      }));
+      // แปลงกลับ yyyy-MM-dd → dd/MM/yyyy
+      let dateStr = p.date;
+      if (dateVal) {
+        const [y, mo, d] = dateVal.split('-');
+        dateStr = `${d}/${mo}/${y}`;
+      }
+      return { date: dateStr, supplierCode, items };
+    }
+  });
+
+  if (!isConfirmed || !formData) return;
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'cors',
+      body: JSON.stringify({ action: 'updatePlatingNote', platingNo: p.platingNo, ...formData })
+    });
+    const out = await res.json();
+    if (!out || out.status !== 'ok') throw new Error((out && out.message) || 'update failed');
+    await fetchPlatingNotes();
+    Swal.fire({ icon:'success', title:'บันทึกแล้ว', background:'#0d1b2a', color:'#cce4ff',
+      timer:1500, showConfirmButton:false, toast:true, position:'top-end' });
+  } catch (e) {
+    Swal.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', text:e.message, background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#dc2626' });
   }
 }
 

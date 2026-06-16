@@ -144,6 +144,7 @@ const TAB_DEFS = [
   { id:'api',       icon:'🔧', label:'ตั้งค่า'  },
   { id:'mat',       icon:'🧱', label:'MAT'      },
   { id:'supplier',  icon:'🏢', label:'Supplier' },
+  { id:'dept_help', icon:'📖', label:'วิธีใช้งานแผนก' },
 ];
 
 // ── Sidebar Group Menu (เดสก์ท็อป ≥1024px) ─────────────
@@ -164,6 +165,7 @@ const GROUP_DEFS = [
     { tab:'labor' },
     { tab:'mold' },
     { tab:'mat' },
+    { tab:'dept_help', label:'วิธีใช้งานแผนก', icon:'📖', dept:'sales' },
   ]},
   { id:'purchase', icon:'🛒', label:'ฝ่ายจัดซื้อ', items: [
     { ph:true, label:'ใบขอราคา', icon:'📨' },
@@ -171,6 +173,7 @@ const GROUP_DEFS = [
     { tab:'plating' },
     { tab:'mat' },
     { tab:'supplier' },
+    { tab:'dept_help', label:'วิธีใช้งานแผนก', icon:'📖', dept:'purchase' },
   ]},
   { id:'production', icon:'🏭', label:'ฝ่ายผลิต', items: [
     { tab:'order', label:'Job Order', icon:'📋' },
@@ -179,6 +182,7 @@ const GROUP_DEFS = [
     { tab:'track', view:'reduced' },
     { ph:true, label:'Inspection', icon:'🔍' },
     { ph:true, label:'WI', icon:'📄' },
+    { tab:'dept_help', label:'วิธีใช้งานแผนก', icon:'📖', dept:'production' },
   ]},
   { id:'account', icon:'💰', label:'บัญชี', items: [
     { tab:'invoice', label:'ใบกำกับภาษี', icon:'📑', subTab:'1' },
@@ -187,6 +191,7 @@ const GROUP_DEFS = [
     { tab:'invoice', label:'ใบวางบิล', icon:'📑', subTab:'4' },
     { ph:true, label:'ใบเสร็จ', icon:'🧾' },
     { ph:true, label:'รายงานภาษี', icon:'📈' },
+    { tab:'dept_help', label:'วิธีใช้งานแผนก', icon:'📖', dept:'account' },
   ]},
   { id:'settings', icon:'⚙️', label:'ตั้งค่า', items: [
     { tab:'api' },
@@ -209,6 +214,22 @@ function _placeholderAlert(label) {
 let _activeSubTab = null;
 // โหมดแสดงผลของหน้าติดตามงาน/แดชบอร์ด ('full' = แดชบอร์ด แสดงทุกการ์ดสรุป, 'reduced' = ติดตามงาน ซ่อนการ์ดที่ไม่จำเป็น)
 let _trkViewMode = 'full';
+let _activeHelpDept = localStorage.getItem('ptts_help_dept') || 'sales';
+function _openDeptHelp(dept) {
+  _activeHelpDept = dept;
+  localStorage.setItem('ptts_help_dept', dept);
+  switchTab('dept_help');
+  _renderDeptHelp(dept);
+  renderTabBar();
+}
+function _renderDeptHelp(dept) {
+  const ids = ['sales','purchase','production','account'];
+  const d = dept || _activeHelpDept;
+  ids.forEach(k => {
+    const el = document.getElementById('deptHelp-' + k);
+    if (el) el.style.display = (k === d) ? '' : 'none';
+  });
+}
 function _sbGoto(tab, subTab, view) {
   _activeSubTab = subTab || null;
   if (tab === 'track' && view) _trkViewMode = view;
@@ -280,14 +301,19 @@ function renderTabBar() {
         if (!def) return '';
         const label = it.label || def.label;
         const icon  = it.icon  || def.icon;
-        const isActive = it.tab === _activeTab && (it.subTab||null) === (_activeSubTab||null);
+        const isActive = it.dept
+          ? (it.tab === _activeTab && it.dept === _activeHelpDept)
+          : (it.tab === _activeTab && (it.subTab||null) === (_activeSubTab||null));
         const viewArg = it.view ? `,'${it.view}'` : '';
-        const click = it.subTab ? `_sbGoto('${it.tab}','${it.subTab}'${viewArg})` : `_sbGoto('${it.tab}',null${viewArg})`;
-        return `<button type="button" class="tab-btn${isActive?' active':''}" id="tbtn-${it.tab}" data-tab="${it.tab}" onclick="${click}">
+        const click = it.dept
+          ? `_openDeptHelp('${it.dept}')`
+          : (it.subTab ? `_sbGoto('${it.tab}','${it.subTab}'${viewArg})` : `_sbGoto('${it.tab}',null${viewArg})`);
+        const btnId = it.dept ? `tbtn-dept_help-${it.dept}` : `tbtn-${it.tab}`;
+        return `<button type="button" class="tab-btn${isActive?' active':''}" id="${btnId}" data-tab="${it.tab}" onclick="${click}">
           <span class="t-icon">${icon}</span><span class="t-label">${label}</span>
         </button>`;
       }).join('');
-      const hasActive = g.items.some(it => !it.ph && it.tab === _activeTab);
+      const hasActive = g.items.some(it => !it.ph && it.tab === _activeTab && (!it.dept || it.dept === _activeHelpDept));
       const isOpen = (groupState[g.id] !== undefined) ? groupState[g.id] : hasActive;
       return `<div class="sb-group${isOpen?' open':''}">
         <button type="button" class="sb-group-header" onclick="_toggleSidebarGroup('${g.id}')">

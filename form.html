@@ -37,7 +37,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v8.61</span>
+      <span class="ph-chip ver">v8.63</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2508,6 +2508,157 @@
 </div>
 </div><!-- end tab-plating -->
 
+<!-- ═══ DEPT HELP TAB ═══════════════════════════════════════════ -->
+<div id="tab-dept_help" class="tab-content">
+<div style="max-width:860px;margin:0 auto;padding:20px 12px 80px">
+
+  <!-- ฝ่ายขาย -->
+  <div id="deptHelp-sales">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(59,130,246,.15);color:#60a5fa">💼</div>
+        <h2>ฝ่ายขาย — วิธีใช้งาน</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.07)">
+          <div style="padding:10px 12px;background:rgba(99,102,241,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:var(--c1);display:flex;align-items:flex-start;gap:6px;white-space:nowrap">📋 BreakDown</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ใส่ข้อมูลวัตถุดิบ (น้ำหนัก, ราคา/กก.), ค่าแรง, ค่าใช้จ่ายต่างๆ เพื่อคำนวณต้นทุนและราคาเสนอลูกค้า ใช้ร่วมกับแท็บแรงงานและ MAT เพื่อดึงข้อมูลประกอบ</div>
+          <div style="padding:10px 12px;background:rgba(99,102,241,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:var(--c1);white-space:nowrap">📝 ใบเสนอราคา / Order</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">บันทึกงานจากลูกค้า (PO, ชนิดสินค้า, จำนวน, ราคา) ติดตาม Process/สถานะงาน ดูประวัติ แก้ไข และยกเลิก Order ได้ในหน้านี้</div>
+          <div style="padding:10px 12px;background:rgba(99,102,241,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:var(--c1);white-space:nowrap">🗂️ DATA</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">จัดการฐานข้อมูลสินค้า (ชื่อ, OD, WT, Grade, ราคาขายอ้างอิง) ใช้เป็นต้นแบบดึงข้อมูลเข้า BreakDown อัตโนมัติ</div>
+          <div style="padding:10px 12px;background:rgba(99,102,241,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:var(--c1);white-space:nowrap">👷 แรงงาน</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ตั้งค่าค่าจ้างแรงงาน (บาท/ลูก หรือ บาท/กก.) ระบบดึงข้อมูลนี้ไปคำนวณต้นทุนแรงงานใน BreakDown อัตโนมัติ</div>
+          <div style="padding:10px 12px;background:rgba(99,102,241,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:var(--c1);white-space:nowrap">🔩 แม่พิมพ์</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">บันทึกข้อมูลแม่พิมพ์ของลูกค้า (เลขแม่พิมพ์, สภาพ, ที่เก็บ) ติดตามการใช้งานและค่าเสื่อม</div>
+          <div style="padding:10px 12px;background:rgba(99,102,241,.12);font-size:.78rem;font-weight:700;color:var(--c1);white-space:nowrap">🧱 MAT</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);font-size:.79rem;color:var(--t2);line-height:1.55">จัดการข้อมูลวัตถุดิบ (ราคา/กก., Spec) ใช้เป็นราคากลางในการคำนวณต้นทุน BreakDown</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border:1px solid rgba(251,191,36,.2)">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(251,191,36,.15);color:#f59e0b">⚡</div>
+        <h2>เงื่อนไขที่กำหนดในระบบ</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding:2px 0">
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">🔄</span><span>ออก <b>ใบกำกับภาษี</b> → Process ของ Order ที่เกี่ยวข้องเปลี่ยนเป็น <b style="color:#2dd4bf">เตรียมส่ง</b> อัตโนมัติ (ยกเว้นสถานะเป็น "เรียบร้อย" แล้ว)</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">🔄</span><span>ออก <b>ใบส่งชุบ</b> → Process เปลี่ยนเป็น <b style="color:#8b5cf6">ส่งชุป</b> อัตโนมัติ (ยกเว้นสถานะเป็น "เตรียมส่ง" หรือ "เรียบร้อย" แล้ว)</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">❓</span><span>ยกเลิก <b>ใบกำกับ</b> หรือ <b>ใบส่งชุบ</b> → ระบบจะถามว่าต้องการเปลี่ยน Process กลับเป็นอะไร ก่อนทำการยกเลิก</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">📊</span><span>ลำดับ Process: รอConfirm → กำลังผลิต → ส่งชุป → ส่งตัวอย่างเทส+รอสรุป → <b style="color:#2dd4bf">เตรียมส่ง</b> → ส่งยังไม่ครบ → FG รอเรียก → Stock → เรียบร้อย</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ฝ่ายจัดซื้อ -->
+  <div id="deptHelp-purchase" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(16,185,129,.15);color:#34d399">🛒</div>
+        <h2>ฝ่ายจัดซื้อ — วิธีใช้งาน</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.07)">
+          <div style="padding:10px 12px;background:rgba(16,185,129,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#34d399;white-space:nowrap">🧾 ใบสั่งซื้อ (PO)</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">สร้างและติดตามใบสั่งซื้อวัตถุดิบจาก Supplier บันทึกวันสั่ง, วันรับ, ราคา, จำนวน และสถานะการรับของ</div>
+          <div style="padding:10px 12px;background:rgba(16,185,129,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#34d399;white-space:nowrap">🧪 ใบส่งชุบ</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ออกใบนำส่งชิ้นงานไปชุบ ระบุ Order ที่เกี่ยวข้อง, ร้านชุบ, จำนวน เมื่อบันทึกจะอัปเดต Process ของ Order อัตโนมัติ<br><span style="color:#fbbf24;font-size:.75rem">● คอลัมน์ "จำนวน" แก้ไขได้ (ช่องขอบเหลือง) — กรอกจำนวนที่จะส่งชุบจริง ไม่กระทบยอด Order; เปลี่ยนค่าจะอัปเดตจำนวน ฝาบน/ฝาล่าง/ตะแกรง ให้อัตโนมัติ</span><br><span style="color:#67e8f9;font-size:.75rem">● ประวัติใบส่งชุบ: ปุ่ม ✏️ แก้ไข — แก้วันที่, ร้านชุบ, จำนวน และราคา/หน่วย ของแต่ละรายการได้ (ไม่ต้องลบแล้วออกใหม่)</span></div>
+          <div style="padding:10px 12px;background:rgba(16,185,129,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#34d399;white-space:nowrap">🧱 MAT</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ดูและอัปเดตราคาวัตถุดิบ ใช้เป็นราคากลางในการสั่งซื้อและตรวจสอบต้นทุน</div>
+          <div style="padding:10px 12px;background:rgba(16,185,129,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#34d399;white-space:nowrap">🏢 Supplier</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">จัดการข้อมูล Supplier/ผู้ขาย (ชื่อ, เบอร์, ประเภทสินค้า) ใช้อ้างอิงในใบสั่งซื้อและใบส่งชุบ</div>
+          <div style="padding:10px 12px;background:rgba(16,185,129,.1);font-size:.78rem;font-weight:700;color:#34d399;white-space:nowrap">📨 ใบขอราคา</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);font-size:.79rem;color:var(--t3);line-height:1.55">⏳ กำลังพัฒนา ยังไม่พร้อมใช้งาน</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border:1px solid rgba(251,191,36,.2)">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(251,191,36,.15);color:#f59e0b">⚡</div>
+        <h2>เงื่อนไขที่กำหนดในระบบ</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding:2px 0">
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">🔄</span><span>ออก <b>ใบส่งชุบ</b> → Process ของทุก Order ในใบเปลี่ยนเป็น <b style="color:#8b5cf6">ส่งชุป</b> อัตโนมัติ (ยกเว้นสถานะเป็น "เตรียมส่ง" หรือ "เรียบร้อย" แล้ว)</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">❓</span><span>ยกเลิก <b>ใบส่งชุบ</b> → ระบบถามว่าต้องการเปลี่ยน Process กลับเป็นอะไร ก่อนทำการลบ</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">⚠️</span><span>หาก Process ของ Order เป็น <b>"เตรียมส่ง"</b> หรือ <b>"เรียบร้อย"</b> อยู่แล้ว การออกใบส่งชุบจะ <b>ไม่เปลี่ยน</b> Process (ป้องกันการถอยหลัง)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ฝ่ายผลิต -->
+  <div id="deptHelp-production" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(245,158,11,.15);color:#fbbf24">🏭</div>
+        <h2>ฝ่ายผลิต — วิธีใช้งาน</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.07)">
+          <div style="padding:10px 12px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#fbbf24;white-space:nowrap">📋 Job Order</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ดูรายการงานที่ต้องผลิต กรองตาม Process/สถานะ เปลี่ยน Process ของงานได้โดยตรง คลิก Order เพื่อดูรายละเอียดครบถ้วนพร้อม Timeline และรูปภาพ</div>
+          <div style="padding:10px 12px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#fbbf24;white-space:nowrap">🔢 คำนวณตัดเหล็ก</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">คำนวณการตัดเหล็กแผ่น/เหล็กแท่ง ใส่ขนาดและจำนวนเพื่อหาจำนวนชิ้นและของเหลือจากแต่ละแผ่น</div>
+          <div style="padding:10px 12px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#fbbf24;white-space:nowrap">🔩 แม่พิมพ์</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ดูและจัดการข้อมูลแม่พิมพ์ ตรวจสอบสภาพ ที่เก็บ และประวัติการใช้งาน</div>
+          <div style="padding:10px 12px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#fbbf24;white-space:nowrap">🚀 ติดตามงาน</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">มุมมองสรุปสถานะงานแบบภาพรวม (แสดงเฉพาะส่วนที่เกี่ยวกับการผลิต) ใช้กรองและติดตาม Order ตาม Process</div>
+          <div style="padding:10px 12px;background:rgba(245,158,11,.1);font-size:.78rem;font-weight:700;color:#fbbf24;white-space:nowrap">🔍 Inspection / 📄 WI</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);font-size:.79rem;color:var(--t3);line-height:1.55">⏳ กำลังพัฒนา ยังไม่พร้อมใช้งาน</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border:1px solid rgba(251,191,36,.2)">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(251,191,36,.15);color:#f59e0b">⚡</div>
+        <h2>เงื่อนไขที่กำหนดในระบบ</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding:2px 0">
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">✏️</span><span>แผนกผลิตสามารถ <b>เปลี่ยน Process</b> ของ Order ได้เองผ่าน Job Order (กดปุ่ม 3 จุด หรือคลิกเข้าดูรายละเอียด)</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">🔄</span><span>Process บางอย่างถูกเปลี่ยน <b>อัตโนมัติจากแผนกอื่น</b>: ฝ่ายจัดซื้อออกใบส่งชุบ → <b style="color:#8b5cf6">ส่งชุป</b>, บัญชีออกใบกำกับ → <b style="color:#2dd4bf">เตรียมส่ง</b></span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">📊</span><span>ลำดับ Process ที่แนะนำ: <b>รอConfirm → กำลังผลิต → ส่งชุป → เตรียมส่ง → เรียบร้อย</b> (สามารถข้ามได้ตามความเหมาะสม)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- บัญชี -->
+  <div id="deptHelp-account" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(139,92,246,.15);color:#a78bfa">💰</div>
+        <h2>บัญชี — วิธีใช้งาน</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.07)">
+          <div style="padding:10px 12px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">📑 ใบกำกับภาษี</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ออกใบกำกับภาษีจาก Order เลือก Order ที่ต้องการออกบิล ระบุวันที่ ระบบสร้างเลขใบกำกับให้อัตโนมัติ และอัปเดต Process ของ Order ที่เกี่ยวข้อง</div>
+          <div style="padding:10px 12px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">👥 เพิ่มลูกค้า</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">จัดการข้อมูลลูกค้า (ชื่อ, ที่อยู่, เลขประจำตัวผู้เสียภาษี) ข้อมูลจะถูกดึงไปใช้ในใบกำกับภาษีและใบเสนอราคา</div>
+          <div style="padding:10px 12px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">📊 รายงานภาษีขาย</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ดูรายงานสรุปยอดขายและภาษีมูลค่าเพิ่มตามช่วงเวลา ใช้สำหรับยื่นแบบ ภ.พ.30 รายเดือน</div>
+          <div style="padding:10px 12px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">📑 ใบวางบิล</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">สร้างใบวางบิลรวมใบกำกับหลายใบให้กับลูกค้า ระบุเงื่อนไขชำระเงิน วันครบกำหนด พิมพ์หรือส่งให้ลูกค้าได้</div>
+          <div style="padding:10px 12px;background:rgba(139,92,246,.12);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">🧾 ใบเสร็จ / 📈 รายงานภาษี</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);font-size:.79rem;color:var(--t3);line-height:1.55">⏳ กำลังพัฒนา ยังไม่พร้อมใช้งาน</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border:1px solid rgba(251,191,36,.2)">
+      <div class="card-header">
+        <div class="icon" style="background:rgba(251,191,36,.15);color:#f59e0b">⚡</div>
+        <h2>เงื่อนไขที่กำหนดในระบบ</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding:2px 0">
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">🔄</span><span>ออก <b>ใบกำกับภาษี</b> → Process ของทุก Order ในใบเปลี่ยนเป็น <b style="color:#2dd4bf">เตรียมส่ง</b> อัตโนมัติ (ยกเว้นสถานะเป็น "เรียบร้อย" แล้ว)</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">❓</span><span>ยกเลิก <b>ใบกำกับภาษี</b> → ระบบถามว่าต้องการเปลี่ยน Process กลับเป็นอะไร ก่อนทำการลบ</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">🔢</span><span>เลขที่ใบกำกับสร้างอัตโนมัติตามรูปแบบที่กำหนด ไม่สามารถซ้ำกันได้ในระบบ</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:var(--t2);line-height:1.55"><span style="flex-shrink:0;font-size:.9rem">⚠️</span><span>หาก Process ของ Order เป็น <b>"เรียบร้อย"</b> อยู่แล้ว การออกใบกำกับจะ <b>ไม่เปลี่ยน</b> Process (ป้องกันการถอยหลัง)</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- end tab-dept_help -->
+
 <!-- Invoice Edit Modal -->
 <div id="invEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;
   align-items:center;justify-content:center;padding:16px">
@@ -2664,15 +2815,15 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="core.js?v=8.61"></script>
-<script src="data.js?v=8.61"></script>
-<script src="formcalc.js?v=8.61"></script>
-<script src="aifeatures.js?v=8.61"></script>
-<script src="theme.js?v=8.61"></script>
-<script src="order.js?v=8.61"></script>
-<script src="purchase.js?v=8.61"></script>
-<script src="invoice.js?v=8.61"></script>
-<script src="plating.js?v=8.61"></script>
+<script src="core.js?v=8.63"></script>
+<script src="data.js?v=8.63"></script>
+<script src="formcalc.js?v=8.63"></script>
+<script src="aifeatures.js?v=8.63"></script>
+<script src="theme.js?v=8.63"></script>
+<script src="order.js?v=8.63"></script>
+<script src="purchase.js?v=8.63"></script>
+<script src="invoice.js?v=8.63"></script>
+<script src="plating.js?v=8.63"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -2815,9 +2966,27 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260616-B',
+    ref: '#REV-20260616-D',
     date: '2026-06-16',
     current: true,
+    items: [
+      'ใบส่งชุบ: คอลัมน์ "จำนวน" ในรายการ Order แก้ไขได้ (กรอกจำนวนที่จะส่งชุบ ไม่กระทบยอด Order) — เปลี่ยนค่าหลักจะอัปเดตจำนวน ฝาบน/ฝาล่าง/ตะแกรง ให้อัตโนมัติ',
+      'ประวัติใบส่งชุบ: เพิ่มปุ่ม "✏️ แก้ไข" แต่ละรายการ — แก้วันที่, ร้านชุบ, จำนวน, ราคา/หน่วย ของแต่ละรายการสินค้าได้ (Code.gs: updatePlatingNote)',
+    ],
+  },
+  {
+    ref: '#REV-20260616-C',
+    date: '2026-06-16',
+    current: false,
+    items: [
+      'เพิ่มเมนู "วิธีใช้งานแผนก" 📖 ในทุกแผนก (ฝ่ายขาย, ฝ่ายจัดซื้อ, ฝ่ายผลิต, บัญชี)',
+      'แต่ละแผนกแสดงคำอธิบายวิธีใช้งานของแต่ละแท็บเมนู และเงื่อนไขที่กำหนดในระบบ',
+    ],
+  },
+  {
+    ref: '#REV-20260616-B',
+    date: '2026-06-16',
+    current: false,
     items: [
       'ปรับเงื่อนไขการเปลี่ยน Process อัตโนมัติ (Code.gs): ออกใบกำกับ → ไม่เปลี่ยนถ้าสถานะปัจจุบันเป็น "เรียบร้อย", ออกใบส่งชุบ → ไม่เปลี่ยนถ้าสถานะเป็น "เตรียมส่ง" หรือ "เรียบร้อย"',
     ],
