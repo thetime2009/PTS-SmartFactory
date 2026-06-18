@@ -38,7 +38,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v9.08</span>
+      <span class="ph-chip ver">v9.09</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2831,7 +2831,7 @@
 <script src="data.js?v=8.94"></script>
 <script src="formcalc.js?v=9.06"></script>
 <script src="aifeatures.js?v=8.94"></script>
-<script src="theme.js?v=9.08"></script>
+<script src="theme.js?v=9.09"></script>
 <script src="order.js?v=9.06"></script>
 <script src="purchase.js?v=9.06"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -2982,10 +2982,9 @@ const DEV_LOGS = [
     date: '2026-06-18',
     current: true,
     items: [
-      'theme.js: printDoc() — แก้รากต้นเหตุจอขาว iOS: ลบ async fetch(style.css) ออก เขียน HTML ไปยัง window ใหม่แบบ synchronous ทันที (เหมือน _openCuttingReport ที่ทำงานได้ปกติ)',
-      'theme.js: printDoc() — ลบ w.document.open() ออก (ไม่ใช้ใน _openCuttingReport ที่ทำงานได้) เพื่อให้ตรงกับ pattern ที่ iOS Safari รองรับ',
-      'theme.js: printDoc() — เพิ่ม overflow:visible !important ที่ .doc-paper และ .doc-paper * เพื่อ override inline style overflow:hidden ในเนื้อหาเอกสาร',
-      'theme.js: printDoc() — ฝัง @page, * {-webkit-print-color-adjust:exact} และ CSS พื้นฐานไว้ใน <style> โดยตรง ไม่พึ่ง style.css จาก fetch อีกต่อไป',
+      'theme.js: printDoc() v9.09 — แก้หน้าขาว iOS: ดึง style.css จาก document.styleSheets (sync, ไม่ต้อง fetch) แล้วฝังทั้งหมดลงในหน้าต่างพิมพ์',
+      'theme.js: printDoc() — wrap bwHtml ด้วย <div id="docExportOverlay"> เพื่อให้ @media print rule ทำงานถูกต้อง + override body > * display:block',
+      'theme.js: printDoc() — ลบ async fetch(style.css), ลบ w.document.open(), เพิ่ม overflow:visible !important ครบทุกจุด',
     ],
   },
   {
