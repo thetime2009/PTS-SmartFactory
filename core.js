@@ -261,6 +261,9 @@ const SUB_TAB_IDS = ['labor', 'mold', 'api', 'mat', 'po', 'cust', 'invoice', 'su
 function renderTabBar() {
   const bar = $('mainTabBar');
   if (!bar) return;
+  // role filter — user2 เห็นแค่ track และ order
+  const _pttsRole = sessionStorage.getItem('ptts_role');
+  const _allowedTabs = _pttsRole === 'user2' ? ['track','order'] : null;
   const { order, hidden } = _loadTabCfg();
   const sidebarHdr = `<div class="sidebar-header">
     <div class="sidebar-logo"><img src="${_getLogoSrc()}" alt="PTS" class="app-logo-img" style="width:100%;height:100%;object-fit:contain;display:block" onerror="this.style.display='none';this.parentNode.textContent='PT'"></div>
@@ -278,6 +281,7 @@ function renderTabBar() {
         </button>`;
       }
       if (hidden.includes(it.tab)) return '';
+      if (_allowedTabs && !_allowedTabs.includes(it.tab)) return '';
       const def = TAB_DEFS.find(t=>t.id===it.tab);
       if (!def) return '';
       const label = it.label || def.label;
@@ -289,7 +293,7 @@ function renderTabBar() {
         <span class="t-icon">${icon}</span><span class="t-label">${label}</span>
       </button>`;
     }).join('');
-    const groupsHtml = GROUP_DEFS.map(g => {
+    const groupsHtml = (function() { if (_allowedTabs) return ''; return GROUP_DEFS.map(g => {
       const itemsHtml = g.items.map(it => {
         if (it.ph) {
           return `<button type="button" class="tab-btn sb-placeholder" onclick="_placeholderAlert('${String(it.label).replace(/'/g,"\\'")}')">
@@ -322,7 +326,7 @@ function renderTabBar() {
         </button>
         <div class="sb-group-items">${itemsHtml}</div>
       </div>`;
-    }).join('');
+    }).join(''); })();
     bar.innerHTML = sidebarHdr + topItemsHtml + groupsHtml;
     const menu = $('moreMenu');
     if (menu) menu.innerHTML = '';
@@ -333,6 +337,7 @@ function renderTabBar() {
   let moreInserted = false;
   const buttons = order.map(id => {
     if (hidden.includes(id)) return '';
+    if (_allowedTabs && !_allowedTabs.includes(id)) return '';
     const def = TAB_DEFS.find(t=>t.id===id);
     if (!def) return '';
     if (!isDesktop && SUB_TAB_IDS.includes(id)) {

@@ -38,8 +38,9 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v9.14</span>
+      <span class="ph-chip ver">v9.15</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
+      <span id="pttsRoleChip" onclick="pttsLogout()" title="คลิกเพื่อออกจากระบบ" style="display:none;cursor:pointer;padding:4px 10px;border-radius:999px;font-size:.72rem;font-weight:700;background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3)"></span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
   </div>
@@ -963,6 +964,26 @@
       <button class="btn" onclick="apiTabCopyScriptUrl()" style="padding:9px 16px;font-size:.85rem">📋 คัดลอก</button>
     </div>
     <div id="apiTab_scriptStatus" style="margin-top:8px;font-size:.78rem;color:#7c7a9a"></div>
+  </div>
+
+
+  <!-- ══ ตั้งค่า PIN ══ -->
+  <div class="card">
+    <div class="card-header"><div class="icon ic-info">🔐</div><h2>ตั้งค่า PIN เข้าระบบ</h2></div>
+    <div style="font-size:.78rem;color:var(--t3);margin-bottom:12px">PIN เริ่มต้น: Admin = <code>1234</code> &nbsp;|&nbsp; User = <code>0000</code> &nbsp;—&nbsp; เปลี่ยนได้ที่นี่</div>
+    <div class="pair-row" style="margin-bottom:10px">
+      <div class="field">
+        <label>Admin PIN (เข้าถึงได้ทั้งหมด)</label>
+        <input type="password" id="cfg_pin_admin" placeholder="PIN ใหม่ของ Admin" autocomplete="new-password"
+          style="background:var(--inp-bg);border:1px solid var(--inp-bc);border-radius:8px;padding:9px 12px;color:var(--txt);font-family:Sarabun,sans-serif;font-size:.9rem;width:100%">
+      </div>
+      <div class="field">
+        <label>User PIN (ดูแดชบอร์ด+Order เท่านั้น)</label>
+        <input type="password" id="cfg_pin_user2" placeholder="PIN ใหม่ของ User" autocomplete="new-password"
+          style="background:var(--inp-bg);border:1px solid var(--inp-bc);border-radius:8px;padding:9px 12px;color:var(--txt);font-family:Sarabun,sans-serif;font-size:.9rem;width:100%">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="pttsSavePins()" style="padding:9px 16px;font-size:.85rem">💾 บันทึก PIN</button>
   </div>
 
   <!-- ══ ค่าเริ่มต้น ══ -->
@@ -2978,9 +2999,22 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260618-G',
+    ref: '#REV-20260618-H',
     date: '2026-06-18',
     current: true,
+    items: [
+      'ระบบ PIN Login: Admin (เข้าถึงทุกอย่าง) และ User 2 (เห็นแค่ ติดตามงาน + Order, อ่านอย่างเดียว)',
+      'form.html: เพิ่ม login overlay (#pttsLoginOverlay) — ขอ PIN ทุกครั้งที่เปิดแอป (session-based)',
+      'form.html: เพิ่ม card ตั้งค่า PIN ใน tab-api (cfg_pin_admin, cfg_pin_user2)',
+      'form.html: เพิ่ม role chip ที่ header — แสดง role ปัจจุบัน กดเพื่อ logout',
+      'core.js: renderTabBar() — filter แท็บตาม role (user2 เห็นแค่ track+order)',
+      'form.html: แก้ไฟล์ที่ถูกตัดขาด — ต่อเติม closeDevLogs, service worker, chat widget ให้ครบ',
+    ],
+  },
+  {
+    ref: '#REV-20260618-G',
+    date: '2026-06-18',
+    current: false,
     items: [
       'order.js: ใบสั่งงาน — ย้ายหมายเหตุกลับใต้ SPEC (ตำแหน่งเดิม)',
       'order.js: ใบสั่งงาน — ย่อ section ลายเซ็น (padding-top 28→14px, margin-top 35→22px) เพื่อให้ทุกอย่างอยู่ใน 1 หน้า A4',
@@ -4445,13 +4479,13 @@ function openDevLogs() {
   if (m) m.style.display = 'flex';
 }
 function closeDevLogs() {
-  const m = document.getElementById('devLogsModal');
+  const m = document.getElement('devLogsModal');
   if (m) m.style.display = 'none';
 }
 </script>
 
 <script>
-// ===== Service Worker: ลงทะเบียนเพื่อให้แอปรีโหลด/อัปเดตเวอร์ชันใหม่อัตโนมัติ =====
+// ===== Service Worker =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then((reg) => {
@@ -4476,7 +4510,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- ═══ CHAT WIDGET (แชทภายในทีม) ════════════════════════════════ -->
+<!-- ═══ CHAT WIDGET ════════════════════════════════ -->
 <button id="chatFab" class="chat-fab" onclick="_chatToggle()" title="แชททีม">
   💬
   <span id="chatFabBadge" class="chat-fab-badge" style="display:none">0</span>
@@ -4492,4 +4526,126 @@ if ('serviceWorker' in navigator) {
   <div id="chatBody" class="chat-panel-body">
     <div class="chat-empty">ยังไม่มีข้อความ — เริ่มแชทกับทีมได้เลย</div>
   </div>
-  <div cl
+  <div class="chat-input-row">
+    <textarea id="chatInput" class="chat-input" rows="1" placeholder="พิมพ์ข้อความ…" onkeydown="_chatInputKeydown(event)"></textarea>
+    <button class="chat-send-btn" onclick="_chatSend()" title="ส่ง">➤</button>
+  </div>
+</div>
+
+<!-- ═══ PIN LOGIN OVERLAY ════════════════════════════════ -->
+<div id="pttsLoginOverlay" style="display:none;position:fixed;inset:0;z-index:99999;
+  background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+  align-items:center;justify-content:center;font-family:'Sarabun',sans-serif">
+  <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+    border-radius:20px;padding:36px 32px;width:320px;max-width:90vw;text-align:center;
+    box-shadow:0 24px 48px rgba(0,0,0,.5)">
+    <div style="font-size:2.4rem;margin-bottom:8px">🔐</div>
+    <div style="font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">PTTS Cost Breakdown</div>
+    <div style="font-size:.82rem;color:#94a3b8;margin-bottom:24px">กรุณาใส่รหัส PIN เพื่อเข้าใช้งาน</div>
+    <input type="password" id="pttsLoginPin" maxlength="8"
+      placeholder="PIN"
+      onkeydown="if(event.key==='Enter')pttsDoLogin()"
+      style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.07);color:#e2e8f0;font-family:'Sarabun',sans-serif;font-size:1.1rem;
+      text-align:center;letter-spacing:4px;outline:none;box-sizing:border-box;margin-bottom:12px">
+    <button onclick="pttsDoLogin()"
+      style="width:100%;padding:12px;border-radius:10px;border:none;cursor:pointer;
+      background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;font-family:'Sarabun',sans-serif;
+      font-size:.95rem;font-weight:700">เข้าสู่ระบบ</button>
+    <div id="pttsLoginErr" style="margin-top:10px;font-size:.8rem;color:#f87171;min-height:18px"></div>
+  </div>
+</div>
+
+<script>
+// ═══ PTTS Auth System ═══════════════════════════════════════════════
+(function(){
+  var USER2_TABS = ['track','order'];
+
+  function getPin(role){ return localStorage.getItem('ptts_pin_'+role) || (role==='admin'?'1234':'0000'); }
+
+  window.pttsDoLogin = function(){
+    var pin = document.getElementById('pttsLoginPin').value;
+    var role = pin===getPin('admin') ? 'admin' : pin===getPin('user2') ? 'user2' : null;
+    if(role){
+      sessionStorage.setItem('ptts_role', role);
+      _applyRole(role);
+    } else {
+      document.getElementById('pttsLoginErr').textContent = '❌ PIN ไม่ถูกต้อง';
+      document.getElementById('pttsLoginPin').value = '';
+    }
+  };
+
+  window.pttsLogout = function(){
+    sessionStorage.removeItem('ptts_role');
+    location.reload();
+  };
+
+  window.pttsSavePins = function(){
+    var a = document.getElementById('cfg_pin_admin');
+    var u = document.getElementById('cfg_pin_user2');
+    var saved = false;
+    if(a && a.value.trim()){ localStorage.setItem('ptts_pin_admin', a.value.trim()); a.value=''; saved=true; }
+    if(u && u.value.trim()){ localStorage.setItem('ptts_pin_user2', u.value.trim()); u.value=''; saved=true; }
+    if(saved) Swal.fire({icon:'success',title:'บันทึกแล้ว',timer:1200,showConfirmButton:false,background:'var(--bg-card)',color:'var(--t1)'});
+    else Swal.fire({icon:'info',title:'ไม่มีการเปลี่ยนแปลง',text:'กรุณากรอก PIN ใหม่ก่อนบันทึก',timer:1500,showConfirmButton:false,background:'var(--bg-card)',color:'var(--t1)'});
+  };
+
+  function _applyRole(role){
+    document.body.classList.remove('role-admin','role-user2');
+    document.body.classList.add('role-'+role);
+    document.getElementById('pttsLoginOverlay').style.display = 'none';
+    // update logout chip
+    var chip = document.getElementById('pttsRoleChip');
+    if(chip){ chip.textContent = role==='admin' ? '👤 Admin' : '👁 User'; chip.style.display=''; }
+    if(typeof renderTabBar === 'function') renderTabBar();
+    if(role==='user2'){
+      if(typeof _activeTab !== 'undefined' && !USER2_TABS.includes(_activeTab)){
+        if(typeof switchTab==='function') switchTab('track');
+      }
+      setTimeout(_enforceReadOnly, 600);
+    }
+  }
+
+  function _enforceReadOnly(){
+    USER2_TABS.forEach(function(tabId){
+      var el = document.getElementById('tab-'+tabId);
+      if(!el) return;
+      el.querySelectorAll('button').forEach(function(btn){
+        var txt = (btn.textContent||'').trim();
+        var ok = /ค้นหา|รีเฟรช|พิมพ์|เต็มจอ|กรอง|ดู|ปิด|เปิด|export|print/i.test(txt)
+               || btn.classList.contains('allow-ro')
+               || btn.id === 'trkFullBtn';
+        if(!ok){ btn.disabled=true; btn.style.opacity='.35'; btn.style.pointerEvents='none'; }
+      });
+    });
+  }
+
+  // patch switchTab to re-enforce after render
+  window.addEventListener('DOMContentLoaded', function(){
+    var origSwitch = window.switchTab;
+    if(origSwitch){
+      window.switchTab = function(name){
+        origSwitch(name);
+        if(sessionStorage.getItem('ptts_role')==='user2') setTimeout(_enforceReadOnly,600);
+      };
+    }
+    // init
+    var role = sessionStorage.getItem('ptts_role');
+    var overlay = document.getElementById('pttsLoginOverlay');
+    if(role){
+      overlay.style.display = 'none';
+      _applyRole(role);
+    } else {
+      overlay.style.display = 'flex';
+      setTimeout(function(){ document.getElementById('pttsLoginPin').focus(); },200);
+    }
+    // populate PIN placeholders
+    ['admin','user2'].forEach(function(r){
+      var el = document.getElementById('cfg_pin_'+r);
+      if(el && localStorage.getItem('ptts_pin_'+r)) el.placeholder='(ตั้งแล้ว — กรอกใหม่เพื่อเปลี่ยน)';
+    });
+  });
+})();
+</script>
+
+</body></html>
