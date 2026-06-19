@@ -145,6 +145,7 @@ const TAB_DEFS = [
   { id:'api',       icon:'🔧', label:'ตั้งค่า'  },
   { id:'mat',       icon:'🧱', label:'MAT'      },
   { id:'supplier',  icon:'🏢', label:'Supplier' },
+  { id:'rfq',       icon:'📨', label:'ใบขอราคา' },
   { id:'dept_help', icon:'📖', label:'วิธีใช้งานแผนก' },
 ];
 
@@ -169,7 +170,7 @@ const GROUP_DEFS = [
     { tab:'dept_help', label:'วิธีใช้งานแผนก', icon:'📖', dept:'sales' },
   ]},
   { id:'purchase', icon:'🛒', label:'ฝ่ายจัดซื้อ', items: [
-    { ph:true, label:'ใบขอราคา', icon:'📨' },
+    { tab:'rfq' },
     { tab:'po' },
     { tab:'plating' },
     { tab:'mat' },

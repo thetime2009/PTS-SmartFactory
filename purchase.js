@@ -1282,3 +1282,441 @@ function _expBuildFullHtml(data) {
   })();<\/script>
   </body></html>`;
 }
+
+
+// ══════════════════════════════════════════════════════════════
+// ── RFQ (ใบขอราคา) ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+let _rfqListCache = [];
+let _rfqRows      = [];   // รายการในฟอร์มปัจจุบัน
+let _rfqEditNo    = null; // เลขที่ที่กำลังแก้ไข (null = สร้างใหม่)
+
+// ── ย่อรูปเป็น base64 ────────────────────────────────────────
+function _rfqCompressImg(file, maxPx, quality) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxPx || h > maxPx) {
+          if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+          else       { w = Math.round(w * maxPx / h); h = maxPx; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality || 0.65));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── เริ่มต้น render ตารางรายการ ───────────────────────────────
+function _rfqRenderItems() {
+  const wrap = $('rfqItemsWrap');
+  if (!wrap) return;
+  if (!_rfqRows.length) _rfqRows = [_rfqEmptyRow()];
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;min-width:720px">
+      <thead>
+        <tr style="background:var(--bg-deep)">
+          <th style="width:3%;padding:7px 6px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">#</th>
+          <th style="width:28%;padding:7px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">ชื่อสินค้า / วัสดุ</th>
+          <th style="width:8%;padding:7px 6px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">จำนวน</th>
+          <th style="width:8%;padding:7px 6px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">หน่วย</th>
+          <th style="width:20%;padding:7px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">หมายเหตุ</th>
+          <th style="width:14%;padding:7px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">รูปภาพ</th>
+          <th style="width:5%;padding:7px 6px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">ลบ</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${_rfqRows.map((r, i) => _rfqRowHtml(r, i)).join('')}
+      </tbody>
+    </table>`;
+}
+
+function _rfqEmptyRow() {
+  return { name:'', qty:'1', unit:'ชิ้น', remark:'', img:'' };
+}
+
+function _rfqRowHtml(r, i) {
+  const imgCell = r.img
+    ? `<div style="position:relative;display:inline-block">
+         <img src="${r.img}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--bc-div);display:block;cursor:pointer"
+              onclick="_rfqViewImg(${i})" title="คลิกดูภาพเต็ม">
+         <button onclick="_rfqRemoveImg(${i})" title="ลบรูป"
+           style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;
+                  background:#ef4444;color:#fff;font-size:.6rem;cursor:pointer;line-height:1;padding:0">✕</button>
+       </div>`
+    : `<label style="cursor:pointer;padding:5px 8px;border-radius:6px;border:1px dashed var(--bc-div);
+              font-size:.72rem;color:var(--t3);white-space:nowrap">
+         📷 เพิ่มรูป
+         <input type="file" accept="image/*" style="display:none" onchange="_rfqImgChange(event,${i})">
+       </label>`;
+  return `<tr style="border-bottom:1px solid var(--bc-div)">
+    <td style="padding:6px;text-align:center;font-size:.75rem;color:var(--t3)">${i+1}</td>
+    <td style="padding:4px 6px">
+      <input type="text" value="${_escH(r.name)}" placeholder="ชื่อสินค้า/วัสดุ"
+        oninput="_rfqRows[${i}].name=this.value"
+        style="width:100%;box-sizing:border-box;padding:5px 7px;border-radius:5px;border:1px solid var(--bc-input);
+               background:var(--bg-input);color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+    </td>
+    <td style="padding:4px 6px">
+      <input type="number" value="${_escH(r.qty)}" min="0" step="any"
+        oninput="_rfqRows[${i}].qty=this.value"
+        style="width:70px;padding:5px 6px;border-radius:5px;border:1px solid var(--bc-input);
+               background:var(--bg-input);color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none;text-align:center">
+    </td>
+    <td style="padding:4px 6px">
+      <input type="text" value="${_escH(r.unit)}" placeholder="ชิ้น"
+        oninput="_rfqRows[${i}].unit=this.value"
+        style="width:70px;padding:5px 6px;border-radius:5px;border:1px solid var(--bc-input);
+               background:var(--bg-input);color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none;text-align:center">
+    </td>
+    <td style="padding:4px 6px">
+      <input type="text" value="${_escH(r.remark)}" placeholder="หมายเหตุ"
+        oninput="_rfqRows[${i}].remark=this.value"
+        style="width:100%;box-sizing:border-box;padding:5px 7px;border-radius:5px;border:1px solid var(--bc-input);
+               background:var(--bg-input);color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+    </td>
+    <td style="padding:4px 6px;text-align:center">${imgCell}</td>
+    <td style="padding:4px 6px;text-align:center">
+      <button onclick="_rfqRemoveRow(${i})"
+        style="padding:3px 8px;border-radius:5px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);
+               color:#f87171;font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif">🗑️</button>
+    </td>
+  </tr>`;
+}
+
+function _rfqAddRow() {
+  _rfqRows.push(_rfqEmptyRow());
+  _rfqRenderItems();
+}
+
+function _rfqRemoveRow(i) {
+  if (_rfqRows.length <= 1) { _rfqRows = [_rfqEmptyRow()]; }
+  else { _rfqRows.splice(i, 1); }
+  _rfqRenderItems();
+}
+
+async function _rfqImgChange(event, i) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const b64 = await _rfqCompressImg(file, 400, 0.65);
+  _rfqRows[i].img = b64;
+  _rfqRenderItems();
+}
+
+function _rfqRemoveImg(i) {
+  _rfqRows[i].img = '';
+  _rfqRenderItems();
+}
+
+function _rfqViewImg(i) {
+  const src = _rfqRows[i].img;
+  if (!src) return;
+  Swal.fire({ imageUrl: src, imageAlt: 'รูปสินค้า', showConfirmButton: false,
+    showCloseButton: true, background:'#0d1b2a' });
+}
+
+// ── reset ฟอร์ม ───────────────────────────────────────────────
+function _rfqReset() {
+  _rfqEditNo = null;
+  if ($('rfq_formTitle')) $('rfq_formTitle').textContent = 'สร้างใบขอราคาใหม่';
+  if ($('rfq_no'))       $('rfq_no').value = '';
+  if ($('rfq_date'))     $('rfq_date').value = new Date().toISOString().slice(0,10);
+  if ($('rfq_supplier')) $('rfq_supplier').value = '';
+  if ($('rfq_remark'))   $('rfq_remark').value = '';
+  if ($('rfq_status'))   $('rfq_status').textContent = '';
+  _rfqRows = [_rfqEmptyRow()];
+  _rfqRenderItems();
+}
+
+// ── auto-gen เลขที่ ────────────────────────────────────────────
+function _rfqGenNo() {
+  const d = new Date();
+  const yy = String(d.getFullYear()).slice(-2);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const seq = String(_rfqListCache.length + 1).padStart(3,'0');
+  return `RFQ-${yy}${mm}-${seq}`;
+}
+
+// ── บันทึก ──────────────────────────────────────────────────────
+async function _rfqSave() {
+  if (!SCRIPT_URL) {
+    Swal.fire({ icon:'warning', title:'ยังไม่ได้ตั้งค่า Script URL', background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1' });
+    return;
+  }
+  const items = _rfqRows.filter(r => r.name.trim());
+  if (!items.length) {
+    Swal.fire({ icon:'warning', title:'กรุณากรอกรายการอย่างน้อย 1 รายการ', background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1' });
+    return;
+  }
+  const rfqNo = ($('rfq_no').value.trim()) || _rfqGenNo();
+  $('rfq_no').value = rfqNo;
+  const payload = {
+    action:   'saveRFQ',
+    rfqNo,
+    date:     $('rfq_date').value,
+    supplier: $('rfq_supplier').value.trim(),
+    items:    JSON.stringify(items),
+    remark:   $('rfq_remark').value.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  const st = $('rfq_status');
+  if (st) st.textContent = '⏳ กำลังบันทึก…';
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if (st) st.textContent = '✅ บันทึกแล้ว';
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'บันทึกใบขอราคาแล้ว',
+      showConfirmButton:false, timer:1800, timerProgressBar:true });
+    _rfqFetchList();
+  } catch(err) {
+    if (st) st.textContent = '❌ บันทึกไม่สำเร็จ';
+    Swal.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', text:String(err), background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1' });
+  }
+}
+
+// ── โหลดรายการ ─────────────────────────────────────────────────
+async function _rfqFetchList() {
+  const tbody = $('rfqListBody');
+  if (!tbody) return;
+  if (!SCRIPT_URL) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--t3);font-size:.8rem">⚠️ ยังไม่ได้ตั้งค่า Script URL</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--t3);font-size:.8rem"><span style="display:inline-block;animation:spin 1s linear infinite">↻</span> กำลังโหลด…</td></tr>`;
+  try {
+    const res  = await fetch(SCRIPT_URL + '?action=getRFQList', {mode:'cors'});
+    const data = await res.json();
+    _rfqListCache = (data.data || []).reverse();
+    _rfqRenderList();
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#f87171;font-size:.8rem">โหลดไม่สำเร็จ: ${err.message}</td></tr>`;
+  }
+}
+
+// ── render รายการ (พร้อม filter) ─────────────────────────────
+function _rfqRenderList() {
+  const tbody = $('rfqListBody');
+  if (!tbody) return;
+  const srch    = (($('rfqFilterSearch')||{}).value||'').trim().toLowerCase();
+  const fromVal = ($('rfqFilterFrom')||{}).value||'';
+  const toVal   = ($('rfqFilterTo')||{}).value||'';
+  const filtered = _rfqListCache.filter(q => {
+    if (srch) {
+      const hay = (String(q.rfqNo||'') + ' ' + String(q.supplier||'')).toLowerCase();
+      if (!hay.includes(srch)) return false;
+    }
+    const isoDate = String(q.date||'').substring(0,10);
+    if (fromVal && isoDate < fromVal) return false;
+    if (toVal   && isoDate > toVal)   return false;
+    return true;
+  });
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--t3);font-size:.8rem">${_rfqListCache.length?'ไม่พบรายการที่ตรงกับตัวกรอง':'ยังไม่มีรายการ'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(q => {
+    const ci = _rfqListCache.indexOf(q);
+    const items = Array.isArray(q.items) ? q.items : [];
+    const hasImg = items.some(r => r.img);
+    return `<tr style="border-bottom:1px solid var(--bc-div);font-size:.8rem">
+      <td style="padding:8px 10px;font-weight:600;color:var(--c1)">${_escH(String(q.rfqNo||''))}${hasImg?'<span style="margin-left:4px;font-size:.65rem;background:rgba(99,102,241,.2);color:#a78bfa;padding:1px 5px;border-radius:4px">📷</span>':''}</td>
+      <td style="padding:8px 10px;color:var(--t2)">${_escH(String(q.date||''))}</td>
+      <td style="padding:8px 10px">${_escH(String(q.supplier||'—'))}</td>
+      <td style="padding:8px 10px;text-align:center">${items.length} รายการ</td>
+      <td style="padding:8px 10px;color:var(--t3);font-size:.75rem">${_escH(String(q.remark||'—'))}</td>
+      <td style="padding:8px 10px;text-align:center;white-space:nowrap">
+        <button onclick="_rfqPrintFromList(${ci})" style="padding:4px 9px;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg-card);color:var(--t1);font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif;margin-right:4px">🖨️ พิมพ์</button>
+        <button onclick="_rfqDeleteFromList(${ci})" style="padding:4px 9px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#f87171;font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif">🗑️ ลบ</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function _rfqResetFilters() {
+  const s = $('rfqFilterSearch'); if (s) s.value = '';
+  const f = $('rfqFilterFrom');   if (f) f.value = '';
+  const t = $('rfqFilterTo');     if (t) t.value = '';
+  _rfqRenderList();
+}
+
+// ── ลบ ────────────────────────────────────────────────────────
+async function _rfqDeleteFromList(i) {
+  const q = _rfqListCache[i];
+  if (!q) return;
+  const { isConfirmed } = await Swal.fire({
+    title: 'ลบใบขอราคา?', html: `<b>${_escH(String(q.rfqNo||''))}</b> — ${_escH(String(q.supplier||''))}`,
+    icon: 'warning', showCancelButton:true,
+    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#ef4444', cancelButtonColor:'#6366f1',
+    background:'#0d1b2a', color:'#cce4ff',
+  });
+  if (!isConfirmed) return;
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'deleteRFQ', rfqNo: q.rfqNo }) });
+    _rfqListCache.splice(i, 1);
+    _rfqRenderList();
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'ลบแล้ว', showConfirmButton:false, timer:1500, timerProgressBar:true });
+  } catch(err) {
+    Swal.fire({ icon:'error', title:'ลบไม่สำเร็จ', text:String(err), background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1' });
+  }
+}
+
+// ── พิมพ์ (จากฟอร์ม) ─────────────────────────────────────────
+function _rfqPrint() {
+  const items = _rfqRows.filter(r => r.name.trim());
+  if (!items.length) {
+    Swal.fire({ icon:'warning', title:'กรุณากรอกรายการก่อนพิมพ์', background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1' });
+    return;
+  }
+  const data = {
+    rfqNo:    $('rfq_no').value || _rfqGenNo(),
+    date:     $('rfq_date').value,
+    supplier: $('rfq_supplier').value.trim(),
+    items,
+    remark:   $('rfq_remark').value.trim(),
+  };
+  _rfqOpenPrintWindow(data);
+}
+
+function _rfqPrintFromList(i) {
+  const q = _rfqListCache[i];
+  if (!q) return;
+  _rfqOpenPrintWindow({ rfqNo: q.rfqNo, date: q.date, supplier: q.supplier,
+    items: Array.isArray(q.items) ? q.items : [], remark: q.remark });
+}
+
+function _rfqOpenPrintWindow(data) {
+  const co   = (typeof getCompanyInfo === 'function') ? getCompanyInfo() : {};
+  const coName   = co.name    || 'PTTS';
+  const coAddr   = co.address || '';
+  const coTel    = co.tel     || '';
+  const coTaxId  = co.taxId   || '';
+  const thDate   = _rfqThDate(data.date);
+  const itemsHtml = data.items.map((r, i) => {
+    const imgCell = r.img
+      ? `<img src="${r.img}" style="width:70px;height:70px;object-fit:cover;border-radius:4px;print-color-adjust:exact;-webkit-print-color-adjust:exact">`
+      : '';
+    return `<tr>
+      <td style="border:1px solid #bbb;padding:5px 7px;text-align:center;font-size:11px">${i+1}</td>
+      <td style="border:1px solid #bbb;padding:5px 7px;text-align:center">${imgCell}</td>
+      <td style="border:1px solid #bbb;padding:5px 7px;font-size:11px">${_escH(r.name)}</td>
+      <td style="border:1px solid #bbb;padding:5px 7px;text-align:center;font-size:11px">${_escH(String(r.qty))}</td>
+      <td style="border:1px solid #bbb;padding:5px 7px;text-align:center;font-size:11px">${_escH(r.unit||'ชิ้น')}</td>
+      <td style="border:1px solid #bbb;padding:5px 7px;font-size:11px">${_escH(r.remark||'')}</td>
+      <td style="border:1px solid #bbb;padding:5px 7px;text-align:right;font-size:11px"> </td>
+      <td style="border:1px solid #bbb;padding:5px 7px;text-align:right;font-size:11px"> </td>
+    </tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>ใบขอราคา ${_escH(data.rfqNo||'')}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Sarabun',sans-serif;font-size:13px;color:#111;background:#fff;padding:20px}
+    @media print{body{padding:0}@page{size:A4;margin:12mm 10mm}}
+    table{width:100%;border-collapse:collapse}
+    th{background:#f3f4f6;font-weight:700;font-size:11px}
+  </style></head><body>
+  <div style="max-width:720px;margin:0 auto;padding:10px">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#111">${_escH(coName)}</div>
+        <div style="font-size:10px;color:#555;margin-top:2px">${_escH(coAddr)}</div>
+        <div style="font-size:10px;color:#555">โทร: ${_escH(coTel)}${coTaxId ? ' &nbsp;|&nbsp; เลขภาษี: ' + _escH(coTaxId) : ''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:800;letter-spacing:.5px;color:#1e3a5f">ใบขอราคา</div>
+        <div style="font-size:10px;color:#555">REQUEST FOR QUOTATION</div>
+        <div style="font-size:11px;font-weight:700;margin-top:4px">เลขที่: ${_escH(data.rfqNo||'')}</div>
+        <div style="font-size:10px;color:#555">วันที่: ${_escH(thDate)}</div>
+      </div>
+    </div>
+    <!-- Supplier -->
+    <div style="border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:11px">
+      <div style="font-weight:700;margin-bottom:2px">เรียน: ${_escH(data.supplier||'…………………………………………………………')}</div>
+      <div style="color:#555">กรุณาเสนอราคาสินค้า/วัสดุตามรายการด้านล่าง และส่งกลับภายในกำหนด</div>
+    </div>
+    <!-- Items table -->
+    <table>
+      <thead>
+        <tr>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:center;width:4%">#</th>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:center;width:12%">รูป</th>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:left;width:28%">รายการสินค้า/วัสดุ</th>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:center;width:8%">จำนวน</th>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:center;width:8%">หน่วย</th>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:left;width:18%">หมายเหตุ</th>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:right;width:11%">ราคา/หน่วย (฿)</th>
+          <th style="border:1px solid #bbb;padding:6px 8px;text-align:right;width:11%">รวม (฿)</th>
+        </tr>
+      </thead>
+      <tbody>${itemsHtml}</tbody>
+      <tfoot>
+        <tr>
+          <td colspan="7" style="border:1px solid #bbb;padding:6px 8px;text-align:right;font-weight:700;font-size:11px">รวมทั้งสิ้น</td>
+          <td style="border:1px solid #bbb;padding:6px 8px;text-align:right;font-size:11px"> </td>
+        </tr>
+      </tfoot>
+    </table>
+    ${data.remark ? `<div style="margin-top:8px;font-size:10px;color:#555">หมายเหตุ: ${_escH(data.remark)}</div>` : ''}
+    <!-- Signature -->
+    <div style="display:flex;justify-content:space-between;margin-top:36px;font-size:11px">
+      <div style="text-align:center;width:45%">
+        <div style="border-bottom:1px solid #999;margin-bottom:4px;padding-bottom:28px"></div>
+        <div>ผู้ขอราคา / ฝ่ายจัดซื้อ</div>
+        <div style="color:#555;margin-top:2px">วันที่ ………………………………</div>
+      </div>
+      <div style="text-align:center;width:45%">
+        <div style="border-bottom:1px solid #999;margin-bottom:4px;padding-bottom:28px"></div>
+        <div>ผู้เสนอราคา / ซัพพลายเออร์</div>
+        <div style="color:#555;margin-top:2px">วันที่ ………………………………</div>
+      </div>
+    </div>
+  </div>
+  <script>(function(){
+    function go(){ try{ window.focus(); window.print(); }catch(e){} }
+    if(document.fonts && document.fonts.ready){
+      document.fonts.ready.then(go).catch(function(){ setTimeout(go,700); });
+    } else { setTimeout(go,700); }
+  })();<\/script>
+  </body></html>`;
+  const win = window.open('','_blank');
+  if (!win) { alert('กรุณาอนุญาต popup'); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+function _rfqThDate(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' });
+  } catch(e) { return iso; }
+}
+
+// ── โหลด supplier list ──────────────────────────────────────
+function _rfqLoadSupplierList() {
+  const dl = $('rfq_supplierList');
+  if (!dl) return;
+  if (typeof _supplierCache !== 'undefined' && _supplierCache.length) {
+    dl.innerHTML = _supplierCache.map(s => `<option value="${_escH(String(s.name||s[0]||''))}"></option>`).join('');
+  }
+}
+
+// ── DOMContentLoaded ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if ($('rfqItemsWrap')) {
+    _rfqReset();
+    _rfqFetchList();
+    setTimeout(_rfqLoadSupplierList, 1200);
+  }
+});

@@ -38,7 +38,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v9.35</span>
+      <span class="ph-chip ver">v9.45</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1547,6 +1547,115 @@
     </div>
   </div>
 
+
+  <!-- รายการ Order -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-header">
+      <div class="icon ic-ext">🗂️</div>
+      <h2>รายการ Order</h2>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="fetchOrders()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(52,211,153,.3);
+          background:rgba(52,211,153,.1);color:#6ecfad;font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif">
+          🔄 รีเฟรช
+        </button>
+      </div>
+    </div>
+    <div style="position:relative;margin-bottom:10px">
+      <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:.85rem">🔍</span>
+      <input id="ordSearch" type="text" placeholder="ค้นหา No.Quo, No.PO, ลูกค้า, รายการสินค้า… (ใส่ได้หลายคำ คั่นด้วยเว้นวรรค/คอมมา)"
+        style="width:100%;box-sizing:border-box;padding:10px 12px 10px 36px;border-radius:10px;
+               border:1px solid var(--bc-input);background:var(--bg-input);
+               color:var(--t1);font-size:.8rem;font-family:Sarabun,sans-serif;outline:none"
+        oninput="_ordPage=1; renderOrderTable()">
+    </div>
+    <div style="font-size:.7rem;color:var(--t3);margin:-4px 0 10px">
+      💡 ใส่ได้หลายคำพร้อมกัน คั่นด้วย เว้นวรรค หรือ คอมมา (,) — เช่น "2605169, 2605170 0587"
+    </div>
+    <!-- ── ตัวกรองแบบละเอียด ── -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">
+      <div class="field" style="margin:0;min-width:180px">
+        <label style="font-size:.7rem;color:var(--t2)">Process</label>
+        <select id="ordFilterStatus" onchange="_ordPage=1; renderOrderTable()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+          <option value="_not_done" selected>ซ่อนเรียบร้อยทั้งหมด (ยกเว้นเดือนนี้-เดือนที่แล้ว)</option>
+          <option value="_all">ทั้งหมด (รวมเรียบร้อยแล้ว)</option>
+          <option value="กำลังผลิต">กำลังผลิต</option>
+          <option value="ส่งชุป">ส่งชุป</option>
+          <option value="ส่งตัวอย่างเทส+รอสรุป">ส่งตัวอย่างเทส+รอสรุป</option>
+          <option value="ส่งยังไม่ครบ">ส่งยังไม่ครบ</option>
+          <option value="รอConfirm">รอConfirm</option>
+          <option value="FG รอเรียก">FG รอเรียก</option>
+          <option value="Stock">Stock</option>
+          <option value="เตรียมส่ง">เตรียมส่ง</option>
+          <option value="เรียบร้อย">เรียบร้อย</option>
+          <option value="">(ไม่ระบุ/ว่าง)</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0;min-width:160px">
+        <label style="font-size:.7rem;color:var(--t2)">ลูกค้า</label>
+        <input id="ordFilterCustomer" type="text" placeholder="ทุกลูกค้า" oninput="_ordPage=1; renderOrderTable()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+      </div>
+      <div class="field" style="margin:0;min-width:160px">
+        <label style="font-size:.7rem;color:var(--t2)">แบบงาน</label>
+        <input id="ordFilterWorkType" type="text" list="ordFilterWorkTypeList" placeholder="ทุกแบบงาน" oninput="_ordPage=1; renderOrderTable()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+        <datalist id="ordFilterWorkTypeList"></datalist>
+      </div>
+      <div class="field" style="margin:0;min-width:140px">
+        <label style="font-size:.7rem;color:var(--t2)">วันที่ต้องการ ตั้งแต่</label>
+        <input id="ordFilterWantFrom" type="date" oninput="_ordPage=1; renderOrderTable()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+      </div>
+      <div class="field" style="margin:0;min-width:140px">
+        <label style="font-size:.7rem;color:var(--t2)">ถึง</label>
+        <input id="ordFilterWantTo" type="date" oninput="_ordPage=1; renderOrderTable()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+      </div>
+      <button onclick="_ordResetFilters()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--bc-card);
+        background:var(--bg-card);color:var(--t2);font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif;align-self:flex-end">
+        ↺ ล้างตัวกรอง
+      </button>
+    </div>
+    <div id="ordLoadBanner" style="margin-bottom:8px;padding:0 2px"></div>
+    <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--bc-card)">
+      <table style="width:100%;border-collapse:collapse;min-width:980px">
+        <thead>
+          <tr style="background:var(--bg-deep)">
+            <th onclick="_ordSortBy('noQuo')" style="width:5%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">No.Quo<span id="ordSortIcon_noQuo"></span></th>
+            <th onclick="_ordSortBy('noPO')" style="width:7%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">No.PO<span id="ordSortIcon_noPO"></span></th>
+            <th onclick="_ordSortBy('customer')" style="width:8%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">ลูกค้า<span id="ordSortIcon_customer"></span></th>
+            <th onclick="_ordSortBy('orderDate')" style="width:6%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">วันที่สั่งซื้อ<span id="ordSortIcon_orderDate"></span></th>
+            <th onclick="_ordSortBy('wantDate')" style="width:6%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">วันที่ต้องการ<span id="ordSortIcon_wantDate"></span></th>
+            <th style="width:9%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">แบบงาน</th>
+            <th style="width:13%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">รายการสินค้า</th>
+            <th onclick="_ordSortBy('qty')" style="width:5%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">จำนวน<span id="ordSortIcon_qty"></span></th>
+            <th style="width:13%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">หมายเหตุ</th>
+            <th onclick="_ordSortBy('price')" style="width:7%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:right;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">ราคาขาย<span id="ordSortIcon_price"></span></th>
+            <th onclick="_ordSortBy('process')" style="width:8%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">Process<span id="ordSortIcon_process"></span></th>
+            <th style="width:15%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">ปฏิบัติการ</th>
+          </tr>
+        </thead>
+        <tbody id="ordBody">
+          <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--t3);font-size:.8rem">
+            กำลังโหลดข้อมูล…
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="ordPager" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;font-size:.78rem;color:var(--t2)"></div>
+  </div>
+
   </div><!-- end ordSubPanel1 -->
 
   <div id="ordSubPanel2" class="ord-subtab-panel">
@@ -1685,6 +1794,9 @@
       <button class="btn btn-primary" onclick="_gquoPreview()" style="padding:10px 18px;font-size:.88rem">
         🖨️ สร้างใบเสนอราคา / ดูตัวอย่าง
       </button>
+      <button class="btn" onclick="_gquoSave()" style="padding:10px 18px;font-size:.88rem;background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3)">
+        💾 บันทึก
+      </button>
       <button class="btn" onclick="_gquoResetCard()" style="padding:10px 18px;font-size:.88rem;background:rgba(255,255,255,.06);color:var(--t2)">
         🧹 เคลียร์การ์ด
       </button>
@@ -1715,115 +1827,69 @@
     </div>
   </div>
 
-  </div><!-- end ordSubPanel2 -->
-
-  <!-- รายการ Order -->
+  <!-- รายการใบเสนอราคาทั่วไป -->
   <div class="card" style="margin-top:14px">
     <div class="card-header">
-      <div class="icon ic-ext">🗂️</div>
-      <h2>รายการ Order</h2>
+      <div class="icon ic-ext">📋</div>
+      <h2>รายการใบเสนอราคาทั่วไป</h2>
       <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="fetchOrders()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(52,211,153,.3);
+        <button onclick="_gquoFetchList()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(52,211,153,.3);
           background:rgba(52,211,153,.1);color:#6ecfad;font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif">
           🔄 รีเฟรช
         </button>
       </div>
     </div>
-    <div style="position:relative;margin-bottom:10px">
-      <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:.85rem">🔍</span>
-      <input id="ordSearch" type="text" placeholder="ค้นหา No.Quo, No.PO, ลูกค้า, รายการสินค้า… (ใส่ได้หลายคำ คั่นด้วยเว้นวรรค/คอมมา)"
-        style="width:100%;box-sizing:border-box;padding:10px 12px 10px 36px;border-radius:10px;
-               border:1px solid var(--bc-input);background:var(--bg-input);
-               color:var(--t1);font-size:.8rem;font-family:Sarabun,sans-serif;outline:none"
-        oninput="_ordPage=1; renderOrderTable()">
-    </div>
-    <div style="font-size:.7rem;color:var(--t3);margin:-4px 0 10px">
-      💡 ใส่ได้หลายคำพร้อมกัน คั่นด้วย เว้นวรรค หรือ คอมมา (,) — เช่น "2605169, 2605170 0587"
-    </div>
-    <!-- ── ตัวกรองแบบละเอียด ── -->
-    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px">
-      <div class="field" style="margin:0;min-width:180px">
-        <label style="font-size:.7rem;color:var(--t2)">Process</label>
-        <select id="ordFilterStatus" onchange="_ordPage=1; renderOrderTable()"
+    <!-- ── ตัวกรอง ── -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px">
+      <div class="field" style="margin:0;flex:1;min-width:180px">
+        <label style="font-size:.7rem;color:var(--t2)">🔍 ค้นหา (เลขที่ / ลูกค้า)</label>
+        <input id="gquoFilterSearch" type="text" placeholder="พิมพ์เพื่อค้นหา…"
+          oninput="_gquoRenderList()"
           style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
                  border:1px solid var(--bc-input);background:var(--bg-input);
                  color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
-          <option value="_not_done" selected>ซ่อนเรียบร้อยทั้งหมด (ยกเว้นเดือนนี้-เดือนที่แล้ว)</option>
-          <option value="_all">ทั้งหมด (รวมเรียบร้อยแล้ว)</option>
-          <option value="กำลังผลิต">กำลังผลิต</option>
-          <option value="ส่งชุป">ส่งชุป</option>
-          <option value="ส่งตัวอย่างเทส+รอสรุป">ส่งตัวอย่างเทส+รอสรุป</option>
-          <option value="ส่งยังไม่ครบ">ส่งยังไม่ครบ</option>
-          <option value="รอConfirm">รอConfirm</option>
-          <option value="FG รอเรียก">FG รอเรียก</option>
-          <option value="Stock">Stock</option>
-          <option value="เตรียมส่ง">เตรียมส่ง</option>
-          <option value="เรียบร้อย">เรียบร้อย</option>
-          <option value="">(ไม่ระบุ/ว่าง)</option>
-        </select>
-      </div>
-      <div class="field" style="margin:0;min-width:160px">
-        <label style="font-size:.7rem;color:var(--t2)">ลูกค้า</label>
-        <input id="ordFilterCustomer" type="text" placeholder="ทุกลูกค้า" oninput="_ordPage=1; renderOrderTable()"
-          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
-                 border:1px solid var(--bc-input);background:var(--bg-input);
-                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
-      </div>
-      <div class="field" style="margin:0;min-width:160px">
-        <label style="font-size:.7rem;color:var(--t2)">แบบงาน</label>
-        <input id="ordFilterWorkType" type="text" list="ordFilterWorkTypeList" placeholder="ทุกแบบงาน" oninput="_ordPage=1; renderOrderTable()"
-          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
-                 border:1px solid var(--bc-input);background:var(--bg-input);
-                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
-        <datalist id="ordFilterWorkTypeList"></datalist>
       </div>
       <div class="field" style="margin:0;min-width:140px">
-        <label style="font-size:.7rem;color:var(--t2)">วันที่ต้องการ ตั้งแต่</label>
-        <input id="ordFilterWantFrom" type="date" oninput="_ordPage=1; renderOrderTable()"
+        <label style="font-size:.7rem;color:var(--t2)">วันที่ตั้งแต่</label>
+        <input id="gquoFilterFrom" type="date" oninput="_gquoRenderList()"
           style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
                  border:1px solid var(--bc-input);background:var(--bg-input);
                  color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
       </div>
       <div class="field" style="margin:0;min-width:140px">
         <label style="font-size:.7rem;color:var(--t2)">ถึง</label>
-        <input id="ordFilterWantTo" type="date" oninput="_ordPage=1; renderOrderTable()"
+        <input id="gquoFilterTo" type="date" oninput="_gquoRenderList()"
           style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
                  border:1px solid var(--bc-input);background:var(--bg-input);
                  color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
       </div>
-      <button onclick="_ordResetFilters()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--bc-card);
+      <button onclick="_gquoResetFilters()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--bc-card);
         background:var(--bg-card);color:var(--t2);font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif;align-self:flex-end">
         ↺ ล้างตัวกรอง
       </button>
     </div>
-    <div id="ordLoadBanner" style="margin-bottom:8px;padding:0 2px"></div>
-    <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--bc-card)">
-      <table style="width:100%;border-collapse:collapse;min-width:980px">
+    <div id="gquoListWrap" style="overflow-x:auto;border-radius:10px;border:1px solid var(--bc-card)">
+      <table style="width:100%;border-collapse:collapse;min-width:600px">
         <thead>
           <tr style="background:var(--bg-deep)">
-            <th onclick="_ordSortBy('noQuo')" style="width:5%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">No.Quo<span id="ordSortIcon_noQuo"></span></th>
-            <th onclick="_ordSortBy('noPO')" style="width:7%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">No.PO<span id="ordSortIcon_noPO"></span></th>
-            <th onclick="_ordSortBy('customer')" style="width:8%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">ลูกค้า<span id="ordSortIcon_customer"></span></th>
-            <th onclick="_ordSortBy('orderDate')" style="width:6%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">วันที่สั่งซื้อ<span id="ordSortIcon_orderDate"></span></th>
-            <th onclick="_ordSortBy('wantDate')" style="width:6%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">วันที่ต้องการ<span id="ordSortIcon_wantDate"></span></th>
-            <th style="width:9%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">แบบงาน</th>
-            <th style="width:13%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">รายการสินค้า</th>
-            <th onclick="_ordSortBy('qty')" style="width:5%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">จำนวน<span id="ordSortIcon_qty"></span></th>
-            <th style="width:13%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">หมายเหตุ</th>
-            <th onclick="_ordSortBy('price')" style="width:7%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:right;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">ราคาขาย<span id="ordSortIcon_price"></span></th>
-            <th onclick="_ordSortBy('process')" style="width:8%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div);cursor:pointer;user-select:none">Process<span id="ordSortIcon_process"></span></th>
-            <th style="width:15%;padding:9px 8px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">ปฏิบัติการ</th>
+            <th style="padding:8px 10px;font-size:.72rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">เลขที่</th>
+            <th style="padding:8px 10px;font-size:.72rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">วันที่</th>
+            <th style="padding:8px 10px;font-size:.72rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">ลูกค้า</th>
+            <th style="padding:8px 10px;font-size:.72rem;color:var(--t2);font-weight:600;text-align:right;border-bottom:1px solid var(--bc-div)">ยอดสุทธิ</th>
+            <th style="padding:8px 10px;font-size:.72rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">ปฏิบัติการ</th>
           </tr>
         </thead>
-        <tbody id="ordBody">
-          <tr><td colspan="12" style="padding:40px;text-align:center;color:var(--t3);font-size:.8rem">
-            กำลังโหลดข้อมูล…
-          </td></tr>
+        <tbody id="gquoListBody">
+          <tr><td colspan="5" style="padding:30px;text-align:center;color:var(--t3);font-size:.8rem"><span style="display:inline-block;animation:spin 1s linear infinite">↻</span> กำลังโหลด…</td></tr>
         </tbody>
       </table>
     </div>
-    <div id="ordPager" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;font-size:.78rem;color:var(--t2)"></div>
   </div>
+
+  </div><!-- end ordSubPanel2 -->
+
+
+
 </div>
 </div><!-- end tab-order -->
 
@@ -2060,6 +2126,132 @@
   </div>
 </div>
 </div><!-- end tab-supplier -->
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- TAB: RFQ (ใบขอราคา)                               -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="tab-rfq" class="tab-content">
+<div style="max-width:1100px;margin:0 auto;padding:12px 8px 80px">
+
+  <!-- ฟอร์มสร้างใบขอราคา -->
+  <div class="card">
+    <div class="card-header">
+      <div class="icon ic-ext">📨</div>
+      <h2 id="rfq_formTitle">สร้างใบขอราคาใหม่</h2>
+      <button type="button" onclick="_toggleCardBody('rfqFormBody',this)" style="margin-left:auto;padding:6px 12px;border-radius:8px;
+        border:1px solid var(--bc-div);background:transparent;color:var(--t2);font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif">▼ แสดง</button>
+    </div>
+    <div id="rfqFormBody">
+    <!-- Row 1: header fields -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 14px;margin-bottom:14px">
+      <div class="field">
+        <label>เลขที่ใบขอราคา</label>
+        <input type="text" id="rfq_no" placeholder="สร้างอัตโนมัติ" style="background:var(--bg-input)">
+      </div>
+      <div class="field">
+        <label>วันที่</label>
+        <input type="date" id="rfq_date">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>ซัพพลายเออร์</label>
+        <input type="text" id="rfq_supplier" list="rfq_supplierList" placeholder="เลือกหรือพิมพ์ชื่อซัพพลายเออร์"
+          style="width:100%;box-sizing:border-box">
+        <datalist id="rfq_supplierList"></datalist>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>หมายเหตุ / เงื่อนไข</label>
+        <textarea id="rfq_remark" rows="2" placeholder="หมายเหตุเพิ่มเติม (เช่น กำหนดส่งราคาภายใน…)"
+          style="resize:vertical;padding:6px 8px;font-size:.78rem;border-radius:6px;border:1px solid var(--bc-div);
+                 background:var(--bg-input);font-family:inherit;width:100%;box-sizing:border-box;color:var(--t1)"></textarea>
+      </div>
+    </div>
+
+    <!-- รายการขอราคา (ตาราง) -->
+    <div style="font-size:.8rem;font-weight:700;color:var(--t1);margin-bottom:8px">รายการขอราคา</div>
+    <div id="rfqItemsWrap" style="overflow-x:auto;margin-bottom:8px"></div>
+    <button type="button" class="btn" onclick="_rfqAddRow()" style="padding:6px 14px;font-size:.78rem;margin-bottom:16px">
+      ➕ เพิ่มรายการ
+    </button>
+
+    <!-- ปุ่มดำเนินการ -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <button class="btn btn-primary" onclick="_rfqPrint()" style="padding:10px 18px;font-size:.88rem">
+        🖨️ พิมพ์ใบขอราคา
+      </button>
+      <button class="btn" onclick="_rfqSave()" style="padding:10px 18px;font-size:.88rem;background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3)">
+        💾 บันทึก
+      </button>
+      <button class="btn" onclick="_rfqReset()" style="padding:10px 18px;font-size:.88rem;background:rgba(255,255,255,.06);color:var(--t2)">
+        🧹 เคลียร์
+      </button>
+      <span id="rfq_status" style="font-size:.76rem;color:var(--t3)"></span>
+    </div>
+    </div><!-- end rfqFormBody -->
+  </div>
+
+  <!-- รายการใบขอราคา -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-header">
+      <div class="icon ic-ext">🗂️</div>
+      <h2>รายการใบขอราคา</h2>
+      <div style="margin-left:auto">
+        <button onclick="_rfqFetchList()" style="padding:6px 12px;border-radius:8px;border:1px solid rgba(52,211,153,.3);
+          background:rgba(52,211,153,.1);color:#6ecfad;font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif">
+          🔄 รีเฟรช
+        </button>
+      </div>
+    </div>
+    <!-- filter -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px">
+      <div class="field" style="margin:0;flex:1;min-width:180px">
+        <label style="font-size:.7rem;color:var(--t2)">🔍 ค้นหา (เลขที่ / ซัพพลายเออร์)</label>
+        <input id="rfqFilterSearch" type="text" placeholder="พิมพ์เพื่อค้นหา…" oninput="_rfqRenderList()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+      </div>
+      <div class="field" style="margin:0;min-width:140px">
+        <label style="font-size:.7rem;color:var(--t2)">วันที่ตั้งแต่</label>
+        <input id="rfqFilterFrom" type="date" oninput="_rfqRenderList()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+      </div>
+      <div class="field" style="margin:0;min-width:140px">
+        <label style="font-size:.7rem;color:var(--t2)">ถึง</label>
+        <input id="rfqFilterTo" type="date" oninput="_rfqRenderList()"
+          style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;
+                 border:1px solid var(--bc-input);background:var(--bg-input);
+                 color:var(--t1);font-size:.78rem;font-family:Sarabun,sans-serif;outline:none">
+      </div>
+      <button onclick="_rfqResetFilters()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--bc-card);
+        background:var(--bg-card);color:var(--t2);font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif;align-self:flex-end">
+        ↺ ล้างตัวกรอง
+      </button>
+    </div>
+    <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--bc-card)">
+      <table style="width:100%;border-collapse:collapse;min-width:700px">
+        <thead>
+          <tr style="background:var(--bg-deep)">
+            <th style="padding:9px 10px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">เลขที่</th>
+            <th style="padding:9px 10px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">วันที่</th>
+            <th style="padding:9px 10px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">ซัพพลายเออร์</th>
+            <th style="padding:9px 10px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">รายการ</th>
+            <th style="padding:9px 10px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:left;border-bottom:1px solid var(--bc-div)">หมายเหตุ</th>
+            <th style="padding:9px 10px;font-size:.7rem;color:var(--t2);font-weight:600;text-align:center;border-bottom:1px solid var(--bc-div)">ปฏิบัติการ</th>
+          </tr>
+        </thead>
+        <tbody id="rfqListBody">
+          <tr><td colspan="6" style="padding:30px;text-align:center;color:var(--t3);font-size:.8rem">
+            <span style="display:inline-block;animation:spin 1s linear infinite">↻</span> กำลังโหลด…
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div><!-- end tab-rfq -->
 
 <!-- ══════════════════════════════════════════════════ -->
 <!-- TAB: PO (ใบสั่งซื้อ)                              -->
@@ -3031,8 +3223,8 @@
 <script src="formcalc.js?v=9.06"></script>
 <script src="aifeatures.js?v=8.94"></script>
 <script src="theme.js?v=9.10"></script>
-<script src="order.js?v=9.35"></script>
-<script src="purchase.js?v=9.32"></script>
+<script src="order.js?v=9.45"></script>
+<script src="purchase.js?v=9.45"></script>
 <script src="invoice.js?v=9.03"></script>
 <script src="plating.js?v=8.94"></script>
 
@@ -3177,9 +3369,101 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260619-C',
+    ref: '#REV-20260619-M',
     date: '2026-06-19',
     current: true,
+    items: [
+      'เพิ่มฟีเจอร์ใบขอราคา (RFQ) ครบวงจร',
+      'core.js: เพิ่ม tab rfq ใน TAB_DEFS / เปลี่ยน placeholder เป็น { tab: rfq } ใน GROUP_DEFS',
+      'form.html: เพิ่ม #tab-rfq — ฟอร์มสร้างใบขอราคา (เลขที่, วันที่, ซัพพลายเออร์, หมายเหตุ) + ตารางรายการ (ชื่อ/จำนวน/หน่วย/หมายเหตุ/แนบรูปต่อรายการ)',
+      'form.html: เพิ่มการ์ด "รายการใบขอราคา" พร้อม filter (ค้นหา/วันที่) และปุ่ม พิมพ์/ลบ',
+      'purchase.js: เพิ่ม RFQ functions ครบ — _rfqAddRow, _rfqRemoveRow, _rfqRenderItems, _rfqImgChange (compress base64), _rfqSave, _rfqFetchList, _rfqRenderList, _rfqResetFilters, _rfqReset, _rfqPrint, _rfqPrintFromList, _rfqDeleteFromList, _rfqOpenPrintWindow',
+      'Code.gs: เพิ่ม saveRFQ / getRFQList / deleteRFQ + routing ใน doPost/doGet (sheet "RFQ")',
+    ],
+  },
+  {
+    ref: '#REV-20260619-L',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'form.html: เพิ่ม filter bar ในการ์ด "รายการใบเสนอราคาทั่วไป" — ค้นหา (เลขที่/ลูกค้า) + วันที่ตั้งแต่/ถึง + ล้างตัวกรอง',
+      'order.js: อัปเดต _gquoRenderList() ให้กรองตาม filter / เพิ่ม _gquoResetFilters()',
+    ],
+  },
+  {
+    ref: '#REV-20260619-K',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'form.html: ใส่การ์ด "รายการใบเสนอราคาทั่วไป" ไว้ใน ordSubPanel2 ("Order ทั่วไป") — แสดงเฉพาะ sub-tab นี้เท่านั้น',
+    ],
+  },
+  {
+    ref: '#REV-20260619-J',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'form.html: ลบการ์ด "รายการใบเสนอราคาทั่วไป" ออกจากแท็บ Order ทั้งหมด',
+    ],
+  },
+  {
+    ref: '#REV-20260619-I',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'form.html: ย้ายการ์ด "รายการ Order" เข้า sub-panel 1 ("สร้าง Order จากใบเสนอราคา") — ไม่แสดงใน tab Order ทั่วไป',
+      'form.html: ใส่การ์ด "รายการใบเสนอราคาทั่วไป" แทน (ด้านล่าง sub-panel 2) — แสดงเฉพาะใน tab Order ทั่วไป',
+    ],
+  },
+  {
+    ref: '#REV-20260619-H',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'form.html: ลบการ์ด "รายการใบเสนอราคาทั่วไป" ออกจากแท็บ Order ตามคำขอ',
+    ],
+  },
+  {
+    ref: '#REV-20260619-G',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'form.html: ย้ายการ์ด "รายการ Order" ออกจาก sub-panel 1 ไปอยู่ด้านนอก sub-panel ทั้งสอง — แสดงตลอดไม่ว่าจะ switch sub-tab ไหน',
+    ],
+  },
+  {
+    ref: '#REV-20260619-F',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'order.js: โหลด รายการใบเสนอราคาทั่วไป อัตโนมัติตอนเปิดหน้า (DOMContentLoaded) — ไม่ต้องกดรีเฟรชเอง',
+      'form.html: เปลี่ยน default tbody gquoListBody เป็น spinner "กำลังโหลด…" แทน "กด รีเฟรช เพื่อโหลดรายการ"',
+    ],
+  },
+  {
+    ref: '#REV-20260619-E',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'form.html: ย้ายการ์ด "รายการ Order" เข้า sub-panel 1 (สร้าง Order จากใบเสนอราคา)',
+      'form.html: เพิ่มการ์ด "รายการใบเสนอราคาทั่วไป" ใน sub-panel 2 — แสดงรายการที่บันทึกจาก Quotations sheet',
+      'order.js: _gquoFetchList(), _gquoRenderList(), _gquoPreviewFromList(), _gquoDeleteFromList()',
+    ],
+  },
+  {
+    ref: '#REV-20260619-D',
+    date: '2026-06-19',
+    current: false,
+    items: [
+      'Code.gs: เพิ่ม saveGeneralQuotation / deleteGeneralQuotation / getGeneralQuotations → สร้างชีต Quotations อัตโนมัติ',
+      'order.js: เพิ่มฟังก์ชัน _gquoSave() — POST บันทึกใบเสนอราคาทั่วไปลง Sheets',
+      'form.html: เพิ่มปุ่ม "💾 บันทึก" ในการ์ดสร้างใบเสนอราคาทั่วไป',
+    ],
+  },
+  {
+    ref: '#REV-20260619-C',
+    date: '2026-06-19',
+    current: false,
     items: [
       'form.html + order.js: เพิ่มตัวกรอง "แบบงาน" ในรายการ Order พร้อม datalist dropdown',
       'order.js: ล้างตัวกรองแบบงานเมื่อกด "ล้างตัวกรอง"',
@@ -4502,236 +4786,4 @@ const DEV_LOGS = [
     date: '2026-06-14',
     current: false,
     items: [
-      'รายงานรายละเอียดย่อย (ส่งชุบ): รวมชื่อรายการ + สเปควัสดุ + เลขที่ใบส่งชุบอ้างอิง ให้อยู่ในแถวเดียวบรรทัดเดียวต่อกัน ไม่ตัดขึ้นบรรทัดใหม่',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BL',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'รายงานรายละเอียดย่อย (ส่งชุบ): ช่องรายการสินค้าไม่ตัดข้อความ แสดงเป็นแถวยาวต่อกัน (เพิ่ม scroll แนวนอน)',
-      'รายงานรายละเอียดย่อย (ส่งชุบ): ถ้ารายการยังไม่มีราคา ช่อง "ราคาต่อหน่วย" แสดง "รอราคา"',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BK',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'รายงานรายละเอียดย่อย (ส่งชุบ): จัดรูปแบบชื่อรายการขนาดเป็น "OD..xID..xH.. mm." และแสดงเลขที่ใบส่งชุบอ้างอิงในช่องรายการสินค้า',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BJ',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ส่งชุบ: เพิ่มการ์ด "ออกรายงานรายละเอียดย่อย" — สรุปยอดส่งชุบแยกตามรายสินค้า (ชื่อรายการ+สเปควัสดุ) พร้อมจำนวน/ราคาต่อหน่วย/จำนวนเงิน ตามช่วงวันที่',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BI',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ส่งชุบ: เพิ่มปุ่ม "ออกรายงานสรุป" ในประวัติใบส่งชุบ — สรุปยอดส่งชุบรวมตามช่วงวันที่ที่เลือก',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BH',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งซื้อ: ยกเลิกคอลัมน์ "สเปค" ทั้งหมด (ในฟอร์มกรอกรายการ และในเอกสารพิมพ์)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BG',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งซื้อ (เอกสารพิมพ์): ลบคอลัมน์ "สเปค/Spec" ออก รวมข้อมูลสเปคไว้ในช่อง "รายการ" แทน (แสดงในวงเล็บต่อท้ายชื่อรายการ)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BF',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งซื้อ: เพิ่มคอลัมน์ "รายการที่ซื้อ" ในตารางรายการใบสั่งซื้อ (แทรกหลังคอลัมน์ Supplier)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BE',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งซื้อ: ชิพรายการเดิมของ Supplier เพิ่มปุ่ม ✕ สำหรับลบรายการที่ไม่ต้องการออกจากคลัง',
-      'ใบสั่งซื้อ: กล่องชิพรายการเดิม ทำให้เลื่อนดูได้ (scroll) เมื่อมีรายการจำนวนมาก',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BD',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งซื้อ: ระบบจดจำรายการสินค้าที่เคยสั่งของแต่ละ Supplier อัตโนมัติ',
-      'ใบสั่งซื้อ: เลือก Supplier แล้วจะมีปุ่มชิพแสดงรายการเดิมที่เคยสั่ง คลิกเพื่อเพิ่มรายการพร้อมราคาล่าสุด',
-      'ใบสั่งซื้อ: รายการใหม่ที่ไม่เคยมีในคลังของ Supplier จะถูกเพิ่มเข้าคลังอัตโนมัติเมื่อบันทึก PO',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BC',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งซื้อ: กดบันทึก/บันทึกการแก้ไขแล้ว เคลียร์รายการและฟอร์มกลับเป็นใบใหม่อัตโนมัติ',
-      'ใบสั่งซื้อ: ช่อง "หน่วย" ในรายการสินค้า เพิ่ม dropdown ตัวเลือกหน่วยที่ใช้บ่อย (ค่าเริ่มต้น "ชิ้น" เมื่อเพิ่มรายการใหม่) ยังพิมพ์เองได้',
-      'ใบสั่งซื้อ: สถานะ "ส่งแล้ว" เปลี่ยนชื่อเป็น "ส่งเอกสารแล้ว"',
-      'ใบสั่งซื้อ: ช่อง "เงื่อนไขส่งมอบ" เพิ่ม dropdown ตัวเลือกที่ใช้บ่อย ยังพิมพ์เองได้',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BB',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้บั๊ก Code.gs: getPurchaseOrders ดึงข้อมูล PO_Items แค่คอลัมน์ A-H (8 คอลัมน์) ทำให้คอลัมน์ I (รูปภาพรายการ) ไม่ถูกโหลดมา — แก้เป็นดึง A-I (9 คอลัมน์) ทำให้รูปแสดงในเอกสารใบสั่งซื้อได้แล้ว',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BA',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้บั๊ก: มีโค้ด JS ซ้ำหลุดออกมานอกแท็ก </html> ทำให้ตัวอักษรโค้ดไปแสดงเป็นข้อความท้ายหน้าเว็บ — ลบโค้ดที่ซ้ำซ้อนออก',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AZ',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'เอกสารใบสั่งซื้อ (PDF/พิมพ์): เพิ่มส่วนแสดงรูปภาพรายการ — รายการที่มีรูปจะแสดงรูปขนาดใหญ่ (150x150px) พร้อมชื่อรายการ อยู่ใต้ตารางรายการสินค้า',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AY',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'เพิ่มรูปภาพต่อรายการในใบสั่งซื้อ — กดไอคอน 📷 ในแต่ละแถวเพื่ออัปโหลดรูปจากเครื่อง (เก็บขึ้น Google Drive) แสดงเป็นรูปย่อในหน้าจอแอป (คลิกรูปเพื่อเปลี่ยน) ไม่แสดงในเอกสาร PDF',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AX',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้กล่องข้อมูลด้านขวา (sidebar) ของ "ใบสั่งซื้อ": สีพื้นเข้มเกินไป — เปลี่ยนเป็นพื้นขาว ตัวอักษรดำ มีกรอบดำล้อมรอบ ดูสะอาดและพิมพ์ชัดเจน',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AW',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้ "ใบสั่งซื้อ" ตอนพิมพ์/บันทึก PDF: กล่องข้อมูลด้านขวา (สถานะ/วันที่/ผู้ติดต่อ) เป็นพื้นหลังสีน้ำเงินตัวอักษรขาว แต่ตอนพิมพ์พื้นหลังหายไปทำให้ตัวอักษรขาวกลืนกับกระดาษ มองไม่เห็น — บังคับให้พิมพ์พื้นหลัง/สีตัวอักษรของกล่องนี้เสมอ (print-color-adjust:exact)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AV',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้หน้า "ใบสั่งซื้อ" (Purchase Order) ที่เปิดแท็บใหม่: เดิมเนื้อหายืดเต็มความกว้างจอจนตัวอักษรเล็กมาก อ่านไม่รู้เรื่อง — จำกัดความกว้างเอกสารไว้ที่ 1000px จัดกลางจอ มีพื้นหลังเทาคั่น (ตอนพิมพ์/PDF ยังเต็มหน้ากระดาษ A4 เหมือนเดิม)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AU',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้หัวกระดาษ "ใบสั่งซื้อ" (Purchase Order): โลโก้บริษัทถูกบีบ/เบี้ยวเกินไป — เปลี่ยนเป็นใส่โลโก้ในกรอบสี่เหลี่ยม 56x56px แบบ object-fit:contain (เหมือนเอกสารใบอื่นๆ) และใช้โลโก้ที่ตั้งค่าไว้ (_getLogoSrc) ถ้ามี',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AT',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'เพิ่มระบบ Service Worker auto-update: เมื่อเปิดโปรแกรมแล้วมีเวอร์ชันใหม่บน GitHub จะดาวน์โหลด+สลับและรีโหลดหน้าให้อัตโนมัติ ไม่ต้องกดปุ่ม "คืนค่าฟอร์ม" เอง (ใช้ sw.js ที่มีอยู่แล้ว แต่ form.html ยังไม่เคยลงทะเบียนใช้งาน)',
-      'แก้บั๊กเดิม: ปุ่ม "Dev Logs" (ประวัติการแก้ไขงาน) กดแล้วไม่ขึ้นป็อปอัพ เพราะไฟล์ form.html ถูกตัดท้ายขาดหายไป (ฟังก์ชัน openDevLogs/closeDevLogs และตัวแสดงรายการ DEV_LOGS ไม่ได้ถูกสร้างไว้เลย) — เพิ่มฟังก์ชันที่หายไปและปิด script/body/html ให้ครบ',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AS',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้ปุ่ม "ส่ง LINE/Telegram" ใบส่งชุบ ที่เปิดแท็บใหม่แล้วเป็นหน้าว่างบนมือถือ: เปลี่ยนวิธีทั้งหมด ไม่เปิดแท็บใหม่อีกต่อไป แต่แสดงรูปการ์ดในป็อปอัพหน้าเดิม ให้แตะค้างที่รูปเพื่อบันทึก/แชร์ได้เลย พร้อมปุ่ม "บันทึกรูป" และ "แชร์ไปยัง LINE/Telegram" (ถ้ามือถือรองรับ)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AR',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้ปุ่ม "ส่ง LINE/Telegram" ใบส่งชุบ เปิดแท็บใหม่แล้วเป็นหน้าว่าง: เดิมถ้า navigator.share ล้มเหลว/ไม่รองรับ จะปิดแท็บเปล่าทิ้งโดยไม่แสดงรูป ตอนนี้แก้ให้แสดงรูปในแท็บที่เปิดไว้เสมอ (ยกเว้นผู้ใช้กดยกเลิกการแชร์เอง)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AQ',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้ปุ่ม "ส่ง LINE/Telegram" ใบส่งชุบ: ถ้ามือถือไม่รองรับการแชร์ไฟล์ภาพผ่าน Web Share API (canShare คืนค่า false) เดิมจะดาวน์โหลดไฟล์เงียบๆไม่มีอะไรเกิดขึ้น ตอนนี้เปลี่ยนเป็นเปิดรูปในแท็บใหม่ให้แตะค้างเพื่อ "บันทึกรูปภาพ"/"แชร์" ได้เหมือนปุ่มบันทึกภาพ และเพิ่มการเช็คว่ามีข้อมูลใบส่งชุบก่อนสร้างการ์ด',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AP',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ปุ่ม "ส่ง LINE/Telegram" ในใบส่งชุบ: เปลี่ยนวิธีแชร์บนมือถือ จากการ capture หน้าเอกสารแบบเต็ม (กว้างเกินไป แชร์ไม่ได้) เป็นสร้าง "การ์ดสรุปใบส่งชุบ" แนวตั้งขนาด 480px (รูปแบบ/สีเหมือนใบส่งชุบจริง) แล้วแชร์การ์ดนี้แทน เหมือนปุ่ม "ส่งรูป" ในใบเสนอราคา',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AO',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ปุ่ม "บันทึกภาพ"/"ส่ง LINE/Telegram" บนมือถือ: เพิ่มการเช็คว่าโหลดไลบรารี html2canvas สำเร็จหรือไม่ ถ้าไม่สำเร็จจะแจ้งเตือนทันที (ใช้ alert() สำรองถ้า Swal ใช้ไม่ได้) แก้ปัญหากดปุ่มแล้วไม่มีการตอบสนองเลย',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AN',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้รูปที่บันทึก/แชร์จากหน้าพรีวิวเอกสารบนมือถือ: เดิมตารางถูกตัดคอลัมน์ (จอเล็ก) ตอนนี้บังคับ capture ที่ความกว้างระดับเดสก์ท็อป (1300px) ให้แสดงครบทุกคอลัมน์เหมือนพรีวิวเดสก์ท็อป',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AM',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้ปุ่ม "ส่ง LINE / Telegram" หน้าพรีวิวเอกสารยังแชร์ไม่ได้: ถ้าโลโก้บริษัทเป็นรูปข้ามโดเมนทำให้ canvas ถูก taint จนแชร์/บันทึกล้มเหลว ตอนนี้จับ capture ใหม่โดยข้ามรูปโลโก้อัตโนมัติ',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AL',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ปุ่ม "ส่ง LINE / Telegram" ในหน้าพรีวิวเอกสาร (ใบส่งชุบ ฯลฯ) ให้ทำงานเหมือนปุ่ม "ส่งรูป" ในใบเสนอราคาเป๊ะๆ (capture → Web Share API → fallback ดาวน์โหลด)',
-    ],
-  },
-  {
-    ref: '#REV-20260614-AK',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'เปิดแท็บ/หน้าต่างใหม่ → เริ่มที่หน้าแดชบอร์ดเสม
+      'รายงานรายละเอียดย่อย (ส่งชุบ): รวมชื่อรายการ + สเปควัสดุ + เลขที่ใบส่งชุบอ้างอิง �

@@ -807,8 +807,154 @@ function _gquoPreview() {
   _gquoRenderDoc({ customer, refNo, dateVal, remark, items });
 }
 
+
+// ── บันทึกใบเสนอราคาทั่วไป → Google Sheets ชีต Quotations ──
+async function _gquoSave() {
+  const items = _gquoItems.filter(it => (it.desc||'').trim() || (parseFloat(it.price)||0) > 0);
+  if (!items.length) {
+    Swal.fire({icon:'warning', title:'กรุณากรอกรายการสินค้า/บริการ',
+      background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1'});
+    return;
+  }
+  if (!SCRIPT_URL) {
+    Swal.fire({icon:'warning', title:'ยังไม่ได้ตั้งค่า Script URL',
+      background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1'});
+    return;
+  }
+  const customer = ($('gquo_customer')?.value || '').trim();
+  const refNoEl  = $('gquo_refNo');
+  const refNo    = (refNoEl?.value || '').trim() || generateRefId();
+  if (refNoEl && !refNoEl.value.trim()) refNoEl.value = refNo; // แสดงเลขที่ที่สร้างอัตโนมัติ
+  const dateVal  = $('gquo_date')?.value || _todayStr();
+  const remark   = ($('gquo_remark')?.value || '').trim();
+
+  const subtotal = items.reduce((s, it) => s + (parseFloat(it.qty)||0) * (parseFloat(it.price)||0), 0);
+  const vatAmt   = subtotal * 0.07;
+  const grand    = subtotal + vatAmt;
+
+  Swal.fire({ title:'กำลังบันทึก...', allowOutsideClick:false,
+    background:'#0d1b2a', color:'#cce4ff', showConfirmButton:false, didOpen:()=>Swal.showLoading() });
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveGeneralQuotation',
+        refNo, date: dateVal, customer, items, remark, subtotal, vatAmt, grand })
+    });
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'บันทึกแล้ว ✅ ' + refNo,
+      showConfirmButton:false, timer:2000, timerProgressBar:true });
+  } catch(err) {
+    Swal.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', text: String(err),
+      background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1' });
+  }
+}
+
+
+// ── รายการใบเสนอราคาทั่วไป (Quotations sheet) ──
+let _gquoListCache = [];
+
+async function _gquoFetchList() {
+  const tbody = $('gquoListBody');
+  if (!tbody) return;
+  if (!SCRIPT_URL) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--t3);font-size:.8rem">⚠️ ยังไม่ได้ตั้งค่า Script URL</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--t3);font-size:.8rem"><span class="spin-ico">↻</span> กำลังโหลด…</td></tr>`;
+  try {
+    const res  = await fetch(SCRIPT_URL + '?action=getGeneralQuotations', {mode:'cors'});
+    const data = await res.json();
+    _gquoListCache = (data.data || []).reverse(); // ใหม่สุดก่อน
+    _gquoRenderList();
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#f87171;font-size:.8rem">โหลดไม่สำเร็จ: ${err.message}</td></tr>`;
+  }
+}
+
+function _gquoRenderList() {
+  const tbody = $('gquoListBody');
+  if (!tbody) return;
+  // ── อ่านค่า filter ──
+  const srch    = (($('gquoFilterSearch')||{}).value||'').trim().toLowerCase();
+  const fromVal = ($('gquoFilterFrom')||{}).value||'';
+  const toVal   = ($('gquoFilterTo')||{}).value||'';
+  // ── กรอง ──
+  const filtered = _gquoListCache.filter((q, i) => {
+    if (srch) {
+      const hay = (String(q.refNo||'') + ' ' + String(q.customer||'')).toLowerCase();
+      if (!hay.includes(srch)) return false;
+    }
+    // วันที่: q.date เก็บเป็น ISO string เช่น "2026-06-18T17:00:00.000Z" หรือ "dd/MM/yyyy"
+    const rawDate = String(q.date||'');
+    const isoDate = rawDate.length >= 10 ? rawDate.substring(0,10) : rawDate;
+    if (fromVal && isoDate < fromVal) return false;
+    if (toVal   && isoDate > toVal)   return false;
+    return true;
+  });
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:30px;text-align:center;color:var(--t3);font-size:.8rem">${_gquoListCache.length ? 'ไม่พบรายการที่ตรงกับตัวกรอง' : 'ยังไม่มีรายการ'}</td></tr>`;
+    return;
+  }
+  const fmtNum = n => (parseFloat(n)||0).toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2});
+  tbody.innerHTML = filtered.map((q) => {
+    const i     = _gquoListCache.indexOf(q); // index จริงใน cache (สำหรับ preview/delete)
+    const refNo = _escH(String(q.refNo||''));
+    const date  = _escH(String(q.date||''));
+    const cust  = _escH(String(q.customer||'—'));
+    const grand = fmtNum(q.grand);
+    return `<tr style="border-bottom:1px solid var(--bc-div);font-size:.8rem">
+      <td style="padding:8px 10px;font-weight:600;color:var(--c1)">${refNo}</td>
+      <td style="padding:8px 10px;color:var(--t2)">${date}</td>
+      <td style="padding:8px 10px">${cust}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600">${grand} ฿</td>
+      <td style="padding:8px 10px;text-align:center;white-space:nowrap">
+        <button onclick="_gquoPreviewFromList(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg-card);color:var(--t1);font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif;margin-right:4px">🖨️ พิมพ์</button>
+        <button onclick="_gquoDeleteFromList(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#f87171;font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif">🗑️ ลบ</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function _gquoResetFilters() {
+  const s = $('gquoFilterSearch'); if (s) s.value = '';
+  const f = $('gquoFilterFrom');  if (f) f.value = '';
+  const t = $('gquoFilterTo');    if (t) t.value = '';
+  _gquoRenderList();
+}
+
+function _gquoPreviewFromList(i) {
+  const q = _gquoListCache[i];
+  if (!q) return;
+  const items = Array.isArray(q.items) ? q.items : [];
+  _gquoRenderDoc({ customer: q.customer||'', refNo: q.refNo||'', dateVal: q.date||'', remark: q.remark||'', items });
+}
+
+async function _gquoDeleteFromList(i) {
+  const q = _gquoListCache[i];
+  if (!q) return;
+  const { isConfirmed } = await Swal.fire({
+    title: 'ลบใบเสนอราคา?',
+    html: `<b>${_escH(String(q.refNo||''))}</b> — ${_escH(String(q.customer||''))}`,
+    icon: 'warning', showCancelButton:true,
+    confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก',
+    confirmButtonColor:'#ef4444', cancelButtonColor:'#6366f1',
+    background:'#0d1b2a', color:'#cce4ff',
+  });
+  if (!isConfirmed) return;
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'deleteGeneralQuotation', refNo: q.refNo }) });
+    _gquoListCache.splice(i, 1);
+    _gquoRenderList();
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'ลบแล้ว',
+      showConfirmButton:false, timer:1500, timerProgressBar:true });
+  } catch(err) {
+    Swal.fire({ icon:'error', title:'ลบไม่สำเร็จ', text:String(err),
+      background:'#0d1b2a', color:'#cce4ff', confirmButtonColor:'#6366f1' });
+  }
+}
+
 // ── เริ่มต้น: render แถวเปล่า 1 แถวเมื่อหน้าโหลด ──
-document.addEventListener('DOMContentLoaded', () => { if ($('gquoItemsWrap')) _gquoRenderItems(); });
+document.addEventListener('DOMContentLoaded', () => { if ($('gquoItemsWrap')) _gquoRenderItems(); if ($('gquoListBody')) _gquoFetchList(); });
 
 // ══════════════════════════════════════════════════════
 // ── Item Master: รายการสินค้า/บริการที่ใช้บ่อย (sheet "ItemMaster") ──
