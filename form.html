@@ -38,7 +38,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v9.33</span>
+      <span class="ph-chip ver">v9.34</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -1434,8 +1434,18 @@
       <div style="background:var(--bg-soft,rgba(99,102,241,.06));border:1px solid var(--bc-div);border-radius:10px;padding:12px 14px;font-size:.8rem;line-height:2;display:flex;flex-direction:column">
         <div style="font-size:.7rem;color:var(--t3);margin-bottom:4px">ดึงข้อมูลจากใบเสนอราคาที่เปิดอยู่</div>
         <div>No.Quo: <b id="ord_previewNoQuo" style="color:var(--c1)">—</b></div>
-        <div>ลูกค้า: <b id="ord_previewCustomer">—</b></div>
-        <div>แบบงาน: <b id="ord_previewWorkType">—</b></div>
+        <div style="display:flex;align-items:center;gap:6px">ลูกค้า:
+          <b id="ord_previewCustomer" style="display:none">—</b>
+          <input type="text" id="ord_customer" list="ord_customerList" placeholder="เลือกหรือพิมพ์ชื่อลูกค้า"
+            style="flex:1;min-width:0;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
+          <datalist id="ord_customerList"></datalist>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">แบบงาน:
+          <b id="ord_previewWorkType" style="display:none">—</b>
+          <input type="text" id="ord_workType" list="ord_workTypeList" placeholder="เลือกหรือพิมพ์แบบงาน"
+            style="flex:1;min-width:0;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
+          <datalist id="ord_workTypeList"></datalist>
+        </div>
         <div>รายการสินค้า: <b id="ord_previewProductList">—</b></div>
         <div style="display:flex;align-items:center;gap:6px">จำนวน (ตามใบเสนอราคา <b id="ord_previewQty">—</b>):
           <input type="text" id="ord_qty" placeholder="จำนวนตาม PO จริง"
@@ -1445,16 +1455,10 @@
           <input type="text" id="ord_price" placeholder="ราคาตาม PO จริง"
             style="flex:1;min-width:0;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:4px">
-          <span style="white-space:nowrap">ขนาดตัดเหล็ก OD:</span>
-          <input type="number" id="ord_od" placeholder="OD (mm)" step="0.01"
-            style="width:80px;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
-          <span style="white-space:nowrap">ID:</span>
-          <input type="number" id="ord_id" placeholder="ID (mm)" step="0.01"
-            style="width:80px;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
-          <span style="white-space:nowrap">H:</span>
-          <input type="number" id="ord_h" placeholder="H (mm)" step="0.01"
-            style="width:80px;padding:3px 8px;font-size:.78rem;font-weight:700;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg1,#fff)">
+        <div style="display:none">
+          <input type="number" id="ord_od" step="0.01">
+          <input type="number" id="ord_id" step="0.01">
+          <input type="number" id="ord_h"  step="0.01">
         </div>
         <div style="display:flex;align-items:center;gap:6px">แม่พิมพ์:
           <input type="text" id="ord_mold" placeholder="แม่พิมพ์"
@@ -3019,7 +3023,7 @@
 <script src="formcalc.js?v=9.06"></script>
 <script src="aifeatures.js?v=8.94"></script>
 <script src="theme.js?v=9.10"></script>
-<script src="order.js?v=9.33"></script>
+<script src="order.js?v=9.34"></script>
 <script src="purchase.js?v=9.32"></script>
 <script src="invoice.js?v=9.03"></script>
 <script src="plating.js?v=8.94"></script>
@@ -3165,9 +3169,19 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260619-A',
+    ref: '#REV-20260619-B',
     date: '2026-06-19',
     current: true,
+    items: [
+      'form.html + order.js: ฟอร์มสร้าง Order — ช่อง "ลูกค้า" และ "แบบงาน" เปลี่ยนเป็น input แก้ไขได้ + datalist dropdown',
+      'order.js: _ordRefreshFormLists() — populate datalist ลูกค้าจาก _custCache, datalist แบบงานจาก Order+DATA cache',
+      'form.html: ซ่อนช่อง OD/ID/H ออกจากฟอร์มสร้าง Order (ยังบันทึกค่าอยู่ใน hidden inputs)',
+    ],
+  },
+  {
+    ref: '#REV-20260619-A',
+    date: '2026-06-19',
+    current: false,
     items: [
       'form.html + order.js: เพิ่มช่อง OD/ID/H ในฟอร์มสร้าง Order และฟอร์มแก้ไข Order',
       'order.js: บันทึก OD/ID/H ลง Order sheet (col AI/AJ/AK) ทั้งตอนสร้างและแก้ไข',

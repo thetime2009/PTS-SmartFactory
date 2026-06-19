@@ -75,22 +75,27 @@ function updateOrderPreview() {
     ['ord_previewNoQuo','ord_previewCustomer','ord_previewWorkType','ord_previewProductList','ord_previewQty','ord_previewPrice'].forEach(id => {
       if ($(id)) $(id).textContent = '—';
     });
+    if ($('ord_customer')) $('ord_customer').value = '';
+    if ($('ord_workType')) $('ord_workType').value = '';
     if ($('ord_productList')) $('ord_productList').value = '';
     if ($('ord_material'))    $('ord_material').textContent = '—';
     _ordUpdateCreateBtn();
     return;
   }
   if ($('ord_previewNoQuo'))    $('ord_previewNoQuo').textContent    = r[DT.noQuo] || '—';
-  if ($('ord_previewCustomer')) $('ord_previewCustomer').textContent = (() => {
+  const _custDisplayVal = (() => {
     const sel = $('f_contact');
     const val = r[DT.contact] || '';
     if (sel) {
       const opt = Array.from(sel.options).find(o => o.value === val);
-      if (opt) return opt.text || '—';
+      if (opt) return opt.text || '';
     }
-    return val || '—';
+    return val || '';
   })();
+  if ($('ord_previewCustomer')) $('ord_previewCustomer').textContent = _custDisplayVal || '—';
+  if ($('ord_customer') && !$('ord_customer').dataset.userEdit) $('ord_customer').value = _custDisplayVal;
   if ($('ord_previewWorkType')) $('ord_previewWorkType').textContent = r[DT.workType] || '—';
+  if ($('ord_workType') && !$('ord_workType').dataset.userEdit)   $('ord_workType').value  = r[DT.workType] || '';
   if ($('ord_previewQty'))      $('ord_previewQty').textContent      = r[DT.unit] || '—';
   if ($('ord_previewPrice'))    $('ord_previewPrice').textContent    = r[DT.sellPrice] || '—';
   // จำนวน/ราคา — ดึงจากใบเสนอราคามาให้อัตโนมัติ แต่แก้ไขให้ตรงกับ PO จริงได้ (ไม่ทับค่าที่แก้เอง)
@@ -421,14 +426,14 @@ async function createOrder() {
   });
   if (!confirmRes.isConfirmed) return;
 
-  const customer = ($('ord_previewCustomer')?.textContent || '').trim().replace(/^—$/, '') || '';
+  const customer = ($('ord_customer')?.value || $('ord_previewCustomer')?.textContent || '').trim().replace(/^—$/, '') || '';
 
   const row = new Array(ORDER_NUM_COLS).fill('');
   row[ORDER_COLS.noQuo]       = noQuo;
   row[ORDER_COLS.noPO]        = noPO;
   row[ORDER_COLS.orderDate]   = _ordDateToSheet($('ord_orderDate').value || _todayStr());
   row[ORDER_COLS.mold]        = $('ord_mold')?.value || '';
-  row[ORDER_COLS.workType]    = _ordSourceRow[DT.workType] || '';
+  row[ORDER_COLS.workType]    = ($('ord_workType')?.value || '').trim() || (_ordSourceRow ? _ordSourceRow[DT.workType] : '') || '';
   row[ORDER_COLS.productList] = $('ord_productList').value || '';
   row[ORDER_COLS.qty]         = ($('ord_qty')?.value || '').trim() || _ordSourceRow[DT.unit] || '';
   row[ORDER_COLS.material]    = ($('ord_material')?.textContent || '').trim().replace(/^—$/, '') || '';
@@ -530,6 +535,7 @@ function _gordRefreshCustomerList() {
   const dl = $('gord_customerList');
   if (!dl) return;
   dl.innerHTML = (_custCache || []).map(c => `<option value="${c.name}${c.branch?' ('+c.branch+')':''}">`).join('');
+  _ordRefreshFormLists();
 }
 
 // แปลงชื่อลูกค้าแบบเต็ม "ชื่อบริษัท (สาขา)" ที่เลือกจาก dropdown → ค่า "ผู้ติดต่อ" ของลูกค้านั้น
@@ -539,6 +545,24 @@ function _custDisplayToContact(display) {
   if (!display) return display;
   const cust = (_custCache || []).find(c => `${c.name}${c.branch ? ' (' + c.branch + ')' : ''}` === display);
   return cust ? (cust.contact || cust.name) : display;
+}
+
+// เติม datalist ลูกค้า + แบบงาน สำหรับฟอร์ม "สร้าง Order จากใบเสนอราคา"
+function _ordRefreshFormLists() {
+  // ลูกค้า — จาก _custCache
+  const custDl = $('ord_customerList');
+  if (custDl) {
+    custDl.innerHTML = (_custCache || []).map(c =>
+      `<option value="${(c.name||'')}${c.branch?' ('+c.branch+')':''}">` ).join('');
+  }
+  // แบบงาน — unique values จาก Order cache + DATA cache
+  const wtDl = $('ord_workTypeList');
+  if (wtDl) {
+    const seen = new Set();
+    (_orderCache || []).forEach(r => { const v = String(r[ORDER_COLS.workType]||'').trim(); if(v) seen.add(v); });
+    (_dtCache    || []).forEach(r => { const v = String(r[DT.workType]||'').trim();          if(v) seen.add(v); });
+    wtDl.innerHTML = [...seen].sort().map(v => `<option value="${v}">`).join('');
+  }
 }
 
 // เมื่อเลือกรายการสินค้า/บริการจาก Item Master (datalist) — เติมหน่วย/ราคาให้อัตโนมัติถ้ามีข้อมูล
