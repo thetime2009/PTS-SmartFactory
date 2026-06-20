@@ -19,10 +19,12 @@ const ORDER_COLS = {
   invoiceNo: 28, invoiceDate: 29,  // AC, AD = เลขที่/วันที่ใบกำกับภาษี
   meshOut: 30, meshIn: 31,         // AE, AF = ตะแกรงนอก/ตะแกรงใน
   matTop: 32, matBot: 33,          // AG, AH = ฝาบน/ฝาล่าง
-  od: 34, id_: 35, h_: 36           // AI, AJ, AK = ขนาด OD/ID/H (ตัดเหล็ก)
+  od: 34, id_: 35, h_: 36,          // AI, AJ, AK = ขนาด OD/ID/H (ตัดเหล็ก)
+  wiId: 37                          // AL = WI ที่ผูกกับ Order นี้โดยตรง
 };
-const ORDER_NUM_COLS = 37;
+const ORDER_NUM_COLS = 38;
 let _orderCache = [];
+let _wiCache = []; // WI list โหลดจาก backend (match ด้วย OD+ID+H+workType)
 const ORDER_LOAD_LIMIT = 100; // โหลดปกติ = 100 รายการล่าสุด, กด "โหลดทั้งหมด" = 0 (ทั้งหมด)
 let _itemMasterCache = []; // รายการสินค้า/บริการที่ใช้บ่อย (Item Master) — โหลดจาก fetchItemMaster()
 let _ordEditNoPO = null;
@@ -1009,7 +1011,484 @@ async function _gquoDeleteFromList(i) {
 }
 
 // ── เริ่มต้น: render แถวเปล่า 1 แถวเมื่อหน้าโหลด ──
-document.addEventListener('DOMContentLoaded', () => { if ($('gquoItemsWrap')) _gquoRenderItems(); if ($('gquoListBody')) _gquoFetchList(); });
+
+// ══════════════════════════════════════════════════════
+// WI (Work Instruction) — จัดการ + viewer
+// ══════════════════════════════════════════════════════
+
+let _wiItems = []; // steps ของ WI ที่กำลังแก้ไขอยู่
+let _wiEditId = null; // WI_ID ที่กำลัง edit (null = สร้างใหม่)
+
+// ── compress รูปก่อนบันทึก (เหมือน RFQ) ──
+function _wiCompressImg(file, maxPx = 900, quality = 0.72) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── เปิดฟอร์ม ──
+function _wiOpenForm(wiId) {
+  _wiEditId = wiId;
+  if (wiId) {
+    const wi = _wiCache.find(w => w.wiId === wiId);
+    if (!wi) return;
+    $('wi_od').value       = wi.od || '';
+    $('wi_id').value       = wi.id || '';
+    $('wi_h').value        = wi.h  || '';
+    $('wi_worktype').value = wi.workType || '';
+    $('wi_remark').value   = wi.remark || '';
+    _wiItems = (wi.steps || []).map(s => ({ ...s }));
+    $('wiFormTitle').textContent = 'แก้ไข WI — ' + wi.wiId;
+  } else {
+    $('wi_od').value = $('wi_id').value = $('wi_h').value = $('wi_worktype').value = $('wi_remark').value = '';
+    _wiItems = [];
+    $('wiFormTitle').textContent = 'สร้าง WI ใหม่';
+  }
+  _wiRenderSteps();
+  $('wiFormCard').style.display = 'block';
+  $('wiFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  _wiPopulateWorkTypeList();
+}
+
+function _wiCloseForm() {
+  $('wiFormCard').style.display = 'none';
+  _wiItems = []; _wiEditId = null;
+}
+
+// ── populate datalist แบบงาน (ดึงจาก backend + orderCache) ──
+async function _wiPopulateWorkTypeList() {
+  const dl = $('wiWorkTypeList');
+  if (!dl) return;
+  // ดึงจาก orderCache ก่อน (ถ้ามี)
+  let types = [...new Set(_orderCache.map(r => String(r[ORDER_COLS.workType] || '').trim()).filter(Boolean))];
+  // ถ้าไม่มี → fetch จาก backend
+  if (!types.length && SCRIPT_URL) {
+    try {
+      const res = await fetch(SCRIPT_URL + '?action=getWorkTypes').then(r => r.json());
+      if (res.status === 'ok') types = (res.types || []).map(w => String(w).trim()).filter(Boolean);
+    } catch(e) {}
+  }
+  dl.innerHTML = [...new Set(types)].map(t => `<option value="${t}">`).join('');
+}
+
+// ── render steps ──
+function _wiRenderSteps() {
+  const wrap = $('wiStepsWrap');
+  if (!wrap) return;
+  if (!_wiItems.length) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--t3);padding:12px;font-size:.82rem">ยังไม่มีขั้นตอน — กด "+ เพิ่มขั้นตอน"</div>';
+    return;
+  }
+  wrap.innerHTML = _wiItems.map((s, i) => `
+    <div style="border:1px solid var(--bc-div);border-radius:10px;padding:10px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">
+      <div style="flex-shrink:0;width:32px;height:32px;border-radius:8px;background:var(--c1);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <input type="text" value="${(s.caption||'').replace(/"/g,'&quot;')}" placeholder="คำอธิบายขั้นตอน..." 
+          oninput="_wiItems[${i}].caption=this.value"
+          style="width:100%;margin-bottom:8px;padding:7px 10px;border:1px solid var(--bc-div);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.85rem;background:var(--bg1);color:var(--t1)">
+        ${s.img
+          ? `<div style="position:relative;display:inline-block">
+               <img src="${s.img}" style="max-height:100px;max-width:200px;border-radius:8px;border:1px solid var(--bc-div);display:block">
+               <button onclick="_wiRemoveImg(${i})" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:.65rem;line-height:1">✕</button>
+             </div>`
+          : `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:var(--c1);border:1.5px dashed var(--bc-div);border-radius:8px;padding:7px 12px;background:var(--bg2)">
+               📷 อัปโหลดรูป
+               <input type="file" accept="image/*" style="display:none" onchange="_wiImgChange(event,${i})">
+             </label>`}
+      </div>
+      <button onclick="_wiRemoveStep(${i})" style="flex-shrink:0;background:none;border:none;color:var(--t3);cursor:pointer;font-size:1.1rem;padding:2px 4px" title="ลบขั้นตอนนี้">🗑️</button>
+    </div>`).join('');
+}
+
+function _wiAddStep() {
+  _wiItems.push({ caption: '', img: '' });
+  _wiRenderSteps();
+}
+
+function _wiRemoveStep(i) {
+  _wiItems.splice(i, 1);
+  _wiRenderSteps();
+}
+
+function _wiRemoveImg(i) {
+  _wiItems[i].img = '';
+  _wiRenderSteps();
+}
+
+async function _wiImgChange(event, i) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!SCRIPT_URL) { Swal.fire({ icon:'error', title:'ยังไม่ได้ตั้งค่า Script URL' }); return; }
+  // compress ก่อนส่ง (ลดขนาด upload)
+  const b64 = await _wiCompressImg(file, 1200, 0.80);
+  Swal.fire({ title:'กำลังอัปโหลดรูป...', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({
+        action: 'uploadWIImage',
+        base64: b64,
+        mimeType: 'image/jpeg',
+        filename: 'wi_step' + i + '_' + Date.now() + '.jpg'
+      })
+    }).then(r => r.json());
+    if (res.status !== 'ok') throw new Error(res.message || 'upload error');
+    _wiItems[i].img = res.url; // เก็บ Drive URL แทน base64
+    Swal.close();
+    _wiRenderSteps();
+  } catch(err) {
+    Swal.fire({ icon:'error', title:'อัปโหลดรูปไม่สำเร็จ', text: err.message });
+  }
+}
+
+// ── บันทึก WI ──
+async function _wiSave() {
+  const od = parseFloat($('wi_od').value) || 0;
+  const id = parseFloat($('wi_id').value) || 0;
+  const h  = parseFloat($('wi_h').value)  || 0;
+  const wt = ($('wi_worktype').value || '').trim();
+  if (!od || !id || !h || !wt) {
+    Swal.fire({ icon:'warning', title:'กรุณากรอก OD / ID / H และ แบบงาน', confirmButtonText:'ตกลง' });
+    return;
+  }
+  if (!_wiItems.length) {
+    Swal.fire({ icon:'warning', title:'กรุณาเพิ่มขั้นตอนอย่างน้อย 1 ขั้น', confirmButtonText:'ตกลง' });
+    return;
+  }
+  if (!SCRIPT_URL) { Swal.fire({ icon:'error', title:'ยังไม่ได้ตั้งค่า Script URL' }); return; }
+
+  // auto wiId
+  const wiId = _wiEditId || ('WI-' + Date.now());
+  const payload = {
+    action: 'saveWI',
+    wiId, od, id: id, h, workType: wt,
+    remark: ($('wi_remark').value || '').trim(),
+    steps: _wiItems
+  };
+
+  Swal.fire({ title:'กำลังบันทึก...', allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+  try {
+    const res = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) }).then(r=>r.json());
+    if (res.status !== 'ok') throw new Error(res.message || 'error');
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'บันทึก WI แล้ว ✅', showConfirmButton:false, timer:2000 });
+    _wiCloseForm();
+    await _wiLoadList();
+  } catch(err) {
+    Swal.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', text:err.message });
+  }
+}
+
+// ── ลบ WI ──
+function _wiPrint(wiId) {
+  const wi = _wiCache.find(w => w.wiId === wiId);
+  if (!wi) return;
+  const companyName = localStorage.getItem('ptts_company_name') || 'PTTS';
+  const steps = wi.steps || [];
+  const stepsHtml = steps.map((s, i) => `
+    <div style="break-inside:avoid;border:1px solid #d1d5db;border-radius:10px;padding:14px 16px;margin-bottom:12px;background:#fff">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="min-width:32px;height:32px;border-radius:50%;background:#2563eb;color:#fff;
+          font-weight:800;font-size:1rem;display:flex;align-items:center;justify-content:center">${i+1}</div>
+        <div style="font-size:.95rem;font-weight:700;color:#1e293b">${s.caption||'(ไม่มีคำอธิบาย)'}</div>
+      </div>
+      ${s.img ? `<img src="${s.img}" style="width:100%;max-height:260px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;display:block">` : ''}
+    </div>`).join('');
+
+  const html = `<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8">
+    <title>WI: ${wi.wiId}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap">
+    <style>
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { font-family:Sarabun,sans-serif; background:#f8fafc; color:#1e293b; padding:0; }
+      @media print {
+        body { background:#fff; }
+        @page { size:A4; margin:15mm 12mm; }
+      }
+    </style>
+  </head><body>
+    <div style="max-width:720px;margin:0 auto;padding:24px 16px">
+
+      <!-- หัว -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;
+        border-bottom:3px solid #2563eb;padding-bottom:12px;margin-bottom:18px">
+        <div>
+          <div style="font-size:.72rem;font-weight:600;color:#64748b;letter-spacing:.05em;text-transform:uppercase">Work Instruction</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#2563eb">${wi.wiId}</div>
+          <div style="font-size:.8rem;color:#475569;margin-top:2px">วันที่สร้าง: ${wi.updatedAt||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:1rem;font-weight:700;color:#1e293b">${companyName}</div>
+          <div style="font-size:.72rem;color:#64748b;margin-top:2px">ฝ่ายผลิต</div>
+        </div>
+      </div>
+
+      <!-- สเปก -->
+      <div style="background:#eff6ff;border-radius:8px;padding:10px 16px;margin-bottom:20px;display:inline-block">
+        <div style="font-size:.68rem;color:#3b82f6;font-weight:600;margin-bottom:2px">รายการ</div>
+        <div style="font-size:1.1rem;font-weight:800;color:#1e40af">OD${wi.od}xID${wi.id}xH${wi.h} mm. &nbsp;·&nbsp; ${wi.workType||'—'}</div>
+      </div>
+
+      ${wi.remark ? `<div style="background:#fefce8;border:1px solid #fde047;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:.85rem">
+        <span style="font-weight:700;color:#854d0e">📝 หมายเหตุ: </span>${wi.remark}</div>` : ''}
+
+      <!-- ขั้นตอน -->
+      <div style="font-size:.78rem;font-weight:700;color:#6366f1;margin-bottom:10px;letter-spacing:.04em">
+        ขั้นตอนการทำงาน (${steps.length} ขั้นตอน)
+      </div>
+      ${stepsHtml || '<div style="color:#94a3b8;font-size:.85rem;padding:12px 0">ไม่มีขั้นตอน</div>'}
+
+      <!-- ช่องลงชื่อ -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0">
+        ${['ผู้ปฏิบัติงาน','หัวหน้างาน','ผู้ตรวจสอบ'].map(l=>`
+        <div style="text-align:center">
+          <div style="border-bottom:1px solid #94a3b8;height:36px;margin-bottom:4px"></div>
+          <div style="font-size:.72rem;color:#64748b">${l}</div>
+        </div>`).join('')}
+      </div>
+
+    </div>
+    <script>(function(){
+      function go(){ try{ window.focus(); window.print(); }catch(e){} }
+      if(document.fonts && document.fonts.ready){
+        document.fonts.ready.then(go).catch(function(){ setTimeout(go,700); });
+      } else { setTimeout(go,700); }
+    })();<\/script>
+  </body></html>`;
+
+  const win = window.open('','_blank');
+  if (!win) { Swal.fire({ icon:'error', title:'บล็อก popup', text:'กรุณาอนุญาต popup แล้วลองใหม่' }); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+function _wiShowLinkedOrders(wiId) {
+  const wi = _wiCache.find(w => w.wiId === wiId);
+  if (!wi) return;
+  // หา Order ที่ผูกตรง (wiId) หรือ auto-match (OD+ID+H+workType)
+  const linked = _orderCache.filter(r => {
+    if (String(r[ORDER_COLS.wiId]||'').trim() === wiId) return true; // ผูกตรง
+    // auto-match
+    if (_wiNorm(r[ORDER_COLS.od]) !== _wiNorm(wi.od)) return false;
+    if (_wiNorm(r[ORDER_COLS.id_]) !== _wiNorm(wi.id)) return false;
+    if (_wiNorm(r[ORDER_COLS.h_])  !== _wiNorm(wi.h))  return false;
+    if (String(r[ORDER_COLS.workType]||'').trim() !== String(wi.workType||'').trim()) return false;
+    return true;
+  });
+
+  if (!linked.length) {
+    Swal.fire({ icon:'info', title:'ไม่มี Order ที่ผูกกับ WI นี้',
+      text: 'WI: ' + wiId, confirmButtonText:'ปิด', confirmButtonColor:'#475569',
+      background:'var(--bg-deep)', color:'var(--t1)' });
+    return;
+  }
+
+  const rows = linked.map(r => {
+    const noPO   = String(r[ORDER_COLS.noPO]||'—');
+    const noQuo  = String(r[ORDER_COLS.noQuo]||'—');
+    const cust   = String(r[ORDER_COLS.customer]||'—');
+    const proc   = String(r[ORDER_COLS.process]||'—');
+    const isDirect = String(r[ORDER_COLS.wiId]||'').trim() === wiId;
+    const escPO  = noPO.replace(/'/g,"\'");
+    return `<tr style="border-bottom:1px solid var(--bc-div);font-size:.82rem">
+      <td style="padding:7px 10px;font-weight:700;color:#9b8fff">${noPO}</td>
+      <td style="padding:7px 10px;color:var(--c1)">${noQuo}</td>
+      <td style="padding:7px 10px">${cust}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <span style="padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600;background:${isDirect?'rgba(20,184,166,.15)':'rgba(99,102,241,.12)'};color:${isDirect?'#2dd4bf':'#9b8fff'};border:1px solid ${isDirect?'rgba(20,184,166,.3)':'rgba(99,102,241,.25)'}">
+          ${isDirect?'🔗 ผูกตรง':'🔍 Auto-match'}
+        </span>
+      </td>
+      <td style="padding:7px 10px">${proc}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <button onclick="Swal.close();setTimeout(()=>showOrderDetail('${escPO}'),150)"
+          style="padding:3px 10px;border-radius:6px;border:none;background:#6366f1;color:#fff;font-size:.7rem;cursor:pointer">📋 ดู</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  Swal.fire({
+    title: '🔗 Order ที่ผูกกับ WI: ' + wiId,
+    html: `<div style="text-align:left;max-height:60vh;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--bg2);color:var(--t2);font-size:.75rem">
+          <th style="padding:7px 10px;text-align:left">No.PO</th>
+          <th style="padding:7px 10px;text-align:left">No.Quo</th>
+          <th style="padding:7px 10px;text-align:left">ลูกค้า</th>
+          <th style="padding:7px 10px;text-align:center">ประเภท</th>
+          <th style="padding:7px 10px;text-align:left">Process</th>
+          <th style="padding:7px 10px"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`,
+    width: 'min(95vw, 820px)',
+    background: 'var(--bg-deep)', color: 'var(--t1)',
+    showConfirmButton: true, confirmButtonText: '✕ ปิด', confirmButtonColor: '#475569'
+  });
+}
+
+async function _wiDelete(wiId) {
+  const confirm = await Swal.fire({ icon:'warning', title:'ลบ WI ' + wiId + '?', showCancelButton:true, confirmButtonText:'ลบ', cancelButtonText:'ยกเลิก', confirmButtonColor:'#ef4444' });
+  if (!confirm.isConfirmed) return;
+  if (!SCRIPT_URL) return;
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'deleteWI', wiId }) }).then(r=>r.json());
+    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'ลบแล้ว', showConfirmButton:false, timer:1500 });
+    await _wiLoadList();
+  } catch(err) {
+    Swal.fire({ icon:'error', title:'ลบไม่สำเร็จ' });
+  }
+}
+
+// ── โหลดรายการ WI ──
+async function _wiLoadList() {
+  if (!SCRIPT_URL) return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getWIList').then(r=>r.json());
+    if (res.status === 'ok') { _wiCache = res.data || []; _wiRenderList(); }
+  } catch(e) {}
+}
+
+// ── render ตาราง WI ──
+function _wiRenderList() {
+  const body = $('wiListBody');
+  if (!body) return;
+  const q   = ($('wiSearchInput')?.value || '').toLowerCase().trim();
+  const fOD = ($('wiFilterOD')?.value || '').trim();
+  const fID = ($('wiFilterID')?.value || '').trim();
+  const fH  = ($('wiFilterH')?.value  || '').trim();
+  const fWT = ($('wiFilterWT')?.value  || '').toLowerCase().trim();
+
+  // populate datalist แบบงาน
+  const dl = $('wiFilterWTList');
+  if (dl) {
+    const wts = [...new Set(_wiCache.map(w => w.workType||'').filter(Boolean))];
+    dl.innerHTML = wts.map(t => `<option value="${t}">`).join('');
+  }
+
+  const rows = _wiCache.filter(w => {
+    if (q && ![w.od, w.id, w.h, w.workType, w.wiId].some(v => String(v||'').toLowerCase().includes(q))) return false;
+    if (fOD && _wiNorm(w.od) !== _wiNorm(fOD)) return false;
+    if (fID && _wiNorm(w.id) !== _wiNorm(fID)) return false;
+    if (fH  && _wiNorm(w.h)  !== _wiNorm(fH))  return false;
+    if (fWT && !String(w.workType||'').toLowerCase().includes(fWT)) return false;
+    return true;
+  });
+  if (!rows.length) {
+    body.innerHTML = '<div style="text-align:center;color:var(--t3);padding:20px;font-size:.85rem">ไม่พบ WI' + (q||fOD||fID||fH||fWT ? ' ที่ตรงกับเงื่อนไข' : ' — กด "+ สร้าง WI ใหม่" ด้านบน') + '</div>';
+    return;
+  }
+  const _wiDateBE = s => {
+    const m = String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    return m ? m[1]+'/'+m[2]+'/'+m[3] : '—'; // ชีตเก็บ พ.ศ. แล้ว — แสดงตรงๆ
+  };
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:.82rem">
+    <thead><tr style="background:var(--bg2);color:var(--t2)">
+      <th style="padding:8px 10px;text-align:left">WI ID</th>
+      <th style="padding:8px 10px;text-align:left">สเปกงาน</th>
+      <th style="padding:8px 10px;text-align:center">ขั้นตอน</th>
+      <th style="padding:8px 10px;text-align:center">วันที่สร้าง</th>
+      <th style="padding:8px 10px;text-align:center">จัดการ</th>
+    </tr></thead>
+    <tbody>${rows.map(w => `
+      <tr style="border-bottom:1px solid var(--bc-div)">
+        <td style="padding:8px 10px;font-weight:700;color:var(--c1)">${w.wiId}</td>
+        <td style="padding:8px 10px">
+          <div style="font-weight:700;color:#1e40af">OD${w.od}xID${w.id}xH${w.h} mm.</div>
+          <div style="font-size:.72rem;color:var(--t3);margin-top:1px">${w.workType||'—'}</div>
+        </td>
+        <td style="padding:8px 10px;text-align:center">
+          <span style="background:#eff6ff;color:#1d4ed8;border-radius:5px;padding:2px 8px;font-weight:700">${(w.steps||[]).length} ขั้น</span>
+        </td>
+        <td style="padding:8px 10px;text-align:center;color:var(--t2);font-size:.75rem">${_wiDateBE(w.updatedAt)}</td>
+        <td style="padding:8px 10px;text-align:center;white-space:nowrap">
+          <button onclick="_wiOpenViewer('${w.wiId}')" style="padding:4px 10px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-size:.72rem;cursor:pointer;margin:1px">👁️ ดู</button>
+          <button onclick="_wiOpenForm('${w.wiId}')" style="padding:4px 10px;border-radius:6px;border:none;background:#f59e0b;color:#fff;font-size:.72rem;cursor:pointer;margin:1px">✏️ แก้</button>
+          <button onclick="_wiDelete('${w.wiId}')" style="padding:4px 10px;border-radius:6px;border:none;background:#ef4444;color:#fff;font-size:.72rem;cursor:pointer;margin:1px">🗑️</button>
+          <button onclick="_wiShowLinkedOrders('${w.wiId}')" style="padding:4px 10px;border-radius:6px;border:none;background:#0f766e;color:#fff;font-size:.72rem;cursor:pointer;margin:1px" title="ดู Order ที่ผูกอยู่">🔗 PO</button>
+          <button onclick="_wiPrint('${w.wiId}')" style="padding:4px 10px;border-radius:6px;border:none;background:#7c3aed;color:#fff;font-size:.72rem;cursor:pointer;margin:1px" title="พิมพ์ใบ WI">🖨️</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ── Viewer (step-by-step สำหรับแรงงาน) — อัปเดต in-place ไม่กระพริบ ──
+let _wiViewStep = 0;
+let _wiViewData = null;
+
+function _wiOpenViewer(wiId) {
+  const wi = _wiCache.find(w => w.wiId === wiId);
+  if (!wi || !(wi.steps||[]).length) { Swal.fire({ icon:'info', title:'ไม่มีขั้นตอนใน WI นี้' }); return; }
+  _wiViewData = wi; _wiViewStep = 0;
+  const total = wi.steps.length;
+  Swal.fire({
+    html: `<div style="font-family:Sarabun,sans-serif">
+      <div style="font-size:.78rem;color:#64748b;margin-bottom:4px" id="_wiVHead"></div>
+      <div style="font-size:.85rem;font-weight:700;color:#2563eb;margin-bottom:10px" id="_wiVStep"></div>
+      <div id="_wiVImg" style="margin-bottom:10px"></div>
+      <div style="font-size:1rem;font-weight:600;color:#1e293b;padding:6px 0;min-height:32px" id="_wiVCaption"></div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-top:10px" id="_wiVDots"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button id="_wiVPrev" onclick="_wiViewPrev()"
+          style="flex:1;padding:9px;border-radius:8px;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;font-family:Sarabun,sans-serif;font-size:.88rem;cursor:pointer">◀ ก่อนหน้า</button>
+        <button id="_wiVNext" onclick="_wiViewNext()"
+          style="flex:1;padding:9px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-family:Sarabun,sans-serif;font-size:.88rem;cursor:pointer;font-weight:700">ถัดไป ▶</button>
+      </div>
+    </div>`,
+    showConfirmButton: false,
+    showCloseButton: true,
+    width: '400px',
+    didOpen: () => _wiUpdateView()
+  });
+}
+
+function _wiUpdateView() {
+  const wi = _wiViewData;
+  const steps = wi.steps || [];
+  const s = steps[_wiViewStep];
+  const total = steps.length;
+  const q = id => document.getElementById(id);
+  if (!q('_wiVHead')) return;
+  q('_wiVHead').textContent    = wi.od + '×' + wi.id + '×' + wi.h + ' · ' + (wi.workType||'');
+  q('_wiVStep').textContent    = 'ขั้นตอนที่ ' + (_wiViewStep+1) + ' / ' + total;
+  q('_wiVImg').innerHTML       = s.img
+    ? `<img src="${s.img}" style="max-width:100%;max-height:260px;border-radius:10px;border:1px solid #e2e8f0;display:block;margin:0 auto">`
+    : `<div style="height:90px;background:#f1f5f9;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#94a3b8">ไม่มีรูป</div>`;
+  q('_wiVCaption').textContent = s.caption || '(ไม่มีคำอธิบาย)';
+  q('_wiVDots').innerHTML      = steps.map((_,i) =>
+    `<div style="width:${i===_wiViewStep?'18px':'8px'};height:8px;border-radius:4px;background:${i===_wiViewStep?'#2563eb':'#cbd5e1'};transition:all .2s"></div>`
+  ).join('');
+  const prev = q('_wiVPrev'), next = q('_wiVNext');
+  if (prev) prev.style.opacity = _wiViewStep === 0 ? '.35' : '1';
+  if (next) next.textContent   = _wiViewStep < total-1 ? 'ถัดไป ▶' : '✅ เสร็จสิ้น';
+}
+
+function _wiViewPrev() {
+  if (_wiViewStep > 0) { _wiViewStep--; _wiUpdateView(); }
+}
+function _wiViewNext() {
+  const total = (_wiViewData?.steps||[]).length;
+  if (_wiViewStep < total-1) { _wiViewStep++; _wiUpdateView(); }
+  else Swal.close();
+}
+
+
+document.addEventListener('DOMContentLoaded', () => { if ($('gquoItemsWrap')) _gquoRenderItems(); if ($('gquoListBody')) _gquoFetchList(); setTimeout(_wiLoad, 1500); });
 
 // ══════════════════════════════════════════════════════
 // ── Item Master: รายการสินค้า/บริการที่ใช้บ่อย (sheet "ItemMaster") ──
@@ -1406,7 +1885,7 @@ function renderOrderTable() {
     return `<tr style="${rowBg};border-bottom:1px solid var(--bc-div)">
       <td style="padding:8px 10px;white-space:nowrap">${_ordStatusBadge(process)}<br>
         <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-size:.72rem;color:var(--c1);font-weight:600">${r[ORDER_COLS.noQuo]||'—'}</span>${_newBadge(isNewRow)}</span></td>
-      <td style="padding:8px 10px;font-size:.78rem;font-weight:600;color:var(--t1);white-space:nowrap">${noPO||'—'}</td>
+      <td style="padding:8px 10px;font-size:.78rem;font-weight:600;color:var(--t1);white-space:nowrap">${noPO||'—'} ${_wiBadge(r)}</td>
       <td style="padding:8px 10px;font-size:.78rem;color:var(--t1)">${customer||'—'}</td>
       <td style="padding:8px 10px;font-size:.72rem;color:var(--t3);white-space:nowrap">${r[ORDER_COLS.orderDate]||'—'}</td>
       <td style="padding:8px 10px;font-size:.72rem;color:var(--t3);white-space:nowrap">${r[ORDER_COLS.wantDate]||'—'}</td>
@@ -1450,6 +1929,74 @@ function renderOrderTable() {
           style="padding:5px 12px;border-radius:7px;border:1px solid var(--bc-card);background:var(--bg-card);color:var(--t1);font-size:.75rem;cursor:pointer;${_ordPage>=totalPages?'opacity:.4;cursor:not-allowed':''}">ถัดไป ›</button>
       `;
     }
+  }
+}
+
+
+// ── WI Cache & Match ─────────────────────────────────────────
+function _wiNorm(v) { return parseFloat(String(v).trim()) || 0; }
+
+function _wiLoad() {
+  if (!SCRIPT_URL) return;
+  fetch(SCRIPT_URL + '?action=getWIList')
+    .then(r => r.json())
+    .then(d => { if (d.status === 'ok') _wiCache = d.data || []; })
+    .catch(() => {});
+}
+
+function _wiMatch(r) {
+  // ตรวจ wiId ที่ผูกไว้โดยตรงก่อน (Approach A)
+  const linkedId = String(r[ORDER_COLS.wiId] || '').trim();
+  if (linkedId) return _wiCache.find(w => w.wiId === linkedId) || null;
+  // fallback: auto-match ด้วย OD+ID+H+workType
+  const od = _wiNorm(r[ORDER_COLS.od]);
+  const id = _wiNorm(r[ORDER_COLS.id_]);
+  const h  = _wiNorm(r[ORDER_COLS.h_]);
+  const wt = String(r[ORDER_COLS.workType] || '').trim();
+  if (!od && !id && !h) return null;
+  return _wiCache.find(w =>
+    _wiNorm(w.od) === od &&
+    _wiNorm(w.id) === id &&
+    _wiNorm(w.h)  === h  &&
+    String(w.workType || '').trim() === wt
+  ) || null;
+}
+
+function _wiBadge(r) {
+  const wi = _wiMatch(r);
+  if (wi) return '<span class="trk-wi-badge trk-wi-yes" title="มี WI: ' + (wi.wiId||'') + '">📋 WI</span>';
+  return ''; // ไม่มี WI — ซ่อน badge
+}
+
+// ── ผูก/เปลี่ยน WI ให้ Order ──
+async function _wiSetForOrder(noPO, wiId) {
+  if (!SCRIPT_URL) return;
+  const r = _orderCache.find(row => String(row[ORDER_COLS.noPO]) === String(noPO));
+  if (!r) return;
+  const toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:1800, timerProgressBar:true });
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({ action:'setOrderWI', noPO, wiId })
+    }).then(res => res.json());
+    if (res.status !== 'ok') throw new Error(res.message || 'error');
+    // อัปเดต cache เลย ไม่ต้อง reload ทั้งหมด
+    r[ORDER_COLS.wiId] = wiId;
+    // อัปเดต badge ใน popup
+    const badgeEl = document.getElementById('swd-wi-badge');
+    if (badgeEl) badgeEl.innerHTML = _wiBadge(r);
+    const viewBtn = document.getElementById('swd-wi-view');
+    if (viewBtn) {
+      const wi = _wiMatch(r);
+      viewBtn.style.display = wi ? '' : 'none';
+      if (wi) viewBtn.onclick = () => { Swal.close(); setTimeout(()=>_wiOpenViewer(wi.wiId),150); };
+    }
+    // re-render ตาราง/kanban เพื่ออัป badge
+    if (typeof renderOrderTable === 'function') renderOrderTable();
+    if (typeof _trkRender === 'function') _trkRender();
+    toast.fire({ icon:'success', title: wiId ? 'ผูก WI แล้ว ✅' : 'ยกเลิก WI แล้ว' });
+  } catch(err) {
+    toast.fire({ icon:'error', title:'บันทึกไม่สำเร็จ', timer:2200 });
   }
 }
 
@@ -1674,6 +2221,19 @@ function showOrderDetail(noPO) {
             ${_ordTimelineHtml(r)}
           </div>
         </div>
+      </div>
+
+      <!-- ── WI Section ── -->
+      <div style="margin-top:12px;padding:10px 14px;border-radius:10px;background:var(--bc-div);border:1px solid var(--bc-card);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:.72rem;font-weight:700;color:var(--c1);white-space:nowrap">📋 Work Instruction</span>
+        <span id="swd-wi-badge">${_wiBadge(r)}</span>
+        <select id="swd-wi-select" onchange="_wiSetForOrder('${escPO}',this.value)"
+          style="flex:1;min-width:140px;padding:5px 8px;border-radius:6px;border:1px solid var(--bc-card);background:var(--bg-deep);color:var(--t1);font-size:.75rem;cursor:pointer">
+          <option value="">— ยังไม่ผูก WI —</option>
+          ${_wiCache.map(w => `<option value="${w.wiId}" ${String(r[ORDER_COLS.wiId]||'')===w.wiId?'selected':''}>${w.wiId} · OD${w.od} ID${w.id} H${w.h} ${w.workType||''}</option>`).join('')}
+        </select>
+        ${(() => { const wi = _wiMatch(r); return `<button id="swd-wi-view" onclick="Swal.close();setTimeout(()=>_wiOpenViewer('${wi ? wi.wiId.replace(/'/g,"\\'") : ''}'),150)"
+          style="padding:5px 12px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;display:${wi?'':'none'}">👁️ ดู WI</button>`; })()}
       </div>
 
       <!-- ปุ่ม Action -->
@@ -2773,7 +3333,7 @@ function _trkRenderTaskList() {
           return `<div class="trk-task-row" onclick="_trkTaskRowClick('${String(noPO).replace(/'/g,"\\'")}')">
               <div class="trk-task-circle">${_trkLeadTimeCircle(r)}</div>
               <div class="trk-task-info">
-                <div class="trk-task-main">${name} = ${qty.toLocaleString('th-TH')} <span class="trk-task-unit">ลูก</span>${_trkWorkStatusBadge(r)}${_newBadge(isNewRow)}</div>
+                <div class="trk-task-main">${name} = ${qty.toLocaleString('th-TH')} <span class="trk-task-unit">ลูก</span>${_trkWorkStatusBadge(r)}${_newBadge(isNewRow)}${_wiBadge(r)}</div>
                 <div class="trk-task-meta">แบบงาน: ${workType} · ลูกค้า: ${customer}</div>
               </div>
             </div>`;

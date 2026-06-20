@@ -38,7 +38,7 @@
       <div class="ph-sub">Manufacturing Cost Management System</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v9.60</span>
+      <span class="ph-chip ver">v9.65</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -2259,6 +2259,73 @@
 </div><!-- end tab-rfq -->
 
 <!-- ══════════════════════════════════════════════════ -->
+<!-- TAB: WI (Work Instruction)                         -->
+<div id="tab-wi" class="tab-content">
+  <div class="tab-title" style="padding-top:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px"><div class="ticon ic-blue">📄</div>Work Instruction (WI)</div>
+    <button onclick="_wiOpenForm(null)" class="btn btn-primary" style="padding:8px 16px;font-size:.85rem">+ สร้าง WI ใหม่</button>
+  </div>
+
+  <!-- ฟอร์มสร้าง/แก้ไข WI -->
+  <div class="card" id="wiFormCard" style="display:none">
+    <div class="card-header"><div class="icon ic-blue">✏️</div><h2 id="wiFormTitle">สร้าง WI ใหม่</h2></div>
+
+    <div class="grid g4" style="margin-bottom:10px">
+      <div class="field"><label>OD (mm)</label><input type="number" id="wi_od" placeholder="0" step="0.01"></div>
+      <div class="field"><label>ID (mm)</label><input type="number" id="wi_id" placeholder="0" step="0.01"></div>
+      <div class="field"><label>H / ความสูง (mm)</label><input type="number" id="wi_h" placeholder="0" step="0.01"></div>
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>แบบงาน</label>
+      <input type="text" id="wi_worktype" list="wiWorkTypeList" placeholder="เลือกหรือพิมพ์แบบงาน">
+      <datalist id="wiWorkTypeList"></datalist>
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>หมายเหตุ</label>
+      <input type="text" id="wi_remark" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)">
+    </div>
+
+    <!-- ขั้นตอน -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <label style="font-weight:700;font-size:.88rem">ขั้นตอน</label>
+      <button onclick="_wiAddStep()" class="btn" style="padding:5px 12px;font-size:.78rem">+ เพิ่มขั้นตอน</button>
+    </div>
+    <div id="wiStepsWrap"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button onclick="_wiSave()" class="btn btn-primary" style="padding:9px 18px">💾 บันทึก WI</button>
+      <button onclick="_wiCloseForm()" class="btn" style="padding:9px 18px">✕ ยกเลิก</button>
+    </div>
+  </div>
+
+  <!-- รายการ WI ทั้งหมด -->
+  <div class="card">
+    <div class="card-header"><div class="icon ic-blue">📋</div><h2>รายการ WI ทั้งหมด</h2>
+      <button onclick="_wiLoadList()" style="margin-left:auto;padding:5px 12px;font-size:.78rem;border-radius:7px;border:1px solid var(--bc-div);background:var(--bg2);cursor:pointer;color:var(--t1)">🔄 รีเฟรช</button>
+    </div>
+    <!-- filter bar -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+      <input type="text" id="wiSearchInput" placeholder="🔍 ค้นหาทั่วไป..." oninput="_wiRenderList()"
+        style="flex:2;min-width:140px;padding:7px 10px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bg-deep);color:var(--t1);font-size:.82rem">
+      <input type="number" id="wiFilterOD" placeholder="OD" oninput="_wiRenderList()"
+        style="width:72px;padding:7px 8px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bg-deep);color:var(--t1);font-size:.82rem;text-align:center">
+      <input type="number" id="wiFilterID" placeholder="ID" oninput="_wiRenderList()"
+        style="width:72px;padding:7px 8px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bg-deep);color:var(--t1);font-size:.82rem;text-align:center">
+      <input type="number" id="wiFilterH" placeholder="H" oninput="_wiRenderList()"
+        style="width:72px;padding:7px 8px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bg-deep);color:var(--t1);font-size:.82rem;text-align:center">
+      <input type="text" id="wiFilterWT" placeholder="แบบงาน..." oninput="_wiRenderList()" list="wiFilterWTList"
+        style="flex:1;min-width:120px;padding:7px 10px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bg-deep);color:var(--t1);font-size:.82rem">
+      <datalist id="wiFilterWTList"></datalist>
+      <button onclick="$('wiSearchInput').value='';$('wiFilterOD').value='';$('wiFilterID').value='';$('wiFilterH').value='';$('wiFilterWT').value='';_wiRenderList()"
+        style="padding:7px 10px;border-radius:8px;border:1px solid var(--bc-card);background:var(--bg-deep);color:var(--t3);font-size:.78rem;cursor:pointer;white-space:nowrap">✕ ล้าง</button>
+    </div>
+    <div id="wiListBody">
+      <div style="text-align:center;color:var(--t3);padding:20px;font-size:.85rem">กำลังโหลด...</div>
+    </div>
+  </div>
+</div><!-- end tab-wi -->
+
+<!-- ══════════════════════════════════════════════════ -->
 <!-- TAB: PO (ใบสั่งซื้อ)                              -->
 <!-- ══════════════════════════════════════════════════ -->
 <div id="tab-po" class="tab-content">
@@ -3235,7 +3302,7 @@
 <script src="formcalc.js?v=9.06"></script>
 <script src="aifeatures.js?v=8.94"></script>
 <script src="theme.js?v=9.10"></script>
-<script src="order.js?v=9.58"></script>
+<script src="order.js?v=9.65"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
 <script src="plating.js?v=8.94"></script>
@@ -3379,9 +3446,22 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
+    ref: '#REV-20260620-A',
+    date: '2026-06-20',
+    current: true,
+    items: [
+      'WI ↔ Order linking: เพิ่ม ORDER_COLS.wiId (index 37, คอลัมน์ AL) และ ORDER_NUM_COLS = 38',
+      'order.js: _wiMatch() ตรวจ wiId ที่ผูกไว้โดยตรงก่อน แล้ว fallback auto-match OD+ID+H+workType',
+      'order.js: แก้ bug _wiMatch ใช้ ORDER_COLS.id_ / h_ ให้ถูกต้อง',
+      'order.js: เพิ่ม section WI ใน showOrderDetail popup — dropdown เลือก WI + ปุ่มดู WI',
+      'order.js: เพิ่ม _wiSetForOrder() บันทึก wiId ลง Order sheet column AL ผ่าน setOrderWI',
+      'Code.gs: เพิ่ม setOrderWI() + doPost route',
+    ],
+  },
+  {
     ref: '#REV-20260619-X',
     date: '2026-06-19',
-    current: true,
+    current: false,
     items: [
       'ใบเสนอราคาทั่วไป: บันทึกวันที่ใน Sheets เป็น dd/mm/yyyy พ.ศ. (เช่น 19/06/2569)',
       'order.js: _gquoSave() แปลงวันที่ด้วย _gquoDateToThai() ก่อนส่ง',
@@ -4848,56 +4928,4 @@ const DEV_LOGS = [
     date: '2026-06-14',
     current: false,
     items: [
-      'แก้ช่องกรอกข้อมูล (input) พื้นสีดำอ่านไม่เห็นในตารางจัดการ Supplier/ลูกค้า/MAT/Item Master — เปลี่ยนเป็นสีตามธีม (var(--bg-input)/var(--t1)) ให้อ่านง่ายทั้งโหมดสว่าง/มืด',
-      'ขยายความกว้างการ์ดแท็บ "จัดการ Supplier" เป็น 1100px รองรับหน้าจอคอมพิวเตอร์',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BR',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'เพิ่มแท็บ "จัดการ Supplier" ใน sidebar กลุ่มฝ่ายจัดซื้อ (ต่อจาก MAT) — เพิ่ม/แก้ไข/ลบข้อมูล Supplier (ชื่อ, เลขผู้เสียภาษี, ที่อยู่, ผู้ติดต่อ, หมายเหตุ) ซิงค์กับ Google Sheet "Suppliers"',
-      'Code.gs: เพิ่ม action saveSupplier / deleteSupplier',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BQ',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แท็บ MAT: เพิ่ม sub tab "🔵 ฝา (Flap) — ฝาบน/ฝาล่าง" และ "🟢 ตะแกรง (Mesh) — นอก/ใน" แยกการแสดงผล สลับดูได้ทีละกลุ่ม',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BP',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ส่งชุบ: เติมพื้นหลังสีชมพูอ่อนให้ช่องกรอก "ราคา/หน่วย" ในตารางรายการ Order และรายการเพิ่มเอง เพื่อให้เห็นเด่นชัด',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BO',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ส่งชุบ: ย้ายปุ่ม "ออกรายงานสรุป" + ช่องกรองวันที่ ออกจากแถวประวัติใบส่งชุบ มารวมกับการ์ด "ออกรายงาน" (เปลี่ยนชื่อจาก "ออกรายงานรายละเอียดย่อย")',
-      'ส่งชุบ: ตัวกรอง "ร้านชุบ" ในการ์ด "ออกรายงาน" ใช้ร่วมกันทั้งปุ่มออกรายงานสรุปและรายงานรายละเอียดย่อย',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BN',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'รายงานรายละเอียดย่อย (ส่งชุบ): แก้สูตรแปลงขนาด ให้รองรับเครื่องหมาย × (multiplication) และรูปแบบ 4 ตัวเลขที่มี "/" เช่น 235/195x160x508 → OD235/195xID160xH508 mm.',
-      'รายงานรายละเอียดย่อย (ส่งชุบ): เพิ่มตัวกรอง "ร้านชุบ" (dropdown เลือกร้านชุบ หรือทุกร้าน) พร้อมแสดงชื่อร้านชุบในหัวรายงานเมื่อเลือก',
-    ],
-  },
-  {
-    ref: '#REV-20260614-BM',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'รา�
+      'แก้ช่องกรอกข้อมูล (input) พื้นสีดำอ่านไม่เห็นในตารางจัดการ Supplier/ลูกค้า/MAT/Item Master — เ

@@ -146,6 +146,7 @@ const TAB_DEFS = [
   { id:'mat',       icon:'🧱', label:'MAT'      },
   { id:'supplier',  icon:'🏢', label:'Supplier' },
   { id:'rfq',       icon:'📨', label:'ใบขอราคา' },
+  { id:'wi',        icon:'📄', label:'WI' },
   { id:'dept_help', icon:'📖', label:'วิธีใช้งานแผนก' },
 ];
 
@@ -183,7 +184,7 @@ const GROUP_DEFS = [
     { tab:'mold' },
     { tab:'track', view:'reduced' },
     { ph:true, label:'Inspection', icon:'🔍' },
-    { ph:true, label:'WI', icon:'📄' },
+    { tab:'wi' },
     { tab:'dept_help', label:'วิธีใช้งานแผนก', icon:'📖', dept:'production' },
   ]},
   { id:'account', icon:'💰', label:'บัญชี', items: [
@@ -441,6 +442,7 @@ function switchTab(name) {
   if (name === 'api')       { initCfgTheme(); renderTabManager(); }
   if (name === 'mat')       { renderMatTable('flap'); renderMatTable('mesh'); }
   if (name === 'supplier')  { fetchSuppliers(); }
+  if (name === 'wi')        { if (typeof _wiLoadList==='function') _wiLoadList(); if (typeof _wiPopulateWorkTypeList==='function') _wiPopulateWorkTypeList(); }
   if (name === 'order')     { updateOrderPreview(); fetchOrders(); fetchCustomers().then(()=>_gordRefreshCustomerList()); fetchItemMaster(); }
   if (name === 'track')     {
     fetchOrders(); renderTrackDashboard();
