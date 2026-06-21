@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v10.21</span>
+      <span class="ph-chip ver">v10.22</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -3497,9 +3497,18 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260621-AQ',
+    ref: '#REV-20260621-AR',
     date: '21/06/2568',
     current: true,
+    items: [
+      'purchase.js: ฟอร์มแก้ไข Supplier — เปลี่ยนจาก colspan+grid เป็น td แยกตามคอลัมน์ให้ตรงกับ header',
+      'purchase.js: MAT Codes แสดงใน row ที่ 2 (colspan=7) ใต้แถว input หลัก',
+    ],
+  },
+  {
+    ref: '#REV-20260621-AQ',
+    date: '21/06/2568',
+    current: false,
     items: [
       'stock.js: _stockUpdateBadge() — badge แสดงบน group header ฝ่ายจัดซื้อด้วยตอนกลุ่มปิด / หายเมื่อขยาย',
       'core.js: renderTabBar() → เรียก _stockUpdateBadge() หลัง render ทุกครั้ง (toggle group / switchTab)',
