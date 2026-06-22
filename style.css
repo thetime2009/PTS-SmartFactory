@@ -1149,40 +1149,34 @@ select option { background: var(--sel-bg); color: var(--t1); }
     width: 100%; display: flex; align-items: center; gap: 10px;
     padding: 10px 13px; border-radius: 10px; border: none;
     background: var(--c1-10);
-    color: var(--c1); font-family: 'Sarabun', sans-serif; font-size: .86rem; font-weight: 800;
+    color: var(--t1); font-family: 'Sarabun', sans-serif; font-size: .86rem; font-weight: 800;
     cursor: pointer; text-align: left; letter-spacing: .3px;
     text-transform: uppercase;
-    transition: background .15s, color .15s;
+    transition: background .15s;
   }
   .sb-group-header:hover { background: var(--c1-20, var(--c1-10)); }
-  .sb-group.open .sb-group-header {
-    background: var(--c1); color: #fff;
-    border-radius: 10px 10px 0 0;
-  }
-  .sb-group.open .sb-group-header:hover { filter: brightness(.92); }
   .sb-group-header .t-icon { font-size: 1.2rem; flex-shrink: 0; }
   .sb-group-header .t-label { flex: 1; }
   .sb-caret {
     font-size: .8rem; color: var(--c1); flex-shrink: 0;
     transition: transform .2s;
   }
-  .sb-group.open .sb-caret { color: rgba(255,255,255,.75); }
   .sb-group.open .sb-caret { transform: rotate(0deg); }
   .sb-group-items {
     display: flex; flex-direction: column;
     max-height: 0; overflow: hidden;
     transition: max-height .25s ease;
-    padding: 3px 0;
-    background: var(--c1-10);
-    border-radius: 0 0 10px 10px;
+    padding: 4px 0 4px 12px;
+    margin-left: 10px;
+    border-left: 2px solid var(--bc-div);
   }
   .sb-group.open .sb-group-items { max-height: 600px; }
   .sb-group-items .tab-btn {
     font-size: .8rem; font-weight: 500; padding: 7px 12px;
-    color: var(--c1); background: transparent;
+    color: var(--t2); background: transparent; border-radius: 8px;
   }
-  .sb-group-items .tab-btn .t-icon { font-size: 1rem; opacity: .75; }
-  .sb-group-items .tab-btn:hover { background: var(--c1-20, rgba(30,86,232,.15)); color: var(--c1); }
+  .sb-group-items .tab-btn .t-icon { font-size: 1rem; opacity: .85; }
+  .sb-group-items .tab-btn:hover { background: var(--c1-10); color: var(--t1); }
   .sb-group-items .tab-btn.active {
     color: #fff; font-weight: 700;
     background: var(--c1);
