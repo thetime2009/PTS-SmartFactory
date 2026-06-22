@@ -647,7 +647,7 @@ function showLastPricingResult() {
       id: parseFloat($('f_id')?.value) || 0,
       h:  parseFloat($('f_h')?.value)  || 0,
       unit: parseFloat($('f_unit')?.value) || 1,
-      costPerUnit: parseFloat($('f_totalCostUnit')?.value||'') || num('f_totalCost') / (parseFloat($('f_unit')?.value)||1),
+      costPerUnit: num('f_totalCost'),
     };
     _showPricingResultModal(cur, saved, null);
     return;
@@ -703,7 +703,7 @@ async function showPricingAnalysis() {
     mat:  String($('f_matTop')?.value || '').trim(),
     meshOut: !!(String($('f_meshOut')?.value||'').trim()) || (parseFloat($('f_cMeshOut')?.value)||0)>0,
     meshIn:  !!(String($('f_meshIn')?.value||'').trim())  || (parseFloat($('f_cMeshIn')?.value) ||0)>0,
-    costPerUnit: parseFloat($('f_totalCostUnit')?.value||'') || num('f_totalCost') / (parseFloat($('f_unit')?.value)||1),
+    costPerUnit: num('f_totalCost'),
     sellPrice: parseFloat(String($('f_sellPrice')?.value||'').replace(/,/g,'')),
   };
 
