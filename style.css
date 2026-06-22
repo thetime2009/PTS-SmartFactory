@@ -1178,9 +1178,12 @@ select option { background: var(--sel-bg); color: var(--t1); }
   .sb-group-items .tab-btn .t-icon { font-size: 1rem; opacity: .85; }
   .sb-group-items .tab-btn:hover { color: var(--t1); }
   .sb-group-items .tab-btn.active {
-    color: var(--c1); font-weight: 700;
-    background: var(--c1-10);
+    color: #fff; font-weight: 700;
+    background: var(--c1);
+    box-shadow: 0 2px 8px var(--c1-20, rgba(0,0,0,.25));
   }
+  .sb-group-items .tab-btn.active .t-icon,
+  .sb-group-items .tab-btn.active .t-label { color: #fff; }
   .tab-btn.sb-placeholder { opacity: .4; cursor: not-allowed; }
   .tab-btn.sb-placeholder:hover { background: transparent; color: var(--t4) !important; }
 }

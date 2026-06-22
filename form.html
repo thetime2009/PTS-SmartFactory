@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=7.41">
+<link rel="stylesheet" href="style.css?v=7.42">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v10.30</span>
+      <span class="ph-chip ver">v10.31</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
     </div>
@@ -3499,9 +3499,17 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
+    ref: '#REV-20260622-A',
+    date: '22/06/2568',
+    current: true,
+    items: [
+      'style.css: sidebar active tab — ทุกแท็บในกลุ่มเมื่อ active แสดงพื้นหลัง var(--c1) + ตัวอักษรขาว เหมือนแท็บแดชบอร์ด',
+    ],
+  },
+  {
     ref: '#REV-20260621-AZ',
     date: '21/06/2568',
-    current: true,
+    current: false,
     items: [
       'stock.js: เพิ่ม stockPrintCountSheet() — พิมพ์ใบตรวจนับวัตถุดิบ A4 (ยอดระบบ+ช่องกรอกยอดจริง+ลายเซ็น)',
       'stock.js: เพิ่ม stockOpenCountForm() — modal กรอกผลตรวจนับ แสดงส่วนต่าง live',
