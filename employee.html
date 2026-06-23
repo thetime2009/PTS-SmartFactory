@@ -349,10 +349,9 @@
     <div class="emp-login-err" id="empLoginErr"></div>
 
     <!-- Script URL note (shown if not configured) -->
-    <div class="emp-login-url-note" id="empUrlNote">
-      ⚠️ ยังไม่ได้ตั้งค่า Script URL — กรุณาใส่ URL จาก Google Apps Script
-      <input type="url" id="empUrlInput" placeholder="https://script.google.com/macros/s/...">
-      <button class="emp-login-url-save" onclick="empSaveUrl()">บันทึก URL</button>
+    <div class="emp-login-url-note" id="empUrlNote" onclick="empAskUrl()" style="cursor:pointer">
+      ⚠️ ยังไม่ได้ตั้งค่า Script URL<br>
+      <span style="text-decoration:underline;font-weight:700">👆 กดที่นี่เพื่อตั้งค่า URL</span>
     </div>
   </div>
 </div>
@@ -375,7 +374,7 @@
         <div class="ph-sub">หน้าพนักงาน</div>
       </div>
       <div class="ph-right">
-        <span class="ph-chip ver">v1.7</span>
+        <span class="ph-chip ver">v1.8</span>
         <span class="ph-chip" id="empConnChip" style="display:none">✓ Online</span>
         <button class="theme-fab" onclick="location.reload()" title="รีเฟรช" style="font-size:1rem">🔄</button>
       </div>
@@ -477,7 +476,7 @@ window.addEventListener('DOMContentLoaded', function() {
   // ตรวจว่าตั้ง Script URL ไว้หรือยัง
   var url = localStorage.getItem('ptts_script_url') || '';
   if (!url) {
-    document.getElementById('empUrlNote').style.display = '';
+    document.getElementById('empUrlNote').style.display = 'block';
   }
 
   // ── ตรวจ session ที่จำไว้ ──
@@ -512,13 +511,28 @@ function _empCheckOnline() {
 }
 
 // ── SAVE SCRIPT URL ──────────────────────────────────────────
-function empSaveUrl() {
-  var v = (document.getElementById('empUrlInput') || {}).value || '';
-  if (!v.trim()) return;
-  localStorage.setItem('ptts_script_url', v.trim());
-  document.getElementById('empUrlNote').style.display = 'none';
-  Swal.fire({ icon: 'success', title: 'บันทึก URL แล้ว', timer: 1200, showConfirmButton: false });
+function empAskUrl() {
+  Swal.fire({
+    title: 'ตั้งค่า Script URL',
+    input: 'url',
+    inputLabel: 'Apps Script URL',
+    inputPlaceholder: 'https://script.google.com/macros/s/...',
+    inputValue: localStorage.getItem('ptts_script_url') || '',
+    showCancelButton: true,
+    confirmButtonText: 'บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    inputValidator: function(v) {
+      if (!v || !v.startsWith('http')) return 'กรุณาใส่ URL ที่ถูกต้อง';
+    }
+  }).then(function(r) {
+    if (r.isConfirmed && r.value) {
+      localStorage.setItem('ptts_script_url', r.value.trim());
+      document.getElementById('empUrlNote').style.display = 'none';
+      Swal.fire({ icon: 'success', title: 'บันทึก URL แล้ว', timer: 1200, showConfirmButton: false });
+    }
+  });
 }
+function empSaveUrl() { empAskUrl(); }
 
 // ── LOGIN ─────────────────────────────────────────────────────
 function empDoLogin() {
@@ -544,7 +558,7 @@ function empDoLogin() {
   var url = localStorage.getItem('ptts_script_url') || '';
   if (!url) {
     errEl.textContent = '⚠️ ยังไม่ได้ตั้งค่า Script URL — กรุณาใส่ด้านบน';
-    document.getElementById('empUrlNote').style.display = '';
+    document.getElementById('empUrlNote').style.display = 'block';
     return;
   }
 
