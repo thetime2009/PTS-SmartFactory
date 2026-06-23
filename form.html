@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v10.59</span>
+      <span class="ph-chip ver">v10.78</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -2201,6 +2201,10 @@
       style="padding:8px 18px;border-radius:10px;border:1px solid var(--bc-input);background:transparent;color:var(--t3);font-family:'Sarabun',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer">
       📅 ปฏิทินวันหยุด
     </button>
+    <button id="hrBtn6" onclick="hrSubSwitch('6')"
+      style="padding:8px 18px;border-radius:10px;border:1px solid var(--bc-input);background:transparent;color:var(--t3);font-family:'Sarabun',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer">
+      💰 เบิก/กู้
+    </button>
   </div>
 
   <!-- Sub-tab panels (rendered by hr.js) -->
@@ -2209,6 +2213,7 @@
   <div id="hrPanel3" style="display:none"></div>
   <div id="hrPanel4" style="display:none"></div>
   <div id="hrPanel5" style="display:none"></div>
+  <div id="hrPanel6" style="display:none"></div>
 </div>
 </div><!-- end tab-hr -->
 
@@ -3470,7 +3475,7 @@
   <script src="stock.js?v=10.32"></script>
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="hr.js?v=2.3"></script>
+  <script src="hr.js?v=4.1"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -3615,9 +3620,210 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
+    ref: '#REV-20260623-S',
+    date: '23/06/2569',
+    current: true,
+    items: [
+      'Code.gs: uploadEmployeeFile() — อัปโหลดรูป/บัตรไป Drive/PTS-Management System/HR-Employees (สร้างอัตโนมัติ)',
+      'Code.gs: saveHREmployee/getHREmployees — เพิ่มฟิลด์ idCard, address, profileUrl, idCardUrl',
+      'hr.js?v=4.1: _hrEmpModal — เพิ่มช่องเลขบัตรปชช, ที่อยู่, อัปโหลดรูปโปรไฟล์+สแกนบัตร',
+      'hr.js: การ์ดพนักงาน — แสดงรูปโปรไฟล์ รายละเอียดครบ ลิงก์บัตรสแกน',
+    ]
+  },
+  {
+    ref: '#REV-20260623-R',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=4.0: พนักงาน — เปลี่ยนจากตารางเป็น card grid (avatar+ชื่อ+แผนก+ค่าจ้าง+OT+ปุ่ม)',
+    ]
+  },
+  {
+    ref: '#REV-20260623-Q',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=3.9: สรุปเวลางาน — เปลี่ยนจากตารางเป็น card grid (ชื่อ+แผนก+สถิติ+ปุ่ม) รองรับมือถือ',
+    ]
+  },
+  {
+    ref: '#REV-20260623-P',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=3.8: การ์ดสถานะเบิก/กู้ — ลดขนาดสำหรับมือถือ (grid 5col, padding เล็กลง, ตัดข้อความ รายการ ออก)',
+    ]
+  },
+  {
+    ref: '#REV-20260623-O',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=3.7: การ์ดเบิก — เพิ่ม budget mini-bar แสดง วงเงิน/เดือน, เบิกแล้ว, เหลือเบิกได้',
+    ]
+  },
+  {
+    ref: '#REV-20260623-N',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=3.6: _hrRenderLoans() — โหลด _hrEmps พร้อมกับ getLoanRequests (manager) เพื่อแสดงชื่อพนักงานในการ์ด',
+    ]
+  },
+  {
+    ref: '#REV-20260623-M',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=3.5: badge HR sidebar — แสดงก่อนเข้า tab (auto-start page load), กระพริบ animation',
+      'hr.js: _hrLoanBadgeUpdate แยก sub-tab badge กับ sidebar badge ทำงานอิสระ',
+    ]
+  },
+  {
+    ref: '#REV-20260623-L',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=3.4: _hrLoanBadgeUpdate() — เพิ่ม badge แจ้งเตือนบน HR sidebar group header ด้วย (คล้าย ฝ่ายจัดซื้อ)',
+    ]
+  },
+  {
+    ref: '#REV-20260623-K',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'Code.gs: uploadSlipImage — อัปโหลดรูปใบโอนเงินเข้า Drive folder Slip',
+      'Code.gs: LOAN_COLS เพิ่ม slipImageUrl (col 20), closeLoan บันทึก URL',
+      'hr.js?v=3.3: hrLoanClose — เพิ่มช่อง 📷 แนบรูปใบโอน, upload → Drive URL',
+      'hr.js: เงินเบิก (advance) auto-fill deductMonth = งวดถัดไป, แสดง info bar',
+      'hr.js: แถว closed แสดงลิงก์ 🖼️ ดูใบโอนเงิน',
+    ]
+  },
+  {
+    ref: '#REV-20260623-J',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'Code.gs: closeLoan — บันทึกการโอนเงิน + ปิดสถานะ closed',
+      'Code.gs: LOAN_COLS เพิ่ม transferDate/transferAmount/transferNote/closedDate',
+      'Code.gs: getLoanRequests return ข้อมูลโอนเงิน',
+      'hr.js?v=3.2: hrLoanClose() — popup กรอก วันโอน/จำนวน/หมายเหตุ/deductMonth',
+      'hr.js: สถานะการ์ด + filter เพิ่ม 🔒 ปิดแล้ว',
+      'hr.js: approved row แสดงปุ่ม 💳 ปิดรายการ, closed row แสดงข้อมูลโอน',
+      'Code.gs: hrLogin — normalize rowPhone 9 หลัก → เติม 0 ก่อน compare',
+    ]
+  },
+  {
+    ref: '#REV-20260623-I',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'Code.gs: getHREmployees — pad 0 ข้างหน้าเบอร์ 9 หลัก (Sheets strip leading zero)',
+      'Code.gs: saveHREmployee — setNumberFormat("@") บน phone column บังคับเป็น text',
+      'hr.js?v=3.1: _hrField เพิ่ม param extra สำหรับ attribute เพิ่มเติม',
+      'hr.js: phone field ใช้ inputmode="numeric" maxlength="10"',
+      'form.html v10.68: อัป hr.js?v=3.1',
+    ]
+  },
+  {
+    ref: '#REV-20260623-H',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'Code.gs: hrLogin รองรับ phone (r[14]) แยกจาก empId — เบอร์โทรไม่ชนกับ ID สแกนหน้า',
+      'Code.gs: saveHREmployee + getHREmployees เพิ่ม column phone (col 15)',
+      'hr.js?v=3.0: เพิ่มช่อง เบอร์โทรศัพท์ ในการ์ดพนักงาน',
+      'employee.html v1.3: login ส่ง phone แทน empId ไปยัง hrLogin',
+      'form.html v10.67: อัป hr.js?v=3.0',
+    ]
+  },
+  {
+    ref: '#REV-20260623-G',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=2.9: ซ่อน session bar ซ้ำใน hrPanel6 ด้วย id="hrLoanSessionBar"',
+      'hr.js: เพิ่ม _hrFmtDateShort() — แปลงวันที่ยาวเป็น dd/MM/YYYY BE HH:MM',
+      'hr.js: ใช้ _hrFmtDateShort ใน _hrLoanTableHtml แทน raw requestDate',
+      'employee.html v1.2: ซ่อน #hrLoanSessionBar ด้วย CSS, อัป hr.js?v=2.9',
+    ]
+  },
+  {
+    ref: '#REV-20260623-F',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=2.8: เพิ่มปุ่ม ✖ ปิด ในหน้าสลิปเงินเดือน (window.close)',
+      'form.html v10.65: อัป hr.js?v=2.8',
+    ]
+  },
+  {
+    ref: '#REV-20260623-E',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=2.7: เพิ่มการ์ดสถานะขนาดใหญ่ใน เบิก/กู้ — ทั้งหมด / รออนุมัติ / อนุมัติ / ปฏิเสธ',
+      'hr.js: _hrLoanStatusCard() — กดการ์ดเพื่อกรองตารางได้ทันที',
+      'form.html v10.64: อัป hr.js?v=2.7',
+    ]
+  },
+  {
+    ref: '#REV-20260623-D',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=2.6: ซ่อนปุ่ม ✏️ แก้ไข ในสรุปเวลางาน เมื่อ role = emp',
+      'employee.html: พนักงานเห็นเฉพาะปุ่ม 🧾 สลิป และ 🖨️ รายงาน เท่านั้น',
+      'form.html v10.63: อัป hr.js?v=2.6',
+    ]
+  },
+  {
+    ref: '#REV-20260623-C',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'สร้าง employee.html v1.0 — หน้าพนักงานแยก URL',
+      'employee.html: หน้า Login ระดับเพจ (empId + PIN) ก่อนเข้าใช้งาน',
+      'employee.html: 4 แท็บที่อนุญาต — 💰 เบิก/กู้, 🧾 สลิป, 📅 ปฏิทิน, ⏱️ สรุปเวลางาน',
+      'employee.html: reuse hr.js panels (hrPanel6, hrPanel5, hrPanel2) — ไม่ copy โค้ด',
+      'employee.html: override hrLogout() → empLogout() ออกจากระบบทั้งหน้า',
+      'employee.html: Master PIN → role manager, PIN พนักงาน → role emp (filtered ข้อมูลตัวเอง)',
+      'form.html v10.62: อัปเวอร์ชัน',
+    ]
+  },
+  {
+    ref: '#REV-20260623-B',
+    date: '23/06/2569',
+    current: false,
+    items: [
+      'hr.js?v=2.5: ระบบ Login สำหรับ sub-tab เบิก/กู้ — empId + PIN (เจ้าของตั้งให้)',
+      'hr.js: _hrShowLoanLogin() — หน้า login inline ใน panel (ไม่ใช่ popup)',
+      'hr.js: hrLoanLogin() — ตรวจ Master PIN ก่อน → ถ้าไม่ตรงค่อย POST hrLogin ไป Code.gs',
+      'hr.js: _hrSession — role manager เห็นทุกคน + ปุ่มอนุมัติ/ปฏิเสธ | role emp เห็นเฉพาะตัวเอง',
+      'hr.js: hrLogout() — ปุ่มออกจากระบบ + session bar แสดงชื่อผู้ login',
+      'hr.js: hrSaveMasterPin() — บันทึก Master PIN ใน localStorage',
+      'hr.js: HR Settings — เพิ่มการ์ด Master PIN',
+      'hr.js: Employee card — เพิ่มช่อง PIN (เจ้าของตั้งให้)',
+      'Code.gs: hrLogin() — ตรวจ empId + pin จาก HR_Employees[13]',
+      'Code.gs: saveHREmployee — เพิ่ม payCycle, advanceBudget, pin column',
+      'form.html v10.61: อัป hr.js?v=2.5',
+    ]
+  },
+  {
+    ref: '#REV-20260623-A',
+    date: '23/06/2569',
+    items: [
+      'Code.gs: เพิ่มฟังก์ชัน saveLoanRequest, getLoanRequests, approveLoan, rejectLoan',
+      'Code.gs: สร้าง Sheet "LoanRequests" อัตโนมัติ (15 คอลัมน์) + ตรวจ budget ก่อน save',
+      'hr.js?v=2.4: เพิ่ม sub-tab 6 "💰 เบิก/กู้" + _hrRenderLoans(), hrLoanNew(), hrLoanApprove(), hrLoanReject()',
+      'hr.js: hrSubSwitch รองรับ tab 6, hrLoanTypeChanged() แสดงวงเงินและ field ผ่อนชำระ',
+      'hr.js: advanceBudget field ในการ์ดพนักงาน — ตั้งวงเงินเบิก/เดือนรายคน',
+      'form.html v10.60: เพิ่ม hrBtn6 + hrPanel6 + อัป script hr.js?v=2.4',
+    ]
+  },
+  {
     ref: '#REV-20260622-Z',
     date: '22/06/2569',
-    current: true,
     items: [
       'hr.js?v=2.3: _hrRenderSummary() — โหลดข้อมูลอัตโนมัติเมื่อเปิดแทบ (ไม่ต้องกดปุ่ม)',
     ],
@@ -5870,42 +6076,4 @@ const DEV_LOGS = [
     date: '2026-06-14',
     current: false,
     items: [
-      'ใบสั่งงานผลิต (Work Order): ปรับส่วน "รายการ/จำนวน" ให้ตัวใหญ่เด่นชัดแบบเดียวกับใบส่งชุบ — แปลงชื่อรายการเป็นรูปแบบ "ODxxxIDxxxHxxx mm." อัตโนมัติ และเพิ่มบรรทัดแสดงขนาด OD x ID x H (มม.) ใต้รายการ',
-    ],
-  },
-  {
-    ref: '#REV-20260614-CF',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งงานผลิต (Work Order): เพิ่มแผนภาพ SVG แสดงโครงตะกร้าตามแบบงาน (workType) — "โครง หัว-ท้าย ทะลุ" และ "โครงหัวทะลุ-ท้ายบุ๋มเจาะรู" พร้อมลายตาตะแกรง แสดงคู่กับรูปแบบงานที่แนบ (ถ้ามี) ในพื้นที่ "แบบงาน / DRAWING"',
-    ],
-  },
-  {
-    ref: '#REV-20260614-CE',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งงานผลิต (Work Order): เพิ่มพื้นที่ "แบบงาน / DRAWING" ขนาดใหญ่ชัดเจน วางคู่กับตารางสเปก — ถ้า Order มีรูปงาน/ไฟล์ PO แนบไว้จะแสดงรูปขนาดใหญ่อัตโนมัติ ถ้าไม่มีจะเว้นกรอบเส้นประไว้สำหรับวาดแบบด้วยมือ',
-    ],
-  },
-  {
-    ref: '#REV-20260614-CD',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'เพิ่มปุ่ม "📋 Work Order" ในตาราง Order — พิมพ์ใบสั่งงานผลิตแบบเอกสารปกติ (มีหัวกระดาษ/โลโก้บริษัท) ดึงข้อมูลจาก Order + DATA โดยอัตโนมัติ',
-      'ใบสั่งงานผลิตประกอบด้วย: ข้อมูลลูกค้า/รายการ/จำนวน, สเปกงาน (ขนาด OD/ID/H, ตะแกรงนอก-ใน, ฝาบน-ล่าง), วันที่รับงาน/กำหนดส่ง, checklist ขั้นตอนผลิต (ตัดเหล็ก/ขึ้นรูป-เชื่อม/ส่งชุบ/ตรวจสอบ-QC/แพ็ค) พร้อมช่องผู้ทำ-วันที่เสร็จ, ช่องหมายเหตุ และลายเซ็นผู้สั่งงาน/QC/อนุมัติ',
-    ],
-  },
-  {
-    ref: '#REV-20260614-CC',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'แก้ "พิมพ์บนฟอร์มสำเร็จ" รายการสินค้าที่มีหลายบรรทัดรายละเอียด (สเปก/ตะแกรง) ทับซ้อนกับแถวถัดไป — เปลี่ยนเป็นเว้นระยะแถวแบบไดนามิกตามจำนวนบรรทัดรายละเอียดของแต่ละรายการ',
-      'แก้บั๊กวันที่ผิด (เช่น "30 พฤษภาคม 3112" ที่ควรเป็น 2569) ในฟังก์ชัน _invThaiDate — เดิมแปลงปี พ.ศ. เป็น ค.ศ. ซ้ำ 2 ครั้ง ทำให้ toLocaleDateString บวก 543 ทับอีกรอบ',
-    ],
-  },
-  {
-    ref: '#REV-20260
+      'ใบสั่งงานผลิต (Work Order): ปรับส่วน "รายการ/จำนวน" ให้ตัวใหญ่เด่นชัดแบบเดียวกับใบส่งชุบ — แปลงชื่อรายการเป็นรูปแบบ "ODxxxIDxxxHxxx mm." อัตโนมัติ และเพิ่มบรรทัดแสด�

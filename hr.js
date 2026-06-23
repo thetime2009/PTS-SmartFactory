@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-// hr.js v1.0  —  HR Module
+// hr.js v3.3  —  HR Module
 // นำเข้าข้อมูลสแกนหน้า | สรุปเวลางาน | พนักงาน | ตั้งค่า | สลิปเงินเดือน
 // ══════════════════════════════════════════════════════════════
 
@@ -107,7 +107,7 @@ function _hrPOST(action, body) {
 // ── Sub-tab navigation ────────────────────────────────────────
 function hrSubSwitch(n) {
   _hrSubCur = String(n);
-  ['1', '2', '3', '4', '5'].forEach(function(k) {
+  ['1', '2', '3', '4', '5', '6'].forEach(function(k) {
     const btn = document.getElementById('hrBtn' + k);
     const pan = document.getElementById('hrPanel' + k);
     if (btn) {
@@ -121,11 +121,16 @@ function hrSubSwitch(n) {
   if (n === '3') _hrRenderEmps();
   if (n === '4') _hrRenderSettings();
   if (n === '5') _hrRenderCal();
+  if (n === '6') _hrRenderLoans();
 }
 
 function hrInitTab() {
   _hrS = null; // reset cache → reload from LS
   _hrCfg();
+  // form.html (admin) → set manager session อัตโนมัติ ไม่ต้อง login
+  if (!_hrSession) {
+    _hrSession = { empId: 'admin', name: 'ผู้จัดการ', dept: '', role: 'manager', advanceBudget: 0 };
+  }
   hrSubSwitch(_hrSubCur || '1');
   _hrRenderImport();
 }
@@ -721,6 +726,12 @@ function _hrLoadAndRender() {
   ]).then(function(results) {
     _hrAtt  = results[0].reduce(function(a,r){ return a.concat(r.data||[]); }, []);
     _hrEmps = results[1].data || [];
+    // employee mode → กรอง เฉพาะตัวเอง
+    if (_hrSession && _hrSession.role === 'emp') {
+      var _empId = String(_hrSession.empId);
+      _hrAtt  = _hrAtt.filter(function(r) { return String(r.empId) === _empId; });
+      _hrEmps = _hrEmps.filter(function(e) { return String(e.empId) === _empId; });
+    }
     var base = _hrAtt.filter(function(r) { return _hrMKey(r.date) === _hrSumMon; });
     if (_hrSumPeriod === 'p2') {
       var mp = _hrSumMon.split('-').map(Number);
@@ -766,64 +777,73 @@ function _hrSumTableHtml(rows) {
   const monthly = Object.keys(emp).filter(function(id) { return emp[id].type !== 'daily'; });
   const daily   = Object.keys(emp).filter(function(id) { return emp[id].type === 'daily'; });
 
-  const THEAD =
-    '<thead><tr style="background:rgba(99,102,241,.12);font-weight:700">' +
-      '<th style="padding:8px 10px;text-align:left">พนักงาน</th>' +
-      '<th style="text-align:center">แผนก</th>' +
-      '<th style="text-align:center">มา</th>' +
-      '<th style="text-align:center">ขาด</th>' +
-      '<th style="text-align:center">สาย</th>' +
-      '<th style="text-align:center">OT ปกติ</th>' +
-      '<th style="text-align:center">OT อาทิตย์</th>' +
-      '<th style="text-align:center">สลิป</th>' +
-    '</tr></thead>';
-
-  function sectionHeader(label, count, color) {
-    return '<tr><td colspan="8" style="padding:6px 10px;background:'+color+';font-size:.74rem;font-weight:700;color:#fff;letter-spacing:.5px">' +
-      label + ' &nbsp;<span style="font-weight:400;opacity:.85">('+count+' คน)</span></td></tr>';
+  function stat(val, label, color, unit) {
+    var c = color || 'var(--t2)';
+    return '<div style="text-align:center;flex:1;min-width:0">' +
+      '<div style="font-size:1.05rem;font-weight:800;color:' + c + ';line-height:1.1">' + val +
+        (unit ? '<span style="font-size:.6rem;font-weight:500"> ' + unit + '</span>' : '') + '</div>' +
+      '<div style="font-size:.6rem;color:var(--t3);margin-top:1px">' + label + '</div>' +
+    '</div>';
   }
 
-  function empRow(id) {
+  function empCard(id) {
     const e = emp[id];
-    return '<tr style="border-top:1px solid var(--bc-input)">' +
-      '<td style="padding:7px 10px;font-weight:600">' + e.name + '</td>' +
-      '<td style="text-align:center;font-size:.76rem;color:var(--t3)">' + (e.dept || '') + '</td>' +
-      '<td style="text-align:center;color:#059669;font-weight:700">' + e.present + '</td>' +
-      '<td style="text-align:center;color:' + (e.absent > 0 ? '#dc2626' : '#9ca3af') + ';font-weight:' + (e.absent > 0 ? '700' : '400') + '">' + e.absent + '</td>' +
-      '<td style="text-align:center;color:' + (e.lateMin > 0 ? '#b45309' : '#9ca3af') + ';font-size:.78rem;font-weight:' + (e.lateMin > 0 ? '700' : '400') + '">' + e.lateTimes + 'ครั้ง<br>' + e.lateMin + 'น.</td>' +
-      '<td style="text-align:center;color:#4338ca;font-weight:700">' + e.otWD.toFixed(1) + '</td>' +
-      '<td style="text-align:center;color:#b45309;font-weight:700">' + e.otSun.toFixed(1) + '</td>' +
-      '<td style="text-align:center">' +
-        '<div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap">' +
-          '<button onclick="hrOpenPayslip(\'' + id + '\',\'' + _hrSumMon + '\',\''+_hrSumPeriod+'\')" ' +
-            'style="padding:4px 10px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:7px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.78rem;font-weight:600">' +
-            '🧾 สลิป' +
-          '</button>' +
-          '<button onclick="hrPrintAttReport(\'' + id + '\',\'' + _hrSumMon + '\',\''+_hrSumPeriod+'\')" ' +
-            'style="padding:4px 10px;background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:7px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.78rem;font-weight:600">' +
-            '🖨️ รายงาน' +
-          '</button>' +
-          '<button onclick="hrEditAtt(\'' + id + '\',\'' + _hrSumMon + '\',\''+_hrSumPeriod+'\')" ' +
-            'style="padding:4px 10px;background:#ffedd5;color:#9a3412;border:1px solid #fdba74;border-radius:7px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.78rem;font-weight:600">' +
-            '✏️ แก้ไข' +
-          '</button>' +
+    const isManager = !_hrSession || _hrSession.role === 'manager';
+    const ac = e.type === 'daily' ? '#0891b2' : '#4f46e5';
+    return '<div style="background:var(--bg-card);border:1.5px solid var(--bc-card);border-radius:14px;overflow:hidden">' +
+      '<div style="background:' + ac + '18;padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1.5px solid ' + ac + '30">' +
+        '<div style="width:36px;height:36px;border-radius:50%;background:' + ac + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;flex-shrink:0">' +
+          (e.name ? e.name.charAt(0) : '?') +
         '</div>' +
-      '</td>' +
-    '</tr>';
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:.93rem;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + e.name + '</div>' +
+          '<div style="font-size:.7rem;color:' + ac + ';font-weight:600;margin-top:1px">' +
+            (e.dept || '—') + ' · ' + (e.type === 'daily' ? 'รายวัน' : 'รายเดือน') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:2px;padding:10px 10px;border-bottom:1px solid var(--bc-input)">' +
+        stat(e.present,          'มา',         '#059669') +
+        stat(e.absent,           'ขาด',        e.absent  > 0 ? '#dc2626' : 'var(--t4)') +
+        stat(e.lateTimes,        'สายครั้ง',   e.lateMin > 0 ? '#d97706' : 'var(--t4)') +
+        stat(e.lateMin,          'สายนาที',    e.lateMin > 0 ? '#d97706' : 'var(--t4)', 'น.') +
+        stat(e.otWD.toFixed(1),  'OT ปกติ',   '#4338ca', 'ชม.') +
+        stat(e.otSun.toFixed(1), 'OT อา.',     '#b45309', 'ชม.') +
+      '</div>' +
+      '<div style="display:flex;gap:6px;padding:8px 10px;flex-wrap:wrap">' +
+        '<button onclick="hrOpenPayslip(\'' + id + '\',\'' + _hrSumMon + '\',\''+_hrSumPeriod+'\')" ' +
+          'style="flex:1;min-width:60px;padding:6px 2px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:8px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.77rem;font-weight:600">🧾 สลิป</button>' +
+        '<button onclick="hrPrintAttReport(\'' + id + '\',\'' + _hrSumMon + '\',\''+_hrSumPeriod+'\')" ' +
+          'style="flex:1;min-width:60px;padding:6px 2px;background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:8px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.77rem;font-weight:600">🖨️ รายงาน</button>' +
+        (isManager ?
+          '<button onclick="hrEditAtt(\'' + id + '\',\'' + _hrSumMon + '\',\''+_hrSumPeriod+'\')" ' +
+            'style="flex:1;min-width:60px;padding:6px 2px;background:#ffedd5;color:#9a3412;border:1px solid #fdba74;border-radius:8px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.77rem;font-weight:600">✏️ แก้ไข</button>' : '') +
+      '</div>' +
+    '</div>';
   }
 
-  let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">' + THEAD + '<tbody>';
+  function sectionLabel(label, count, color) {
+    return '<div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:4px">' +
+      '<div style="flex:1;height:2px;border-radius:2px;background:' + color + '40"></div>' +
+      '<span style="font-size:.78rem;font-weight:700;color:' + color + ';white-space:nowrap">' +
+        label + ' <span style="font-weight:400;opacity:.75">(' + count + ' คน)</span>' +
+      '</span>' +
+      '<div style="flex:1;height:2px;border-radius:2px;background:' + color + '40"></div>' +
+    '</div>';
+  }
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px">';
 
   if (monthly.length) {
-    html += sectionHeader('💼 รายเดือน', monthly.length, '#4f46e5');
-    monthly.forEach(function(id) { html += empRow(id); });
+    html += sectionLabel('💼 รายเดือน', monthly.length, '#4f46e5');
+    monthly.forEach(function(id) { html += empCard(id); });
   }
   if (daily.length) {
-    html += sectionHeader('🔧 รายวัน', daily.length, '#0891b2');
-    daily.forEach(function(id) { html += empRow(id); });
+    html += sectionLabel('🔧 รายวัน', daily.length, '#0891b2');
+    daily.forEach(function(id) { html += empCard(id); });
   }
 
-  html += '</tbody></table></div>';
+  html += '</div>';
   return html;
 }
 
@@ -844,41 +864,64 @@ function _hrRenderEmps() {
 }
 
 function _hrEmpsHtml() {
-  const addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px">' +
+  const addBtn = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px">' +
     '<button onclick="hrAddEmp()" style="padding:8px 20px;background:var(--c1);color:#fff;border:none;border-radius:10px;font-family:\'Sarabun\',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer">➕ เพิ่มพนักงาน</button>' +
     '</div>';
 
-  if (!_hrEmps.length) return '<div style="max-width:700px">' + addBtn + '<div style="color:var(--t3);font-size:.85rem;text-align:center;padding:24px">ยังไม่มีข้อมูลพนักงาน — กด ➕ เพิ่มพนักงาน</div></div>';
+  if (!_hrEmps.length) return '<div>' + addBtn + '<div style="color:var(--t3);font-size:.85rem;text-align:center;padding:24px">ยังไม่มีข้อมูลพนักงาน — กด ➕ เพิ่มพนักงาน</div></div>';
 
-  let rows = _hrEmps.map(function(e, i) {
-    return '<tr style="border-top:1px solid var(--bc-input)">' +
-      '<td style="padding:7px 10px;color:var(--t3);font-size:.78rem">' + e.empId + '</td>' +
-      '<td style="font-weight:600">' + e.name + '</td>' +
-      '<td style="text-align:center;font-size:.78rem">' + (e.dept || '') + '</td>' +
-      '<td style="text-align:center;font-size:.78rem">' + (e.type === 'daily' ? 'รายวัน' : 'รายเดือน') + '</td>' +
-      '<td style="text-align:right">' + _hrFmt(e.type === 'daily' ? e.dailyRate : e.salary) + '</td>' +
-      '<td style="text-align:center;font-size:.76rem">' + (e.otRateWD || 100) + '/' + (e.otRateSun || 200) + '</td>' +
-      '<td style="text-align:center;white-space:nowrap">' +
-        '<button onclick="hrEditEmp(' + i + ')" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.1);color:#818cf8;cursor:pointer;font-size:.75rem">✏️</button> ' +
-        '<button onclick="hrDelEmp(' + i + ')" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:#f87171;cursor:pointer;font-size:.75rem">🗑</button>' +
-      '</td>' +
-    '</tr>';
+  const cards = _hrEmps.map(function(e, i) {
+    const isDaily = e.type === 'daily';
+    const ac = isDaily ? '#0891b2' : '#4f46e5';
+    const payLabel = isDaily ? 'ค่าแรง/วัน' : 'เงินเดือน';
+    const payVal = _hrFmt(isDaily ? e.dailyRate : e.salary);
+
+    // avatar — รูปโปรไฟล์ หรืออักษรย่อ
+    const avatar = e.profileUrl
+      ? '<img src="' + e.profileUrl + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid ' + ac + ';flex-shrink:0" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">' +
+        '<div style="display:none;width:44px;height:44px;border-radius:50%;background:' + ac + ';color:#fff;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;flex-shrink:0">' + (e.name ? e.name.charAt(0) : '?') + '</div>'
+      : '<div style="width:44px;height:44px;border-radius:50%;background:' + ac + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;flex-shrink:0">' + (e.name ? e.name.charAt(0) : '?') + '</div>';
+
+    function infoItem(label, val) {
+      if (!val) return '';
+      return '<div style="display:flex;gap:6px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--bc-input)">' +
+        '<span style="font-size:.68rem;color:var(--t3);white-space:nowrap;min-width:80px;padding-top:1px">' + label + '</span>' +
+        '<span style="font-size:.8rem;color:var(--t1);word-break:break-word">' + val + '</span>' +
+      '</div>';
+    }
+
+    return '<div style="background:var(--bg-card);border:1.5px solid var(--bc-card);border-radius:14px;overflow:hidden">' +
+      // ── header ──
+      '<div style="background:' + ac + '18;padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1.5px solid ' + ac + '30">' +
+        avatar +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:.96rem;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + e.name + '</div>' +
+          '<div style="font-size:.7rem;color:' + ac + ';font-weight:600;margin-top:1px">' + (e.dept || '—') + (e.position ? ' · ' + e.position : '') + '</div>' +
+        '</div>' +
+        '<span style="background:' + ac + '22;color:' + ac + ';border-radius:6px;padding:2px 8px;font-size:.68rem;font-weight:700;white-space:nowrap;flex-shrink:0">' + (isDaily ? 'รายวัน' : 'รายเดือน') + '</span>' +
+      '</div>' +
+      // ── รายละเอียด ──
+      '<div style="padding:10px 14px">' +
+        infoItem('รหัส', e.empId) +
+        infoItem('เบอร์โทร', e.phone) +
+        infoItem('บัตรประชาชน', e.idCard ? (e.idCard.replace(/(.{1})(.{4})(.{5})(.{2})(.{1})/, '$1-$2-$3-$4-$5')) : '') +
+        infoItem('ที่อยู่', e.address) +
+        infoItem(payLabel, '฿' + payVal) +
+        infoItem('OT ปกติ/อา.', (e.otRateWD||100) + '% / ' + (e.otRateSun||200) + '%') +
+        infoItem('วงเงินเบิก/เดือน', e.advanceBudget ? '฿' + _hrFmt(e.advanceBudget) : '') +
+        (e.idCardUrl ? '<div style="margin-top:4px"><a href="' + e.idCardUrl + '" target="_blank" style="font-size:.75rem;color:#3b82f6;text-decoration:none">🪪 ดูสแกนบัตร</a></div>' : '') +
+      '</div>' +
+      // ── ปุ่ม ──
+      '<div style="display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--bc-input)">' +
+        '<button onclick="hrEditEmp(' + i + ')" style="flex:1;padding:6px;border-radius:8px;border:1px solid rgba(99,102,241,.35);background:rgba(99,102,241,.08);color:#6366f1;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.8rem;font-weight:600">✏️ แก้ไข</button>' +
+        '<button onclick="hrDelEmp(' + i + ')" style="flex:1;padding:6px;border-radius:8px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.07);color:#f87171;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.8rem;font-weight:600">🗑 ลบ</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
 
-  return '<div style="max-width:820px">' + addBtn +
-    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">' +
-      '<thead><tr style="background:rgba(99,102,241,.1);font-weight:700">' +
-        '<th style="padding:8px 10px;text-align:left">รหัส</th>' +
-        '<th style="text-align:left">ชื่อ</th>' +
-        '<th style="text-align:center">แผนก</th>' +
-        '<th style="text-align:center">ประเภท</th>' +
-        '<th style="text-align:right">เงินเดือน/วัน</th>' +
-        '<th style="text-align:center">OT ปกติ/อาทิตย์</th>' +
-        '<th></th>' +
-      '</tr></thead><tbody>' + rows + '</tbody>' +
-    '</table></div></div>';
+  return '<div>' + addBtn +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">' + cards + '</div></div>';
 }
-
 function hrAddEmp()   { _hrEmpModal(null, -1); }
 function hrEditEmp(i) { _hrEmpModal(_hrEmps[i], i); }
 
@@ -886,19 +929,61 @@ function _hrEmpModal(emp, idx) {
   const isNew = idx < 0;
   const v = function(id) { const el = document.getElementById(id); return el ? el.value : ''; };
 
+  // helper อัปโหลดไฟล์พนักงาน
+  function uploadEmpFile(inputId, fieldId) {
+    return new Promise(function(resolve) {
+      var input = document.getElementById(inputId);
+      if (!input || !input.files || !input.files[0]) return resolve('');
+      var file = input.files[0];
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var b64 = ev.target.result.split(',')[1];
+        _hrPOST('uploadEmployeeFile', {
+          base64: b64, mimeType: file.type,
+          filename: (emp && emp.empId ? emp.empId : 'new') + '_' + fieldId + '_' + file.name
+        }).then(function(r) { resolve(r && r.url ? r.url : ''); }).catch(function() { resolve(''); });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const fileRow = function(id, label, currentUrl) {
+    return '<div style="margin-bottom:8px">' +
+      '<label style="font-size:.76rem;color:var(--t3);display:block;margin-bottom:3px">' + label + '</label>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<input id="' + id + '" type="file" accept="image/*,.pdf" style="flex:1;font-size:.78rem">' +
+        (currentUrl ? '<a href="' + currentUrl + '" target="_blank" style="font-size:.75rem;color:#3b82f6;white-space:nowrap">📎 ดูไฟล์</a>' : '') +
+      '</div>' +
+    '</div>';
+  };
+
   Swal.fire({
     title: isNew ? '➕ เพิ่มพนักงาน' : '✏️ แก้ไขพนักงาน',
-    width: '520px',
+    width: '600px',
     html:
       '<div style="text-align:left;font-size:.86rem">' +
+      // ── ข้อมูลพื้นฐาน ──
+      '<div style="font-size:.72rem;font-weight:700;color:#6366f1;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">ข้อมูลพื้นฐาน</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
-        _hrField('empFId',   'รหัสพนักงาน',  emp && emp.empId    || '', 'text', '001') +
-        _hrField('empFName', 'ชื่อ-สกุล',    emp && emp.name     || '', 'text', 'ชื่อ') +
+        _hrField('empFId',   'รหัสพนักงาน', emp && emp.empId    || '', 'text', '001') +
+        _hrField('empFName', 'ชื่อ-สกุล',   emp && emp.name     || '', 'text', 'ชื่อ') +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
         _hrField('empFDept', 'แผนก',         emp && emp.dept     || '', 'text', 'ฝ่ายผลิต') +
         _hrField('empFPos',  'ตำแหน่ง',      emp && emp.position || '', 'text', 'พนักงาน') +
       '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+        _hrField('empFPhone',  'เบอร์โทรศัพท์', emp ? (emp.phone||'') : '', 'tel', '0812345678', 'inputmode="numeric" maxlength="10" autocomplete="tel"') +
+        _hrField('empFIdCard', 'เลขบัตรประชาชน', emp && emp.idCard || '', 'text', '1-XXXX-XXXXX-XX-X', 'maxlength="17"') +
+      '</div>' +
+      '<div style="margin-bottom:10px">' +
+        '<label style="font-size:.76rem;color:var(--t3);display:block;margin-bottom:3px">ที่อยู่</label>' +
+        '<textarea id="empFAddr" rows="2" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--bc-input);background:var(--card);color:var(--t1);font-family:\'Sarabun\',sans-serif;box-sizing:border-box;resize:vertical">' +
+          (emp && emp.address || '') +
+        '</textarea>' +
+      '</div>' +
+      // ── ค่าจ้าง / OT ──
+      '<div style="font-size:.72rem;font-weight:700;color:#6366f1;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">ค่าจ้าง / OT</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
         '<div><label style="font-size:.76rem;color:var(--t3);display:block;margin-bottom:3px">ประเภทค่าจ้าง</label>' +
           '<select id="empFType" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--bc-input);background:var(--card);color:var(--t1);font-family:\'Sarabun\',sans-serif;box-sizing:border-box">' +
@@ -916,29 +1001,54 @@ function _hrEmpModal(emp, idx) {
         _hrField('empFSal',  'เงินเดือน (บาท/เดือน)', emp && emp.salary    || 0, 'number') +
         _hrField('empFDay',  'ค่าแรง (บาท/วัน)',       emp && emp.dailyRate || 0, 'number') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-        _hrField('empFOTWD',  'OT ปกติ (฿/ชม.)',      emp && emp.otRateWD  || 100, 'number') +
-        _hrField('empFOTSun', 'OT อาทิตย์ (฿/ชม.)',   emp && emp.otRateSun || 200, 'number') +
-      '</div></div>',
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+        _hrField('empFOTWD',  'OT ปกติ (฿/ชม.)',       emp && emp.otRateWD  || 100, 'number') +
+        _hrField('empFOTSun', 'OT อาทิตย์ (฿/ชม.)',    emp && emp.otRateSun || 200, 'number') +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+        _hrField('empFAdvBudget', 'วงเงินเบิก/เดือน (฿)', emp && emp.advanceBudget || 0, 'number') +
+        _hrField('empFPin', 'PIN เข้าระบบ (4 หลัก)', '', 'password', '••••') +
+      '</div>' +
+      // ── เอกสาร / รูปถ่าย ──
+      '<div style="font-size:.72rem;font-weight:700;color:#6366f1;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">เอกสาร / รูปถ่าย (เก็บที่ Drive)</div>' +
+      fileRow('empFProfile', '📷 รูปประจำตัว', emp && emp.profileUrl || '') +
+      fileRow('empFIdScan',  '🪪 สแกนบัตรประชาชน', emp && emp.idCardUrl || '') +
+      '</div>',
     showCancelButton: true,
     confirmButtonText: isNew ? '➕ เพิ่ม' : '💾 บันทึก',
     cancelButtonText: 'ยกเลิก',
     preConfirm: function() {
-      const data = {
-        empId:     v('empFId').trim(), name: v('empFName').trim(),
-        dept:      v('empFDept').trim(), position: v('empFPos').trim(),
-        type:      v('empFType'),
-        payCycle:  v('empFPayCycle') || 'default',
-        salary:    parseFloat(v('empFSal')) || 0, dailyRate: parseFloat(v('empFDay')) || 0,
-        otRateWD:  parseFloat(v('empFOTWD')) || 100, otRateSun: parseFloat(v('empFOTSun')) || 200,
+      var addr = document.getElementById('empFAddr');
+      var data = {
+        empId:         v('empFId').trim(), name: v('empFName').trim(),
+        dept:          v('empFDept').trim(), position: v('empFPos').trim(),
+        type:          v('empFType'),
+        payCycle:      v('empFPayCycle') || 'default',
+        salary:        parseFloat(v('empFSal')) || 0, dailyRate: parseFloat(v('empFDay')) || 0,
+        otRateWD:      parseFloat(v('empFOTWD')) || 100, otRateSun: parseFloat(v('empFOTSun')) || 200,
+        advanceBudget: parseFloat(v('empFAdvBudget')) || 0,
+        pin:           v('empFPin').trim() || undefined,
+        phone:         v('empFPhone').trim() || undefined,
+        idCard:        v('empFIdCard').trim(),
+        address:       addr ? addr.value.trim() : '',
+        profileUrl:    emp && emp.profileUrl || '',
+        idCardUrl:     emp && emp.idCardUrl  || '',
         active: true, _idx: idx,
       };
       if (!data.empId || !data.name) { Swal.showValidationMessage('กรุณาใส่รหัสและชื่อ'); return false; }
-      return data;
+      // อัปโหลดไฟล์ก่อนบันทึก
+      return Promise.all([
+        uploadEmpFile('empFProfile', 'profile'),
+        uploadEmpFile('empFIdScan',  'idcard'),
+      ]).then(function(urls) {
+        if (urls[0]) data.profileUrl = urls[0];
+        if (urls[1]) data.idCardUrl  = urls[1];
+        return data;
+      });
     }
   }).then(function(res) {
     if (!res.isConfirmed) return;
-    Swal.fire({ title: '⏳', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+    Swal.fire({ title: '⏳', text: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
     _hrPOST('saveHREmployee', res.value).then(function(r) {
       Swal.hideLoading(); Swal.close();
       if (r.status === 'ok') _hrRenderEmps();
@@ -947,10 +1057,11 @@ function _hrEmpModal(emp, idx) {
   });
 }
 
-function _hrField(id, label, value, type, placeholder) {
+function _hrField(id, label, value, type, placeholder, extra) {
   return '<div><label style="font-size:.76rem;color:var(--t3);display:block;margin-bottom:3px">' + label + '</label>' +
     '<input id="' + id + '" type="' + (type || 'text') + '" value="' + value + '"' +
     (placeholder ? ' placeholder="' + placeholder + '"' : '') +
+    (extra ? ' ' + extra : '') +
     ' style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--bc-input);background:var(--card);color:var(--t1);font-family:\'Sarabun\',sans-serif;box-sizing:border-box"></div>';
 }
 
@@ -1475,6 +1586,21 @@ function _hrRenderSettings() {
 
     // ── การ์ดรอบการจ่ายเงินเดือน ─────────────────────────────────
     _hrPayCycleCard() +
+
+    // ── การ์ด Master PIN ─────────────────────────────────────────
+    '<div style="max-width:560px;margin-top:16px;background:var(--card);border:1px solid var(--bc-input);border-radius:14px;padding:22px 24px">' +
+      '<div style="font-weight:700;font-size:.95rem;color:var(--c1);margin-bottom:4px">🔐 Master PIN (ผู้จัดการ)</div>' +
+      '<div style="font-size:.76rem;color:var(--t3);margin-bottom:14px">PIN นี้ใช้สำหรับผู้จัดการ/เจ้าของเข้าระบบเบิก/กู้ — สามารถดูและอนุมัติคำขอของพนักงานทุกคน</div>' +
+      '<div style="display:flex;gap:10px;align-items:center">' +
+        '<input id="hrMasterPinInput" type="password" maxlength="8" placeholder="ตั้ง Master PIN" ' +
+          'style="flex:1;padding:9px 12px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:\'Sarabun\',sans-serif;font-size:.9rem" ' +
+          'value="' + (localStorage.getItem('ptts_hr_master_pin') ? '••••' : '') + '">' +
+        '<button onclick="hrSaveMasterPin()" style="padding:9px 18px;background:var(--c1);color:#fff;border:none;border-radius:8px;font-family:\'Sarabun\',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer">💾 บันทึก</button>' +
+      '</div>' +
+      (localStorage.getItem('ptts_hr_master_pin')
+        ? '<div style="margin-top:8px;font-size:.76rem;color:#059669">✅ ตั้ง Master PIN ไว้แล้ว</div>'
+        : '<div style="margin-top:8px;font-size:.76rem;color:#d97706">⚠️ ยังไม่ได้ตั้ง Master PIN</div>') +
+    '</div>' +
 
     '</div>';
 }
@@ -2077,6 +2203,7 @@ function _hrSlipHtml(p) {
   '<button class="btn bp" onclick="window.print()">🖨 พิมพ์</button>' +
   '<button class="btn bs" onclick="hrSaveImg()">💾 บันทึกภาพ</button>' +
   '<button class="btn bl" onclick="hrShareLINE()">💚 แชร์ LINE</button>' +
+  '<button class="btn" style="background:#64748b;color:#fff" onclick="window.close()">✖ ปิด</button>' +
 '</div>\n' +
 '<div class="slip" id="slipCard">\n' +
   '<div class="top">' +
@@ -2138,10 +2265,757 @@ function _hrSlipHtml(p) {
 '    }\n' +
 '  } catch(e) { alert("ไม่สามารถแชร์ได้: "+e.message); }\n' +
 '}\n' +
-'(function(){\n' +
-'  function go(){try{window.focus();}catch(e){}}\n' +
-'  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(go);}else{setTimeout(go,700);}\n' +
-'})();\n' +
 '<\/script>\n' +
 '</body></html>';
 }
+
+// ══════════════════════════════════════════════════════════════
+// SUB-TAB 6 — เบิก/กู้เงิน (Loan & Advance)
+// ══════════════════════════════════════════════════════════════
+let _hrLoans = [];
+
+function _hrRenderLoans() {
+  const p = document.getElementById('hrPanel6');
+  if (!p) return;
+  _hrLoanBadgeClear(); // ล้าง badge เมื่อเปิดหน้าเบิก/กู้
+  // ยังไม่ login → แสดงหน้า login
+  if (!_hrSession) { _hrShowLoanLogin(); return; }
+  p.innerHTML = '<div style="padding:16px 0;text-align:center;color:var(--t3)">⏳ กำลังโหลด...</div>';
+  // emp เห็นเฉพาะตัวเอง, manager เห็นทุกคน
+  const params = _hrSession.role === 'emp' ? { empId: _hrSession.empId } : {};
+  // โหลด employees พร้อมกัน (manager ต้องการชื่อพนักงาน)
+  var calls = [_hrGET('getLoanRequests', params)];
+  if (_hrSession.role === 'manager' && !_hrEmps.length) calls.push(_hrGET('getHREmployees'));
+  Promise.all(calls).then(function(results) {
+    _hrLoans = (results[0] && results[0].data) || [];
+    if (results[1]) _hrEmps = results[1].data || [];
+    p.innerHTML = _hrLoansPanelHtml();
+    _hrLoansBindEvents();
+  }).catch(function(e) {
+    p.innerHTML = '<div style="padding:20px;color:#dc2626">โหลดข้อมูลไม่สำเร็จ: ' + e.message + '</div>';
+  });
+}
+
+function _hrLoanStatusCard(filter, icon, label, count, accent, bg) {
+  return '<div onclick="hrLoanSetFilter(\'' + filter + '\')" ' +
+    'style="flex:1;min-width:0;cursor:pointer;background:' + bg + ';border:2px solid ' + accent + ';border-radius:10px;padding:8px 4px;text-align:center;transition:transform .15s,box-shadow .15s" ' +
+    'onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 18px rgba(0,0,0,.1)\'" ' +
+    'onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">' +
+    '<div style="font-size:1.1rem;line-height:1.3">' + icon + '</div>' +
+    '<div style="font-size:1.5rem;font-weight:800;color:' + accent + ';line-height:1.2">' + count + '</div>' +
+    '<div style="font-size:.65rem;color:var(--t2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px">' + label + '</div>' +
+  '</div>';
+}
+
+function _hrLoansPanelHtml() {
+  const isManager = _hrSession && _hrSession.role === 'manager';
+  const sessionName = _hrSession ? (_hrSession.name || _hrSession.empId) : '';
+  // นับแต่ละสถานะ
+  const cntPending  = _hrLoans.filter(function(l) { return l.status === 'pending';  }).length;
+  const cntApproved = _hrLoans.filter(function(l) { return l.status === 'approved'; }).length;
+  const cntRejected = _hrLoans.filter(function(l) { return l.status === 'rejected'; }).length;
+  const cntClosed   = _hrLoans.filter(function(l) { return l.status === 'closed';   }).length;
+  const cntAll      = _hrLoans.length;
+
+  return '<div style="padding:0 4px">' +
+    // session info bar (ซ่อนใน employee.html เพราะมี session bar ของตัวเองแล้ว — ยังคงไว้สำหรับ form.html)
+    '<div id="hrLoanSessionBar" style="display:flex;align-items:center;justify-content:space-between;background:' + (isManager ? 'rgba(79,70,229,.07)' : 'rgba(8,145,178,.07)') + ';border:1px solid ' + (isManager ? 'rgba(79,70,229,.2)' : 'rgba(8,145,178,.2)') + ';border-radius:10px;padding:8px 14px;margin-bottom:14px">' +
+      '<div style="font-size:.84rem;color:var(--t2)">' +
+        (isManager ? '🔑 <b>ผู้จัดการ</b>' : '👤 ' + sessionName) +
+      '</div>' +
+      '<button onclick="hrLogout()" style="background:transparent;color:var(--t3);border:1px solid var(--bc-input);border-radius:6px;padding:4px 12px;cursor:pointer;font-family:inherit;font-size:.78rem">🔓 ออกจากระบบ</button>' +
+    '</div>' +
+    // ── สถานะขนาดใหญ่ ──
+    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px">' +
+      _hrLoanStatusCard('all',      '📋', 'ทั้งหมด',     cntAll,      '#6366f1', 'rgba(99,102,241,.08)') +
+      _hrLoanStatusCard('pending',  '⏳', 'รออนุมัติ',   cntPending,  '#f59e0b', 'rgba(245,158,11,.08)') +
+      _hrLoanStatusCard('approved', '✅', 'อนุมัติแล้ว', cntApproved, '#10b981', 'rgba(16,185,129,.08)') +
+      _hrLoanStatusCard('rejected', '❌', 'ปฏิเสธ',      cntRejected, '#ef4444', 'rgba(239,68,68,.08)') +
+      _hrLoanStatusCard('closed',   '🔒', 'ปิดแล้ว',     cntClosed,   '#64748b', 'rgba(100,116,139,.08)') +
+    '</div>' +
+    // header bar
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">' +
+      '<div style="font-size:1.05rem;font-weight:700;color:var(--t1)">💰 เบิก/กู้เงิน</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button onclick="hrLoanNew()" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:inherit;font-size:.9rem">➕ ยื่นคำขอใหม่</button>' +
+        '<button onclick="_hrRenderLoans()" style="background:transparent;color:var(--t3);border:1px solid var(--bc-input);border-radius:8px;padding:7px 14px;cursor:pointer;font-family:inherit;font-size:.9rem">🔄 รีเฟรช</button>' +
+      '</div>' +
+    '</div>' +
+    // filter tabs
+    '<div id="hrLoanFilter" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">' +
+      _hrLoanFilterBtn('all',      'ทั้งหมด') +
+      _hrLoanFilterBtn('pending',  '⏳ รออนุมัติ') +
+      _hrLoanFilterBtn('approved', '✅ อนุมัติ') +
+      _hrLoanFilterBtn('rejected', '❌ ปฏิเสธ') +
+      _hrLoanFilterBtn('closed',   '🔒 ปิดแล้ว') +
+    '</div>' +
+    // table
+    '<div id="hrLoanTable">' + _hrLoanTableHtml('all') + '</div>' +
+  '</div>';
+}
+
+function _hrLoanFilterBtn(val, label) {
+  return '<button onclick="hrLoanSetFilter(\'' + val + '\')" id="hrLFBtn-' + val + '" ' +
+    'style="border-radius:20px;padding:5px 14px;cursor:pointer;font-family:inherit;font-size:.85rem;' +
+    'background:' + (val === 'all' ? 'var(--c1)' : 'transparent') + ';' +
+    'color:' + (val === 'all' ? '#fff' : 'var(--t3)') + ';' +
+    'border:1px solid ' + (val === 'all' ? 'var(--c1)' : 'var(--bc-input)') + '">' + label + '</button>';
+}
+
+let _hrLoanCurFilter = 'all';
+function hrLoanSetFilter(val) {
+  _hrLoanCurFilter = val;
+  ['all','pending','approved','rejected','closed'].forEach(function(k) {
+    const b = document.getElementById('hrLFBtn-' + k);
+    if (!b) return;
+    const active = k === val;
+    b.style.background  = active ? 'var(--c1)' : 'transparent';
+    b.style.color        = active ? '#fff' : 'var(--t3)';
+    b.style.borderColor  = active ? 'var(--c1)' : 'var(--bc-input)';
+  });
+  const tbl = document.getElementById('hrLoanTable');
+  if (tbl) tbl.innerHTML = _hrLoanTableHtml(val);
+}
+
+function _hrFmtDateShort(d) {
+  if (!d) return '—';
+  var dt = new Date(d);
+  if (isNaN(dt.getTime())) return String(d).slice(0, 16);
+  var day = String(dt.getDate()).padStart(2, '0');
+  var mon = String(dt.getMonth() + 1).padStart(2, '0');
+  var yr  = dt.getFullYear() + 543;
+  var h   = String(dt.getHours()).padStart(2, '0');
+  var m   = String(dt.getMinutes()).padStart(2, '0');
+  return day + '/' + mon + '/' + yr + ' ' + h + ':' + m;
+}
+
+function _hrLoanDaysSince(dateStr) {
+  if (!dateStr) return 0;
+  var d;
+  var s = String(dateStr);
+  if (s[2] === '/') { // dd/MM/yyyy BE
+    var p = s.split(' ')[0].split('/');
+    var yr = parseInt(p[2]); var mo = parseInt(p[1])-1; var dy = parseInt(p[0]);
+    if (yr > 2500) yr -= 543;
+    d = new Date(yr, mo, dy);
+  } else {
+    d = new Date(s);
+  }
+  if (isNaN(d.getTime())) return 0;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+}
+
+function _hrLoanTableHtml(filter) {
+  const rows = filter === 'all' ? _hrLoans : _hrLoans.filter(function(l) { return l.status === filter; });
+  if (!rows.length) return '<div style="padding:32px;text-align:center;color:var(--t3)">ไม่มีรายการ</div>';
+
+  const isEmp = _hrSession && _hrSession.role === 'emp';
+  const isManagerView = _hrSession && _hrSession.role === 'manager';
+
+  const statusStyle = {
+    pending:  { bg:'#fef3c7', color:'#92400e', label:'⏳ รออนุมัติ' },
+    approved: { bg:'#d1fae5', color:'#065f46', label:'✅ อนุมัติแล้ว' },
+    rejected: { bg:'#fee2e2', color:'#991b1b', label:'❌ ปฏิเสธ' },
+    closed:   { bg:'#f1f5f9', color:'#475569', label:'🔒 ปิดแล้ว' },
+  };
+  const typeStyle = {
+    advance: { bg:'#e0e7ff', color:'#3730a3', label:'เบิก' },
+    loan:    { bg:'#fce7f3', color:'#9d174d', label:'กู้' },
+  };
+  const dayRingColor = { pending:'#f59e0b', approved:'#10b981', rejected:'#94a3b8', closed:'#64748b' };
+
+  function badge(map, key) {
+    var s = map[key] || { bg:'#f1f5f9', color:'#475569', label: key };
+    return '<span style="background:' + s.bg + ';color:' + s.color + ';border-radius:99px;padding:2px 10px;font-size:.76rem;font-weight:600">' + s.label + '</span>';
+  }
+
+  var cards = rows.map(function(l) {
+    var days    = _hrLoanDaysSince(l.requestDate);
+    var ringClr = dayRingColor[l.status] || '#64748b';
+    var ts      = typeStyle[l.type] || { bg:'#f1f5f9', color:'#475569', label: l.type };
+
+    // ── day circle ──
+    var dayCircle =
+      '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+        'width:52px;height:52px;border-radius:50%;border:3px solid ' + ringClr + ';flex-shrink:0">' +
+        '<span style="font-size:1.1rem;font-weight:800;color:' + ringClr + ';line-height:1">' + days + '</span>' +
+        '<span style="font-size:.6rem;color:' + ringClr + ';margin-top:1px">วันที่แล้ว</span>' +
+      '</div>';
+
+    // ── action buttons ──
+    var actionArea = '';
+    if (l.status === 'pending' && isManagerView) {
+      actionArea =
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button onclick="hrLoanApprove(\'' + l.requestId + '\')" style="flex:1;min-width:80px;background:#d1fae5;color:#065f46;border:none;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:.84rem;font-family:inherit;font-weight:600">✅ อนุมัติ</button>' +
+          '<button onclick="hrLoanReject(\'' + l.requestId + '\')" style="flex:1;min-width:80px;background:#fee2e2;color:#991b1b;border:none;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:.84rem;font-family:inherit;font-weight:600">❌ ปฏิเสธ</button>' +
+        '</div>';
+    } else if (l.status === 'approved' && isManagerView) {
+      actionArea =
+        '<button onclick="hrLoanClose(\'' + l.requestId + '\')" style="width:100%;background:#0f172a;color:#fff;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:.84rem;font-family:inherit;font-weight:600">💳 บันทึกโอนเงิน / ปิดรายการ</button>';
+    } else if (l.status === 'closed') {
+      var xfAmt  = l.transferAmount ? '฿' + _hrFmt(l.transferAmount) : '';
+      var xfDate = l.transferDate   ? _hrFmtDateShort(l.transferDate).slice(0,10) : '';
+      var xfNote = l.transferNote   ? l.transferNote : '';
+      actionArea =
+        '<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;font-size:.8rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center">' +
+          (xfDate ? '<span style="color:var(--t2)">📅 ' + xfDate + '</span>' : '') +
+          (xfAmt  ? '<span style="color:#059669;font-weight:700">' + xfAmt + '</span>' : '') +
+          (xfNote ? '<span style="color:var(--t3)">' + xfNote + '</span>' : '') +
+          (l.slipImageUrl ? '<a href="' + l.slipImageUrl + '" target="_blank" style="color:#3b82f6;text-decoration:none">🖼️ ใบโอน</a>' : '') +
+          (l.closedDate ? '<span style="color:var(--t4);font-size:.75rem;margin-left:auto">ปิด ' + _hrFmtDateShort(l.closedDate).slice(0,10) + '</span>' : '') +
+        '</div>';
+    } else if (l.status === 'approved' && !isManagerView) {
+      actionArea = '<div style="font-size:.8rem;color:#059669">✅ อนุมัติโดย ' + (l.approvedBy || '—') + '</div>';
+    } else if (l.status === 'rejected') {
+      actionArea = '<div style="font-size:.8rem;color:#dc2626">❌ ปฏิเสธแล้ว</div>';
+    }
+
+    return '<div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
+      // ── header row ──
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">' +
+            '<span style="background:' + ts.bg + ';color:' + ts.color + ';border-radius:6px;padding:2px 9px;font-size:.78rem;font-weight:700">' + ts.label + '</span>' +
+            badge(statusStyle, l.status) +
+          '</div>' +
+          '<div style="font-size:1.2rem;font-weight:800;color:var(--t1)">฿' + _hrFmt(l.amount) + '</div>' +
+          (function(){
+            var n = l.empName || ((_hrEmps||[]).find(function(e){ return String(e.empId)===String(l.empId); })||{}).name || l.empId;
+            return !isEmp ? '<div style="font-size:.85rem;font-weight:600;color:var(--t2);margin-top:2px">👤 ' + n + '</div>' : '';
+          })() +
+          (function(){
+            if (l.type !== 'advance') return '';
+            // หา advanceBudget ของพนักงานคนนี้
+            var empRec = (_hrEmps||[]).find(function(e){ return String(e.empId)===String(l.empId); }) || {};
+            var budget = parseFloat(empRec.advanceBudget || (_hrSession && _hrSession.empId === String(l.empId) ? _hrSession.advanceBudget : 0) || 0);
+            if (!budget) return '';
+            // คำนวณยอดเบิกแล้วเดือนปัจจุบัน (pending+approved+closed ที่ requestDate อยู่เดือนนี้)
+            var nowYM = (function(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); })();
+            var used = 0;
+            (_hrLoans||[]).forEach(function(x){
+              if (String(x.empId) !== String(l.empId)) return;
+              if (x.type !== 'advance') return;
+              if (x.status === 'rejected') return;
+              // parse requestDate dd/MM/yyyy BE → CE ym
+              var rd = String(x.requestDate||'');
+              var parts = rd.split(/[\/ ]/);
+              if (parts.length >= 3) {
+                var beY = parseInt(parts[2]); var m = parts[1];
+                var ceY = beY > 2500 ? beY - 543 : beY;
+                var ym = ceY + '-' + (m.length===1?'0':'') + m;
+                if (ym === nowYM) used += parseFloat(x.amount||0);
+              }
+            });
+            var remain = Math.max(0, budget - used);
+            var pct = Math.min(100, budget > 0 ? Math.round(used/budget*100) : 0);
+            var barColor = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981';
+            return '<div style="margin-top:6px;background:var(--bg2);border-radius:8px;padding:7px 10px;font-size:.75rem">' +
+              '<div style="display:flex;justify-content:space-between;color:var(--t3);margin-bottom:4px">' +
+                '<span>วงเงิน/เดือน <b style="color:var(--t1)">฿' + _hrFmt(budget) + '</b></span>' +
+                '<span style="color:' + (remain===0?'#ef4444':'#059669') + ';font-weight:700">เหลือ ฿' + _hrFmt(remain) + '</span>' +
+              '</div>' +
+              '<div style="background:var(--bc-card);border-radius:99px;height:5px;overflow:hidden">' +
+                '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:99px;transition:width .3s"></div>' +
+              '</div>' +
+              '<div style="color:var(--t4);margin-top:3px">เบิกแล้ว ฿' + _hrFmt(used) + ' (' + pct + '%)</div>' +
+            '</div>';
+          })() +
+        '</div>' +
+        dayCircle +
+      '</div>' +
+      // ── details ──
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:.8rem">' +
+        '<div style="color:var(--t3)">เลขที่<br><span style="color:var(--t2);font-size:.75rem">' + l.requestId + '</span></div>' +
+        '<div style="color:var(--t3)">วันที่ยื่น<br><span style="color:var(--t2)">' + _hrFmtDateShort(l.requestDate) + '</span></div>' +
+        (l.reason ? '<div style="color:var(--t3);grid-column:1/-1">เหตุผล<br><span style="color:var(--t2)">' + l.reason + '</span></div>' : '') +
+        (l.type === 'loan' && l.repayPeriods > 1
+          ? '<div style="color:var(--t3)">ผ่อน<br><span style="color:var(--t2)">' + l.repayPeriods + ' งวด (฿' + _hrFmt(l.installmentAmt) + '/งวด)</span></div>'
+          : '') +
+      '</div>' +
+      // ── action ──
+      (actionArea ? '<div style="border-top:1px solid var(--bc-input);padding-top:10px">' + actionArea + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">' + cards + '</div>';
+}
+
+
+function _hrLoansBindEvents() { /* event binding ผ่าน onclick inline */ }
+
+// ── ยื่นคำขอใหม่ ─────────────────────────────────────────────
+function hrLoanNew() {
+  const _isEmpRole = _hrSession && _hrSession.role === 'emp';
+  if (!_isEmpRole && (!_hrEmps || !_hrEmps.length)) {
+    Swal.fire({ icon: 'warning', title: 'ยังไม่มีข้อมูลพนักงาน', text: 'กรุณาเพิ่มพนักงานในแท็บ "พนักงาน" ก่อน', confirmButtonText: 'ตกลง' });
+    return;
+  }
+  const isEmp = _hrSession && _hrSession.role === 'emp';
+  // emp เห็นเฉพาะตัวเอง; manager เห็นทุกคน
+  // ถ้า role=emp และ _hrEmps ยังไม่โหลด → ใช้ session data แทน
+  const empListRaw = (!_hrEmps || !_hrEmps.length) && isEmp
+    ? [{ empId: _hrSession.empId, name: _hrSession.name, dept: _hrSession.dept || '', advanceBudget: _hrSession.advanceBudget || 0 }]
+    : _hrEmps;
+  const empList = isEmp
+    ? empListRaw.filter(function(e) { return String(e.empId) === String(_hrSession.empId); })
+    : empListRaw;
+  const empOpts = empList.map(function(e) {
+    return '<option value="' + e.empId + '" data-budget="' + (e.advanceBudget || 0) + '">' + e.name + ' (' + e.empId + ')</option>';
+  }).join('');
+
+  Swal.fire({
+    title: '💰 ยื่นคำขอเบิก/กู้',
+    width: 480,
+    html: '<div style="text-align:left;font-family:Sarabun,sans-serif">' +
+      '<div style="margin-bottom:10px">' +
+        '<label style="font-size:.85rem;color:var(--t2)">พนักงาน</label>' +
+        '<select id="lnFEmp" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px">' + empOpts + '</select>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+        '<div>' +
+          '<label style="font-size:.85rem;color:var(--t2)">ประเภท</label>' +
+          '<select id="lnFType" onchange="hrLoanTypeChanged()" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px">' +
+            '<option value="advance">เบิกล่วงหน้า</option>' +
+            '<option value="loan">กู้เงิน</option>' +
+          '</select>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:.85rem;color:var(--t2)">จำนวนเงิน (บาท)</label>' +
+          '<input id="lnFAmt" type="number" min="0" step="100" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
+        '</div>' +
+      '</div>' +
+      '<div id="lnFLoanRow" style="display:none;margin-bottom:10px">' +
+        '<label style="font-size:.85rem;color:var(--t2)">ผ่อนชำระ (งวด)</label>' +
+        '<input id="lnFPeriods" type="number" min="1" max="24" value="1" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
+      '</div>' +
+      '<div style="margin-bottom:10px">' +
+        '<label style="font-size:.85rem;color:var(--t2)">เหตุผล</label>' +
+        '<input id="lnFReason" type="text" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
+      '</div>' +
+      '<div id="lnBudgetInfo" style="font-size:.82rem;color:#4338ca;background:#e0e7ff;border-radius:8px;padding:8px 12px;display:none"></div>' +
+    '</div>',
+    showCancelButton: true,
+    confirmButtonText: '📨 ยื่นคำขอ',
+    cancelButtonText: 'ยกเลิก',
+    didOpen: function() { hrLoanTypeChanged(); },
+    preConfirm: function() {
+      const empSel = document.getElementById('lnFEmp');
+      const empId  = empSel.value;
+      const empOpt = empSel.options[empSel.selectedIndex];
+      const empObj = _hrEmps.find(function(e) { return String(e.empId) === String(empId); }) || {};
+      const amt    = parseFloat(document.getElementById('lnFAmt').value) || 0;
+      const type   = document.getElementById('lnFType').value;
+      const reason = document.getElementById('lnFReason').value.trim();
+      const periods = parseInt(document.getElementById('lnFPeriods').value) || 1;
+      if (!empId) { Swal.showValidationMessage('กรุณาเลือกพนักงาน'); return false; }
+      if (amt <= 0)  { Swal.showValidationMessage('กรุณาใส่จำนวนเงิน'); return false; }
+      if (!reason)   { Swal.showValidationMessage('กรุณาใส่เหตุผล'); return false; }
+      return {
+        empId: empId, empName: empObj.name || '', dept: empObj.dept || '',
+        type: type, amount: amt, reason: reason, repayPeriods: periods,
+        advanceBudget: parseFloat(empOpt.dataset.budget) || 0
+      };
+    }
+  }).then(function(res) {
+    if (!res.isConfirmed) return;
+    _hrPOST('saveLoanRequest', res.value).then(function(r) {
+      if (r.status === 'budget_exceeded') {
+        Swal.fire({ icon: 'warning', title: '⚠️ เกินวงเงิน', text: r.message, confirmButtonText: 'ตกลง' });
+      } else if (r.status === 'ok') {
+        Swal.fire({ icon: 'success', title: 'ยื่นคำขอสำเร็จ', text: 'เลขที่: ' + r.requestId, timer: 2000, showConfirmButton: false });
+        _hrRenderLoans();
+      } else {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: r.message || 'ไม่ทราบสาเหตุ', confirmButtonText: 'ตกลง' });
+      }
+    });
+  });
+}
+
+function hrLoanTypeChanged() {
+  const t = document.getElementById('lnFType');
+  const loanRow = document.getElementById('lnFLoanRow');
+  const budgetInfo = document.getElementById('lnBudgetInfo');
+  if (!t) return;
+  if (loanRow) loanRow.style.display = t.value === 'loan' ? '' : 'none';
+  if (t.value === 'advance' && budgetInfo) {
+    const empSel = document.getElementById('lnFEmp');
+    if (empSel) {
+      const opt      = empSel.options[empSel.selectedIndex];
+      const selEmpId = opt ? opt.value : '';
+      const budget   = parseFloat(opt && opt.dataset.budget) || 0;
+      if (budget > 0) {
+        // คำนวณยอดที่เบิกไปแล้วในเดือนนี้
+        const nowMon = (function(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); })();
+        var used = 0;
+        (_hrLoans || []).forEach(function(l) {
+          if (String(l.empId) !== String(selEmpId)) return;
+          if (l.type !== 'advance') return;
+          if (l.status === 'rejected') return;
+          var rd = String(l.requestDate || '');
+          var rdKey = '';
+          if (rd.length >= 10 && rd[2] === '/') {
+            var beYr = parseInt(rd.slice(6,10));
+            var ceYr = beYr > 2500 ? beYr - 543 : beYr; // แปลง BE → CE
+            rdKey = ceYr + '-' + rd.slice(3,5);
+          } else { rdKey = rd.slice(0,7); }
+          if (rdKey === nowMon) used += parseFloat(l.amount) || 0;
+        });
+        const remain = Math.max(0, budget - used);
+        budgetInfo.style.display = '';
+        budgetInfo.innerHTML =
+          '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem">' +
+            '<span>💡 วงเงิน/เดือน <b>฿' + _hrFmt(budget) + '</b></span>' +
+            (used > 0 ? '<span style="color:#dc2626">เบิกแล้ว <b>฿' + _hrFmt(used) + '</b></span>' : '') +
+            '<span style="color:#059669">เบิกได้อีก <b>฿' + _hrFmt(remain) + '</b></span>' +
+          '</div>';
+      } else {
+        budgetInfo.style.display = 'none';
+      }
+    }
+  } else if (budgetInfo) {
+    budgetInfo.style.display = 'none';
+  }
+}
+
+// ── อนุมัติ ───────────────────────────────────────────────────
+function hrLoanApprove(requestId) {
+  Swal.fire({
+    title: '✅ อนุมัติคำขอ',
+    html: '<div style="text-align:left;font-family:Sarabun,sans-serif">' +
+      '<div style="margin-bottom:10px">' +
+        '<label style="font-size:.85rem;color:var(--t2)">ชื่อผู้อนุมัติ</label>' +
+        '<input id="apFBy" type="text" placeholder="คุณสุรศักดิ์" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
+      '</div>' +
+      '<div style="margin-bottom:10px">' +
+        '<label style="font-size:.85rem;color:var(--t2)">หักจากงวดเดือน (เช่น 2026-07)</label>' +
+        '<input id="apFMon" type="month" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
+      '</div>' +
+      '<div>' +
+        '<label style="font-size:.85rem;color:var(--t2)">หมายเหตุ (ถ้ามี)</label>' +
+        '<input id="apFNote" type="text" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
+      '</div>' +
+    '</div>',
+    showCancelButton: true,
+    confirmButtonText: '✅ ยืนยันอนุมัติ',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#059669',
+    preConfirm: function() {
+      const by = (document.getElementById('apFBy').value || '').trim();
+      if (!by) { Swal.showValidationMessage('กรุณาใส่ชื่อผู้อนุมัติ'); return false; }
+      return {
+        requestId: requestId,
+        approvedBy: by,
+        deductMonth: document.getElementById('apFMon').value || '',
+        notes: document.getElementById('apFNote').value || ''
+      };
+    }
+  }).then(function(res) {
+    if (!res.isConfirmed) return;
+    _hrPOST('approveLoan', res.value).then(function(r) {
+      if (r.status === 'ok') {
+        Swal.fire({ icon: 'success', title: 'อนุมัติแล้ว', timer: 1500, showConfirmButton: false });
+        _hrRenderLoans();
+      } else {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: r.message, confirmButtonText: 'ตกลง' });
+      }
+    });
+  });
+}
+
+// ── ปฏิเสธ ───────────────────────────────────────────────────
+function hrLoanReject(requestId) {
+  Swal.fire({
+    title: '❌ ปฏิเสธคำขอ',
+    input: 'text',
+    inputLabel: 'เหตุผลที่ปฏิเสธ (ถ้ามี)',
+    inputPlaceholder: 'เช่น เกินวงเงิน',
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยันปฏิเสธ',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#dc2626',
+  }).then(function(res) {
+    if (!res.isConfirmed) return;
+    _hrPOST('rejectLoan', { requestId: requestId, notes: res.value || '' }).then(function(r) {
+      if (r.status === 'ok') {
+        Swal.fire({ icon: 'success', title: 'ปฏิเสธแล้ว', timer: 1500, showConfirmButton: false });
+        _hrRenderLoans();
+      } else {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: r.message, confirmButtonText: 'ตกลง' });
+      }
+    });
+  });
+}
+
+// ── helper: next pay month (yyyy-MM) ─────────────────────────
+function _hrNextPayMonth() {
+  var d = new Date();
+  var m = d.getMonth() + 1; // next month (0-based+1 = current, +2 = next)
+  var y = d.getFullYear();
+  if (m > 11) { m = 0; y++; } else { m++; }
+  return y + '-' + String(m).padStart(2, '0');
+}
+
+// ── ปิดรายการ (บัญชี Step 4) ──────────────────────────────────
+function hrLoanClose(requestId) {
+  const loan     = _hrLoans.find(function(l) { return l.requestId === requestId; }) || {};
+  const isAdv    = loan.type === 'advance';
+  const nextMon  = _hrNextPayMonth();
+  const inp = function(id, label, type, val, ph, extra) {
+    return '<div style="margin-bottom:10px">' +
+      '<label style="font-weight:600;display:block;margin-bottom:4px;font-size:.88rem">' + label + '</label>' +
+      '<input id="' + id + '" type="' + type + '" value="' + (val||'') + '" placeholder="' + (ph||'') + '" ' + (extra||'') +
+      ' style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:.92rem;box-sizing:border-box"></div>';
+  };
+  var deductHtml = isAdv
+    ? '<div style="margin-bottom:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:.88rem;color:#166534">' +
+        '✅ <b>หักงวดถัดไปทั้งหมด</b> — งวด ' + nextMon +
+        '<input type="hidden" id="clMon" value="' + nextMon + '">' +
+      '</div>'
+    : inp('clMon', 'หักเงินเดือนงวด (yyyy-MM)', 'month', loan.deductMonth || '', '');
+
+  Swal.fire({
+    title: '💳 บันทึกการโอนเงิน',
+    html:
+      '<div style="text-align:left;font-family:\'Sarabun\',sans-serif;font-size:.92rem">' +
+      inp('clDate', 'วันที่โอนเงิน', 'date', new Date().toISOString().slice(0,10), '') +
+      inp('clAmt',  'จำนวนที่โอน (บาท)', 'number', loan.amount || '', '0', 'min="0"') +
+      inp('clNote', 'หมายเหตุ / เลขที่ใบโอน', 'text', '', 'เช่น ref. โอน') +
+      deductHtml +
+      '<div style="margin-bottom:4px"><label style="font-weight:600;display:block;margin-bottom:4px;font-size:.88rem">📷 แนบรูปใบโอนเงิน (ถ้ามี)</label>' +
+        '<input id="clSlip" type="file" accept="image/*" style="width:100%;font-family:inherit;font-size:.85rem;padding:4px 0">' +
+        '<div id="clSlipStatus" style="font-size:.8rem;color:var(--t3);margin-top:4px"></div>' +
+      '</div>' +
+      '</div>',
+    showCancelButton: true,
+    confirmButtonText: '✅ ปิดรายการ',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#0f172a',
+    preConfirm: function() {
+      var d = document.getElementById('clDate').value;
+      var a = parseFloat(document.getElementById('clAmt').value);
+      if (!d) { Swal.showValidationMessage('กรุณาระบุวันที่โอน'); return false; }
+      if (!a || a <= 0) { Swal.showValidationMessage('กรุณาระบุจำนวนเงินที่โอน'); return false; }
+      var baseData = {
+        requestId:      requestId,
+        transferDate:   d,
+        transferAmount: a,
+        transferNote:   document.getElementById('clNote').value || '',
+        deductMonth:    document.getElementById('clMon').value  || '',
+        slipImageUrl:   ''
+      };
+      var fileInput = document.getElementById('clSlip');
+      if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        return Promise.resolve(baseData);
+      }
+      var file = fileInput.files[0];
+      var statusEl = document.getElementById('clSlipStatus');
+      if (statusEl) statusEl.textContent = '⏳ กำลังอัปโหลดรูป...';
+      return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var b64 = e.target.result.split(',')[1];
+          var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+          _hrPOST('uploadSlipImage', {
+            base64:   b64,
+            mimeType: file.type || 'image/jpeg',
+            filename: 'slip_' + requestId + '_' + Date.now() + '.' + ext
+          }).then(function(up) {
+            if (up && up.url) baseData.slipImageUrl = up.url;
+            resolve(baseData);
+          }).catch(function() { resolve(baseData); });
+        };
+        reader.onerror = function() { resolve(baseData); };
+        reader.readAsDataURL(file);
+      });
+    }
+  }).then(function(res) {
+    if (!res.isConfirmed) return;
+    _hrPOST('closeLoan', res.value).then(function(r) {
+      if (r.status === 'ok') {
+        Swal.fire({ icon: 'success', title: 'ปิดรายการแล้ว', timer: 1500, showConfirmButton: false });
+        _hrRenderLoans();
+      } else {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: r.message, confirmButtonText: 'ตกลง' });
+      }
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// LOAN PENDING BADGE — แจ้งเตือน admin หน้าแท็บ เบิก/กู้
+// ══════════════════════════════════════════════════════════════
+let _hrLoanPollTimer = null;
+
+function _hrLoanBadgeStart() {
+  if (_hrLoanPollTimer) return; // running already
+  _hrLoanPoll();
+  _hrLoanPollTimer = setInterval(_hrLoanPoll, 60000); // ทุก 60 วิ
+}
+
+function _hrLoanPoll() {
+  if (_hrSubCur === '6') return; // อยู่หน้าเบิก/กู้แล้ว — ไม่ต้อง poll
+  _hrGET('getLoanRequests', { status: 'pending' }).then(function(r) {
+    var cnt = (r && r.data) ? r.data.length : 0;
+    _hrLoanBadgeUpdate(cnt);
+  }).catch(function() {});
+}
+
+// inject blink animation once
+(function() {
+  if (document.getElementById('hrBadgeStyle')) return;
+  var s = document.createElement('style');
+  s.id = 'hrBadgeStyle';
+  s.textContent = '@keyframes hrBadgePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.65;transform:scale(1.2)}}' +
+    '.hr-badge-blink{animation:hrBadgePulse 1.2s ease-in-out infinite}';
+  document.head.appendChild(s);
+})();
+
+function _hrLoanBadgeUpdate(cnt) {
+  var BADGE_STYLE = 'position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;' +
+    'border-radius:99px;font-size:.65rem;font-weight:700;padding:1px 5px;min-width:16px;' +
+    'text-align:center;line-height:16px;pointer-events:none;box-shadow:0 0 0 2px var(--bg)';
+
+  // --- badge บน sub-tab เบิก/กู้ ---
+  var btn = document.getElementById('hrBtn6');
+  if (btn) {
+    var badge = document.getElementById('hrLoanBadge');
+    if (cnt > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.id = 'hrLoanBadge';
+        badge.style.cssText = BADGE_STYLE;
+        btn.style.position = 'relative';
+        btn.appendChild(badge);
+      }
+      badge.className = 'hr-badge-blink';
+      badge.textContent = cnt > 9 ? '9+' : String(cnt);
+    } else if (badge) { badge.remove(); }
+  }
+
+  // --- badge บน HR sidebar group header (แสดงก่อนเข้า tab) ---
+  var hrGrpBtn = null;
+  var allGrp = document.querySelectorAll('.sb-group-header');
+  for (var i = 0; i < allGrp.length; i++) {
+    if (allGrp[i].textContent.replace(/[\s\u200b]/g,'').indexOf('HR') !== -1) {
+      hrGrpBtn = allGrp[i]; break;
+    }
+  }
+  if (hrGrpBtn) {
+    var sbBadge = document.getElementById('hrSidebarLoanBadge');
+    if (cnt > 0) {
+      if (!sbBadge) {
+        sbBadge = document.createElement('span');
+        sbBadge.id = 'hrSidebarLoanBadge';
+        sbBadge.style.cssText = 'position:absolute;top:8px;right:30px;background:#ef4444;color:#fff;' +
+          'border-radius:99px;font-size:.65rem;font-weight:700;padding:1px 5px;min-width:16px;' +
+          'text-align:center;line-height:16px;pointer-events:none;box-shadow:0 0 0 2px var(--bg)';
+        hrGrpBtn.style.position = 'relative';
+        hrGrpBtn.appendChild(sbBadge);
+      }
+      sbBadge.className = 'hr-badge-blink';
+      sbBadge.textContent = cnt > 9 ? '9+' : String(cnt);
+    } else if (sbBadge) { sbBadge.remove(); }
+  }
+}
+
+function _hrLoanBadgeClear() {
+  _hrLoanBadgeUpdate(0);
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOGIN SYSTEM — เบิก/กู้
+// ══════════════════════════════════════════════════════════════
+const HR_MASTER_PIN_LS = 'ptts_hr_master_pin';
+let _hrSession = null; // null | { empId, name, dept, role: 'manager'|'emp', advanceBudget }
+
+function hrSaveMasterPin() {
+  const inp = document.getElementById('hrMasterPinInput');
+  if (!inp) return;
+  const v = inp.value.trim();
+  if (!v || v.length < 4) {
+    Swal.fire({ icon: 'warning', title: 'PIN ต้องมีอย่างน้อย 4 ตัวอักษร', confirmButtonText: 'ตกลง' });
+    return;
+  }
+  localStorage.setItem(HR_MASTER_PIN_LS, v);
+  inp.value = '••••';
+  Swal.fire({ icon: 'success', title: 'บันทึก Master PIN แล้ว', timer: 1200, showConfirmButton: false });
+}
+
+function hrLogout() {
+  _hrSession = null;
+  _hrRenderLoans();
+}
+
+// เรียกจาก _hrRenderLoans() — ถ้ายังไม่ login → แสดง popup login
+function _hrShowLoanLogin() {
+  const p = document.getElementById('hrPanel6');
+  if (!p) return;
+  p.innerHTML = '<div style="max-width:400px;margin:40px auto;padding:32px 28px;' +
+    'background:var(--bg-card);border:1px solid var(--bc-card);border-radius:20px;text-align:center">' +
+    '<div style="font-size:2rem;margin-bottom:12px">🔐</div>' +
+    '<div style="font-size:1.1rem;font-weight:700;color:var(--t1);margin-bottom:6px">เข้าสู่ระบบ</div>' +
+    '<div style="font-size:.84rem;color:var(--t3);margin-bottom:24px">ใส่เบอร์โทรศัพท์ + PIN</div>' +
+    '<div style="text-align:left;margin-bottom:12px">' +
+      '<label style="font-size:.82rem;color:var(--t2);font-weight:600;display:block;margin-bottom:4px">เบอร์โทรศัพท์</label>' +
+      '<input id="lnLoginId" type="tel" inputmode="numeric" maxlength="10" ' +
+        'style="width:100%;padding:10px 12px;border:1px solid var(--bc-input);border-radius:9px;' +
+        'background:var(--bg-input);color:var(--t1);font-family:\'Sarabun\',sans-serif;font-size:.95rem" ' +
+        'placeholder="0812345678">' +
+    '</div>' +
+    '<div style="text-align:left;margin-bottom:20px">' +
+      '<label style="font-size:.82rem;color:var(--t2);font-weight:600;display:block;margin-bottom:4px">PIN</label>' +
+      '<input id="lnLoginPin" type="password" ' +
+        'style="width:100%;padding:10px 12px;border:1px solid var(--bc-input);border-radius:9px;' +
+        'background:var(--bg-input);color:var(--t1);font-family:\'Sarabun\',sans-serif;font-size:.95rem" ' +
+        'placeholder="รหัส PIN" onkeydown="if(event.key===\'Enter\')hrDoLoanLogin()">' +
+    '</div>' +
+    '<div id="lnLoginErr" style="min-height:18px;font-size:.82rem;color:#ef4444;margin-bottom:12px"></div>' +
+    '<button onclick="hrDoLoanLogin()" style="width:100%;padding:12px;background:var(--c1);color:#fff;' +
+      'border:none;border-radius:11px;font-family:\'Sarabun\',sans-serif;font-size:1rem;font-weight:700;cursor:pointer">' +
+      'เข้าสู่ระบบ</button>' +
+  '</div>';
+}
+
+function hrDoLoanLogin() {
+  const empId = ((document.getElementById('lnLoginId') || {}).value || '').trim();
+  const pin   = ((document.getElementById('lnLoginPin') || {}).value || '').trim();
+  const errEl = document.getElementById('lnLoginErr');
+  if (!empId || !pin) {
+    if (errEl) errEl.textContent = 'กรุณากรอกเบอร์โทร และ PIN';
+    return;
+  }
+  // ตรวจ Master PIN ก่อน — ถ้าตรง = manager
+  const masterPin = localStorage.getItem(HR_MASTER_PIN_LS) || '';
+  if (masterPin && pin === masterPin) {
+    _hrSession = { empId: empId, name: 'ผู้จัดการ', dept: '', role: 'manager', advanceBudget: 0 };
+    _hrRenderLoans();
+    return;
+  }
+  // login ปกติผ่าน backend (ใช้ phone)
+  _hrPOST('hrLogin', { phone: empId, pin: pin }).then(function(r) {
+    if (r.status === 'ok') {
+      _hrSession = Object.assign({}, r.emp, { role: 'emp' });
+      _hrRenderLoans();
+    } else {
+      if (errEl) errEl.textContent = r.message || 'PIN ไม่ถูกต้อง';
+    }
+  }).catch(function() {
+    if (errEl) errEl.textContent = 'เชื่อมต่อไม่สำเร็จ';
+  });
+}
+
+// ===== AUTO-START LOAN BADGE (ก่อนเข้า HR tab) =====
+(function() {
+  function _hrAutoStart() {
+    if (typeof _hrLoanBadgeStart === 'function') _hrLoanBadgeStart();
+  }
+  // รอให้ sidebar render + SCRIPT_URL พร้อม (localStorage)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(_hrAutoStart, 1200); });
+  } else {
+    setTimeout(_hrAutoStart, 1200);
+  }
+})();

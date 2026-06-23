@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PTS — หน้าพนักงาน</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+/* ── LOGIN OVERLAY ──────────────────────────────────────────── */
+#empLoginOverlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.emp-login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--bc-card);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 36px 32px 32px;
+  width: 100%; max-width: 380px;
+  text-align: center;
+}
+.emp-login-logo {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin: 0 auto 16px;
+  background: var(--c1-10);
+  display: flex; align-items: center; justify-content: center;
+}
+.emp-login-logo img { width: 100%; height: 100%; object-fit: contain; }
+.emp-login-title {
+  font-size: 1.2rem; font-weight: 700; color: var(--t1);
+  margin-bottom: 4px;
+}
+.emp-login-sub {
+  font-size: .83rem; color: var(--t3);
+  margin-bottom: 24px;
+}
+.emp-login-field {
+  text-align: left; margin-bottom: 14px;
+}
+.emp-login-field label {
+  display: block; font-size: .82rem; color: var(--t2);
+  font-weight: 600; margin-bottom: 5px;
+}
+.emp-login-field input {
+  width: 100%; padding: 11px 14px;
+  border: 1px solid var(--bc-input);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--t1);
+  font-family: 'Sarabun', sans-serif;
+  font-size: .95rem;
+  outline: none;
+  transition: border-color .2s;
+}
+.emp-login-field input:focus { border-color: var(--c1); }
+.emp-login-btn {
+  width: 100%; padding: 13px;
+  background: var(--c1); color: #fff;
+  border: none; border-radius: 12px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 1rem; font-weight: 700;
+  cursor: pointer; margin-top: 8px;
+  transition: opacity .15s;
+}
+.emp-login-btn:hover { opacity: .88; }
+.emp-login-err {
+  min-height: 20px;
+  font-size: .82rem; color: #ef4444;
+  margin-top: 10px;
+}
+.emp-login-url-note {
+  display: none;
+  margin-top: 20px; padding: 12px 14px;
+  background: rgba(245,158,11,.1);
+  border: 1px solid rgba(245,158,11,.3);
+  border-radius: 10px;
+  font-size: .82rem; color: #b45309;
+  text-align: left;
+}
+.emp-login-url-note input {
+  width: 100%; margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(245,158,11,.4);
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--t1);
+  font-family: 'Sarabun', sans-serif;
+  font-size: .85rem;
+}
+.emp-login-url-save {
+  margin-top: 6px; padding: 6px 14px;
+  background: rgba(245,158,11,.8); color: #fff;
+  border: none; border-radius: 7px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .82rem; cursor: pointer;
+}
+/* PIN eye toggle */
+.emp-pin-wrap {
+  position: relative;
+}
+.emp-pin-wrap input {
+  padding-right: 44px !important;
+}
+.emp-pin-eye {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: var(--t3); font-size: 1.1rem; padding: 2px;
+  line-height: 1;
+}
+/* Remember me */
+.emp-remember {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 12px; font-size: .82rem; color: var(--t2);
+  cursor: pointer; user-select: none;
+}
+.emp-remember input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--c1); }
+
+/* ── TAB BAR (employee) ──────────────────────────────────────── */
+.emp-tab-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--tabbar);
+  border-top: 1px solid var(--bc-div);
+  display: flex; align-items: stretch;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.emp-tab-btn {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+  color: var(--t3);
+  font-size: .7rem;
+  transition: color .15s, background .15s;
+  padding: 4px 2px;
+}
+.emp-tab-btn .et-icon { font-size: 1.3rem; line-height: 1; }
+.emp-tab-btn.active { color: var(--c1); background: var(--c1-05); }
+
+/* ── CONTENT AREA ───────────────────────────────────────────── */
+.emp-content {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 12px 8px 80px;
+}
+
+/* ── SLIP PANEL ─────────────────────────────────────────────── */
+.emp-slip-card {
+  background: var(--bg-card);
+  border: 1px solid var(--bc-card);
+  border-radius: 16px;
+  padding: 24px 20px;
+  margin-top: 12px;
+}
+.emp-slip-title {
+  font-size: 1rem; font-weight: 700; color: var(--t1);
+  margin-bottom: 18px;
+}
+.emp-slip-row {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+  margin-bottom: 16px;
+}
+.emp-slip-row label {
+  font-size: .83rem; color: var(--t2); font-weight: 600;
+  display: block; margin-bottom: 5px;
+}
+.emp-slip-row input[type="month"] {
+  padding: 9px 12px;
+  border: 1px solid var(--bc-input);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--t1);
+  font-family: 'Sarabun', sans-serif;
+  font-size: .92rem;
+}
+.emp-period-btns {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.emp-period-btn {
+  padding: 7px 16px;
+  border: 1px solid var(--bc-input);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--t3);
+  font-family: 'Sarabun', sans-serif;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.emp-period-btn.sel {
+  background: var(--c1); color: #fff; border-color: var(--c1);
+}
+.emp-slip-view-btn {
+  padding: 11px 24px;
+  background: var(--c1); color: #fff;
+  border: none; border-radius: 11px;
+  font-family: 'Sarabun', sans-serif;
+  font-size: .92rem; font-weight: 700;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.emp-slip-view-btn:hover { opacity: .88; }
+
+/* ── SESSION BAR ────────────────────────────────────────────── */
+.emp-session-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--c1-10);
+  border: 1px solid var(--c1-20);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-size: .85rem;
+}
+.emp-session-bar .emp-name { font-weight: 700; color: var(--t1); }
+.emp-logout-btn {
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid var(--bc-input);
+  border-radius: 8px;
+  color: var(--t3);
+  font-family: 'Sarabun', sans-serif;
+  font-size: .8rem;
+  cursor: pointer;
+}
+
+/* ── HEADER NAV STRIP ───────────────────────────────────────── */
+.emp-header-strip {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--bc-div);
+  padding: 10px 16px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.emp-nav-chip {
+  padding: 6px 16px;
+  border: 1px solid var(--bc-input);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--t3);
+  font-family: 'Sarabun', sans-serif;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.emp-nav-chip.active {
+  background: var(--c1); color: #fff; border-color: var(--c1);
+}
+
+/* ซ่อน session bar ที่ hr.js render ใน hrPanel6 — employee.html มีของตัวเองแล้ว */
+#hrLoanSessionBar { display: none !important; }
+
+@media print {
+  #empLoginOverlay, #empApp > .page-header, .emp-tab-bar { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN OVERLAY ══════════════════════════════════════════ -->
+<div id="empLoginOverlay">
+  <div class="emp-login-card">
+    <div class="emp-login-logo">
+      <img src="PTS.png" alt="PTS" onerror="this.style.display='none'">
+    </div>
+    <div class="emp-login-title">PTS Smart Factory</div>
+    <div class="emp-login-sub">ระบบพนักงาน — กรุณาเข้าสู่ระบบ</div>
+
+    <div class="emp-login-field">
+      <label>เบอร์โทรศัพท์</label>
+      <input type="tel" id="empLoginId" placeholder="เช่น 0812345678"
+             autocomplete="username" inputmode="tel"
+             onkeydown="if(event.key==='Enter')document.getElementById('empLoginPin').focus()">
+    </div>
+    <div class="emp-login-field">
+      <label>PIN (4 หลัก)</label>
+      <div class="emp-pin-wrap">
+        <input type="password" id="empLoginPin" placeholder="••••"
+               autocomplete="current-password" inputmode="numeric" maxlength="8"
+               onkeydown="if(event.key==='Enter')empDoLogin()">
+        <button type="button" class="emp-pin-eye" onclick="empTogglePin()" title="แสดง/ซ่อน PIN">👁</button>
+      </div>
+    </div>
+
+    <label class="emp-remember">
+      <input type="checkbox" id="empRemember" checked>
+      จำการเข้าสู่ระบบ 30 วัน
+    </label>
+
+    <button class="emp-login-btn" onclick="empDoLogin()" style="margin-top:16px">เข้าสู่ระบบ</button>
+    <div class="emp-login-err" id="empLoginErr"></div>
+
+    <!-- Script URL note (shown if not configured) -->
+    <div class="emp-login-url-note" id="empUrlNote">
+      ⚠️ ยังไม่ได้ตั้งค่า Script URL — กรุณาใส่ URL จาก Google Apps Script
+      <input type="url" id="empUrlInput" placeholder="https://script.google.com/macros/s/...">
+      <button class="emp-login-url-save" onclick="empSaveUrl()">บันทึก URL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ════════════════════════════════════════════════ -->
+<div id="empApp" style="display:none">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="ph-inner">
+      <div class="ph-logo">
+        <img src="PTS.png" alt="PTS" class="app-logo-img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <span class="ph-logo-fallback"
+              style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-weight:700">PT</span>
+      </div>
+      <div class="ph-divider"></div>
+      <div class="ph-text">
+        <div class="ph-title">PTS Smart Factory</div>
+        <div class="ph-sub">หน้าพนักงาน</div>
+      </div>
+      <div class="ph-right">
+        <span class="ph-chip ver">v1.3</span>
+        <span class="ph-chip" id="empConnChip" style="display:none">✓ Online</span>
+        <button class="theme-fab" onclick="location.reload()" title="รีเฟรช" style="font-size:1rem">🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="emp-content">
+
+    <!-- Session bar (name + logout) -->
+    <div class="emp-session-bar" id="empSessionBar">
+      <span class="emp-name" id="empSessionName">—</span>
+      <button class="emp-logout-btn" onclick="empLogout()">ออกจากระบบ</button>
+    </div>
+
+    <!-- Tab nav chips -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button id="empTabBtn-loan"    class="emp-nav-chip active"  onclick="empTabSwitch('loan')">💰 เบิก/กู้</button>
+      <button id="empTabBtn-slip"    class="emp-nav-chip"         onclick="empTabSwitch('slip')">🧾 สลิปเงินเดือน</button>
+      <button id="empTabBtn-cal"     class="emp-nav-chip"         onclick="empTabSwitch('cal')">📅 ปฏิทินวันหยุด</button>
+      <button id="empTabBtn-summary" class="emp-nav-chip"         onclick="empTabSwitch('summary')">⏱️ สรุปเวลางาน</button>
+    </div>
+
+    <!-- ── PANEL: เบิก/กู้ (rendered by hr.js _hrRenderLoans) ── -->
+    <div id="hrPanel6"></div>
+
+    <!-- ── PANEL: สลิปเงินเดือน (custom) ── -->
+    <div id="empPanelSlip" style="display:none">
+      <div class="emp-slip-card">
+        <div class="emp-slip-title">🧾 สลิปเงินเดือน</div>
+        <div class="emp-slip-row">
+          <div>
+            <label>เดือน</label>
+            <input type="month" id="empSlipMonth">
+          </div>
+          <div>
+            <label>งวด</label>
+            <div class="emp-period-btns" id="empPeriodBtns">
+              <button class="emp-period-btn sel" data-val="all"  onclick="empPeriodSel(this)">ทั้งเดือน</button>
+              <button class="emp-period-btn"     data-val="p1"   onclick="empPeriodSel(this)">งวด 1 (11–25)</button>
+              <button class="emp-period-btn"     data-val="p2"   onclick="empPeriodSel(this)">งวด 2 (26–10)</button>
+            </div>
+          </div>
+        </div>
+        <button class="emp-slip-view-btn" onclick="empViewSlip()">🖨️ ดูสลิป / พิมพ์</button>
+      </div>
+    </div>
+
+    <!-- ── PANEL: ปฏิทินวันหยุด (rendered by hr.js _hrRenderCal) ── -->
+    <div id="hrPanel5" style="display:none"></div>
+
+    <!-- ── PANEL: สรุปเวลางาน (rendered by hr.js _hrRenderSummary) ── -->
+    <div id="hrPanel2" style="display:none"></div>
+
+    <!-- Dummy panels so hrSubSwitch null-checks pass (not strictly needed, hr.js checks if(pan)) -->
+  </div><!-- end emp-content -->
+
+  <!-- Bottom tab bar (mobile-friendly duplicate) -->
+  <div class="emp-tab-bar">
+    <button id="empBotBtn-loan"    class="emp-tab-btn active"  onclick="empTabSwitch('loan')">
+      <span class="et-icon">💰</span><span>เบิก/กู้</span>
+    </button>
+    <button id="empBotBtn-slip"    class="emp-tab-btn"         onclick="empTabSwitch('slip')">
+      <span class="et-icon">🧾</span><span>สลิป</span>
+    </button>
+    <button id="empBotBtn-cal"     class="emp-tab-btn"         onclick="empTabSwitch('cal')">
+      <span class="et-icon">📅</span><span>ปฏิทิน</span>
+    </button>
+    <button id="empBotBtn-summary" class="emp-tab-btn"         onclick="empTabSwitch('summary')">
+      <span class="et-icon">⏱️</span><span>เวลางาน</span>
+    </button>
+  </div>
+
+</div><!-- end empApp -->
+
+<!-- ══ SCRIPTS ════════════════════════════════════════════════ -->
+<script src="hr.js?v=4.1"></script>
+<script>
+// ────────────────────────────────────────────────────────────
+// EMPLOYEE PORTAL — employee.html v1.3
+// ────────────────────────────────────────────────────────────
+
+var _empSlipPeriod = 'all';
+var _empCurTab = 'loan';
+var EMP_SESSION_LS = 'ptts_emp_session';
+
+// ── INIT ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  // ตั้งค่า month default = เดือนปัจจุบัน
+  var now = new Date();
+  var yyyymm = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  var slipMonEl = document.getElementById('empSlipMonth');
+  if (slipMonEl) slipMonEl.value = yyyymm;
+
+  // ตรวจว่าตั้ง Script URL ไว้หรือยัง
+  var url = localStorage.getItem('ptts_script_url') || '';
+  if (!url) {
+    document.getElementById('empUrlNote').style.display = '';
+  }
+
+  // ── ตรวจ session ที่จำไว้ ──
+  try {
+    var saved = JSON.parse(localStorage.getItem(EMP_SESSION_LS) || 'null');
+    if (saved && saved.session && saved.expiry && Date.now() < saved.expiry) {
+      _hrSession = saved.session;
+      empShowApp();
+      return; // ข้ามหน้า login
+    } else if (saved) {
+      localStorage.removeItem(EMP_SESSION_LS); // expired → ล้าง
+    }
+  } catch(e) {}
+
+  _empCheckOnline();
+});
+
+function _empCheckOnline() {
+  var url = localStorage.getItem('ptts_script_url') || '';
+  if (!url) return;
+  var chip = document.getElementById('empConnChip');
+  fetch(url + '?action=ping', { method: 'GET' })
+    .then(function(r) { return r.json(); })
+    .then(function() { if (chip) { chip.style.display = ''; chip.textContent = '✓ Online'; } })
+    .catch(function() {});
+}
+
+// ── SAVE SCRIPT URL ──────────────────────────────────────────
+function empSaveUrl() {
+  var v = (document.getElementById('empUrlInput') || {}).value || '';
+  if (!v.trim()) return;
+  localStorage.setItem('ptts_script_url', v.trim());
+  document.getElementById('empUrlNote').style.display = 'none';
+  Swal.fire({ icon: 'success', title: 'บันทึก URL แล้ว', timer: 1200, showConfirmButton: false });
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+function empDoLogin() {
+  var empId = ((document.getElementById('empLoginId') || {}).value || '').trim();
+  var pin   = ((document.getElementById('empLoginPin') || {}).value || '').trim();
+  var errEl  = document.getElementById('empLoginErr');
+
+  if (!empId || !pin) {
+    errEl.textContent = 'กรุณากรอกรหัสพนักงานและ PIN';
+    return;
+  }
+
+  // ตรวจ Master PIN ก่อน
+  var masterPin = localStorage.getItem('ptts_hr_master_pin') || '';
+  if (masterPin && pin === masterPin) {
+    _hrSession = { empId: empId, name: 'ผู้จัดการ (admin)', dept: '', role: 'manager', advanceBudget: 0 };
+    _empSaveSession();
+    empShowApp();
+    return;
+  }
+
+  // ตรวจ PIN พนักงานผ่าน Code.gs
+  var url = localStorage.getItem('ptts_script_url') || '';
+  if (!url) {
+    errEl.textContent = '⚠️ ยังไม่ได้ตั้งค่า Script URL — กรุณาใส่ด้านบน';
+    document.getElementById('empUrlNote').style.display = '';
+    return;
+  }
+
+  errEl.textContent = '⏳ กำลังตรวจสอบ...';
+  _hrPOST('hrLogin', { phone: empId, pin: pin }).then(function(r) {
+    if (r.status === 'ok') {
+      _hrSession = Object.assign({}, r.emp, { role: 'emp' });
+      _empSaveSession();
+      empShowApp();
+    } else {
+      errEl.textContent = r.message || 'PIN ไม่ถูกต้อง';
+    }
+  }).catch(function(e) {
+    errEl.textContent = 'เชื่อมต่อไม่ได้: ' + (e.message || String(e));
+  });
+}
+
+function _empSaveSession() {
+  var remember = (document.getElementById('empRemember') || {}).checked !== false;
+  if (!remember || !_hrSession) return;
+  var expiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 วัน
+  try { localStorage.setItem(EMP_SESSION_LS, JSON.stringify({ session: _hrSession, expiry: expiry })); } catch(e) {}
+}
+
+function empTogglePin() {
+  var inp = document.getElementById('empLoginPin');
+  var eye = document.querySelector('.emp-pin-eye');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    if (eye) eye.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    if (eye) eye.textContent = '👁';
+  }
+}
+
+function empShowApp() {
+  document.getElementById('empLoginOverlay').style.display = 'none';
+  document.getElementById('empApp').style.display = '';
+
+  // แสดงชื่อพนักงาน
+  var nameEl = document.getElementById('empSessionName');
+  if (nameEl && _hrSession) {
+    nameEl.textContent = (_hrSession.name || _hrSession.empId) +
+      (_hrSession.dept ? ' · ' + _hrSession.dept : '') +
+      (_hrSession.role === 'manager' ? ' 👔' : '');
+  }
+
+  empTabSwitch('loan');
+  _empCheckOnline();
+}
+
+// ── LOGOUT ────────────────────────────────────────────────────
+function empLogout() {
+  _hrSession = null;
+  localStorage.removeItem(EMP_SESSION_LS); // ล้าง session ที่จำไว้
+  document.getElementById('empApp').style.display = 'none';
+  document.getElementById('empLoginOverlay').style.display = '';
+  var idEl  = document.getElementById('empLoginId');
+  var pinEl = document.getElementById('empLoginPin');
+  var errEl = document.getElementById('empLoginErr');
+  if (idEl)  idEl.value  = '';
+  if (pinEl) { pinEl.value = ''; pinEl.type = 'password'; }
+  var eye = document.querySelector('.emp-pin-eye');
+  if (eye) eye.textContent = '👁';
+  if (errEl) errEl.textContent = '';
+}
+
+// Override hrLogout (defined in hr.js) — ใน employee.html ให้ออกจากระบบทั้งหน้า
+function hrLogout() {
+  empLogout();
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────
+function empTabSwitch(tab) {
+  _empCurTab = tab;
+
+  var tabs = ['loan', 'slip', 'cal', 'summary'];
+  var panMap = {
+    loan:    'hrPanel6',
+    slip:    'empPanelSlip',
+    cal:     'hrPanel5',
+    summary: 'hrPanel2'
+  };
+
+  // อัป chip buttons (top)
+  tabs.forEach(function(t) {
+    var btn = document.getElementById('empTabBtn-' + t);
+    if (btn) {
+      btn.classList.toggle('active', t === tab);
+    }
+  });
+
+  // อัป bottom tab buttons (mobile)
+  tabs.forEach(function(t) {
+    var btn = document.getElementById('empBotBtn-' + t);
+    if (btn) {
+      btn.classList.toggle('active', t === tab);
+    }
+  });
+
+  // แสดง/ซ่อน panels
+  tabs.forEach(function(t) {
+    var el = document.getElementById(panMap[t]);
+    if (el) el.style.display = t === tab ? '' : 'none';
+  });
+
+  // เรียก render function
+  if (tab === 'loan')    _hrRenderLoans();
+  if (tab === 'cal')     _hrRenderCal();
+  if (tab === 'summary') _hrRenderSummary();
+  if (tab === 'slip')    _empRenderSlip();
+}
+
+// ── SLIP PANEL ─────────────────────────────────────────────────
+function _empRenderSlip() {
+  // panel already in static HTML — nothing to re-render
+  // just ensure month default
+  var slipMonEl = document.getElementById('empSlipMonth');
+  if (slipMonEl && !slipMonEl.value) {
+    var now = new Date();
+    slipMonEl.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  }
+}
+
+function empPeriodSel(btn) {
+  _empSlipPeriod = btn.getAttribute('data-val') || 'all';
+  document.querySelectorAll('.emp-period-btn').forEach(function(b) {
+    b.classList.toggle('sel', b === btn);
+  });
+}
+
+function empViewSlip() {
+  if (!_hrSession) { Swal.fire('⚠️', 'กรุณาเข้าสู่ระบบก่อน', 'warning'); return; }
+  var mon = (document.getElementById('empSlipMonth') || {}).value || '';
+  if (!mon) { Swal.fire('⚠️', 'กรุณาเลือกเดือน', 'warning'); return; }
+  hrOpenPayslip(_hrSession.empId, mon, _empSlipPeriod);
+}
+</script>
+
+</body>
