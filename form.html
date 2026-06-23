@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v10.99</span>
+      <span class="ph-chip ver">v11.00</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -2209,6 +2209,10 @@
       style="padding:8px 18px;border-radius:10px;border:1px solid var(--bc-input);background:transparent;color:var(--t3);font-family:'Sarabun',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer">
       💰 เบิก/กู้
     </button>
+    <button id="hrBtn8" onclick="hrSubSwitch('8')"
+      style="padding:8px 18px;border-radius:10px;border:1px solid var(--bc-input);background:transparent;color:var(--t3);font-family:'Sarabun',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer">
+      📋 สัญญาเงินกู้
+    </button>
   </div>
 
   <!-- Sub-tab panels (rendered by hr.js) -->
@@ -2219,6 +2223,7 @@
   <div id="hrPanel5" style="display:none"></div>
   <div id="hrPanel6" style="display:none"></div>
   <div id="hrPanel7" style="display:none"></div>
+  <div id="hrPanel8" style="display:none"></div>
 </div>
 </div><!-- end tab-hr -->
 
@@ -3481,7 +3486,7 @@
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="hr.js?v=4.10"></script>
+<script src="hr.js?v=4.11"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -3626,9 +3631,21 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260623-AN',
+    ref: '#REV-20260623-AO',
     date: '23/06/2569',
     current: true,
+    items: [
+      'Code.gs: เพิ่ม HR_Loans + HR_LoanPayments sheets + 4 actions (saveHRLoanContract, getHRLoanContracts, recordHRLoanPayment, getHRLoanPayments)',
+      'hr.js v4.11: Loan Contracts module — admin sub-tab 8, บันทึกการหัก, ดูสัญญา+ตารางผ่อน, พิมพ์สัญญา',
+      'hr.js v4.11: employee loan panel — section "สัญญาเงินกู้ของฉัน" แสดงยอดคงค้าง + progress',
+      'hr.js v4.11: payslip — เพิ่มบรรทัดหักเงินกู้อัตโนมัติจาก active loan contracts',
+      'form.html: เพิ่ม hrBtn8 + hrPanel8 สัญญาเงินกู้',
+    ]
+  },
+  {
+    ref: '#REV-20260623-AN',
+    date: '23/06/2569',
+    current: false,
     items: [
       'hr.js v4.10: แท็บ เบิก/กู้ — เปลี่ยน 5 ช่องสถานะเป็น 2 ช่องสรุปยอดสะสม (เบิก/กู้)',
     ]

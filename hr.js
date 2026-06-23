@@ -107,7 +107,7 @@ function _hrPOST(action, body) {
 // ── Sub-tab navigation ────────────────────────────────────────
 function hrSubSwitch(n) {
   _hrSubCur = String(n);
-  ['1', '2', '3', '4', '5', '6', '7'].forEach(function(k) {
+  ['1', '2', '3', '4', '5', '6', '7', '8'].forEach(function(k) {
     const btn = document.getElementById('hrBtn' + k);
     const pan = document.getElementById('hrPanel' + k);
     if (btn) {
@@ -123,6 +123,7 @@ function hrSubSwitch(n) {
   if (n === '5') _hrRenderSettings();
   if (n === '6') _hrRenderCal();
   if (n === '7') _hrRenderLoans();
+  if (n === '8') _hrRenderLoanContracts();
 }
 
 function hrInitTab() {
@@ -2470,7 +2471,24 @@ function _hrCalcPayslip(emp, att, month, period) {
   const otPayWD  = otWDH  * otRateWD;
   const otPaySun = otSunH * otRateSun;
   const gross    = basePay + otPayWD + otPaySun;
-  const net      = gross - absentDeduct;
+
+  // ── หักเงินกู้ — ดึงจาก _hrLoanContracts ที่โหลดไว้แล้ว ──
+  var empIdStr = String((emp && emp.empId) || '');
+  var loanDeductItems = [];
+  if (empIdStr && typeof _hrLoanContracts !== 'undefined') {
+    (_hrLoanContracts || []).forEach(function(lc) {
+      if (String(lc.empId) !== empIdStr) return;
+      if (lc.status !== 'active') return;
+      if (lc.outstanding <= 0) return;
+      var deductAmt = Math.min(lc.outstanding, lc.installmentAmt);
+      loanDeductItems.push({
+        label: (lc.type === 'advance' ? 'หักเบิก' : 'หักเงินกู้') + ' (' + lc.loanId + ')',
+        amount: deductAmt
+      });
+    });
+  }
+  var loanDeductTotal = loanDeductItems.reduce(function(s, x) { return s + x.amount; }, 0);
+  const net = gross - absentDeduct - loanDeductTotal;
 
   return {
     empId: (emp && emp.empId) || '',
@@ -2484,7 +2502,9 @@ function _hrCalcPayslip(emp, att, month, period) {
     otWDH: otWDH, otSunH: otSunH,
     salary: salary, dailyRate: dailyRate, otRateWD: otRateWD, otRateSun: otRateSun,
     basePay: basePay, otPayWD: otPayWD, otPaySun: otPaySun,
-    absentDeduct: absentDeduct, gross: gross, net: net,
+    absentDeduct: absentDeduct, gross: gross,
+    loanDeductItems: loanDeductItems, loanDeductTotal: loanDeductTotal,
+    net: net,
   };
 }
 
@@ -2504,9 +2524,12 @@ function _hrSlipHtml(p) {
     p.otSunH > 0 ? ['OT อาทิตย์ (' + p.otSunH + ' ชม. × ฿' + _hrFmt(p.otRateSun) + ')', p.otPaySun] : null,
   ].filter(Boolean);
 
-  const deductRows = p.absentDeduct > 0
+  const absentDeductRows = p.absentDeduct > 0
     ? [['ขาดงาน ' + p.absent + ' วัน', -p.absentDeduct]]
     : [];
+  const loanDeductRows = (p.loanDeductItems || []).map(function(x) { return [x.label, -x.amount]; });
+  const deductRows = absentDeductRows.concat(loanDeductRows);
+  const totalDeduct = (p.absentDeduct || 0) + (p.loanDeductTotal || 0);
 
   function row(label, val, bold) {
     return '<tr><td style="padding:7px 16px;' + (bold ? 'font-weight:700;color:#1e293b' : 'color:#374151') + '">' + label + '</td>' +
@@ -2583,7 +2606,7 @@ function _hrSlipHtml(p) {
   (deductRows.length
     ? '<div class="sec-head">รายการหัก</div><table>' +
       deductRows.map(function(r) { return row(r[0], r[1], false); }).join('') +
-      '<tr class="tot-row">' + row('รวมหัก', -p.absentDeduct, true).slice(4, -5) + '</tr>' +
+      '<tr class="tot-row">' + row('รวมหัก', -totalDeduct, true).slice(4, -5) + '</tr>' +
       '</table>\n'
     : '') +
   '<table><tr class="net-row"><td>💰 รับสุทธิ</td><td style="text-align:right">฿' + _hrFmt(p.net) + '</td></tr></table>\n' +
@@ -2636,9 +2659,15 @@ function _hrRenderLoans() {
   // โหลด employees พร้อมกัน (manager ต้องการชื่อพนักงาน)
   var calls = [_hrGET('getLoanRequests', params)];
   if (_hrSession.role === 'manager' && !_hrEmps.length) calls.push(_hrGET('getHREmployees'));
+  // โหลด loan contracts + payments (สำหรับ employee แสดงสัญญาของตัวเอง)
+  var lcParams = _hrSession.role === 'emp' ? { empId: _hrSession.empId } : {};
+  calls.push(_hrGET('getHRLoanContracts', lcParams));
+  calls.push(_hrGET('getHRLoanPayments', lcParams));
   Promise.all(calls).then(function(results) {
     _hrLoans = (results[0] && results[0].data) || [];
-    if (results[1]) _hrEmps = results[1].data || [];
+    if (results[1] && results[1].data && _hrSession.role === 'manager') _hrEmps = results[1].data || [];
+    _hrLoanContracts = (results[results.length-2] && results[results.length-2].data) || [];
+    _hrLoanContractPayments = (results[results.length-1] && results[results.length-1].data) || [];
     p.innerHTML = _hrLoansPanelHtml();
     _hrLoansBindEvents();
   }).catch(function(e) {
@@ -2700,6 +2729,8 @@ function _hrLoansPanelHtml() {
       '</div>' +
     '</div>' +
     // filter tabs
+    // แสดงสัญญาเงินกู้ของฉัน (เฉพาะ emp)
+    (!isManager ? _hrEmpMyLoansSection() : '') +
     '<div id="hrLoanFilter" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">' +
       _hrLoanFilterBtn('all',      'ทั้งหมด') +
       _hrLoanFilterBtn('pending',  '⏳ รออนุมัติ') +
@@ -3388,3 +3419,482 @@ function hrDoLoanLogin() {
     setTimeout(_hrAutoStart, 1200);
   }
 })();
+
+// ═══════════════════════════════════════════════════════════════════════
+// HR LOAN CONTRACTS MODULE — ตารางสัญญาเงินกู้ + ติดตามยอด
+// ═══════════════════════════════════════════════════════════════════════
+
+var _hrLoanContracts = [];
+var _hrLoanContractPayments = [];
+
+// ── loader ───────────────────────────────────────────────────────────
+function _hrLoanContractsLoad(empId, cb) {
+  var url = (typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : (localStorage.getItem('ptts_script_url')||''));
+  if (!url) { cb && cb(); return; }
+  var qs = empId ? '?action=getHRLoanContracts&empId=' + encodeURIComponent(empId)
+                 : '?action=getHRLoanContracts';
+  fetch(url + qs).then(function(r){ return r.json(); }).then(function(d){
+    _hrLoanContracts = d.data || [];
+    cb && cb();
+  }).catch(function(){ cb && cb(); });
+}
+
+function _hrLoanContractPaymentsLoad(loanId, empId, cb) {
+  var url = (typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : (localStorage.getItem('ptts_script_url')||''));
+  if (!url) { cb && cb(); return; }
+  var qs = '?action=getHRLoanPayments';
+  if (loanId) qs += '&loanId=' + encodeURIComponent(loanId);
+  if (empId)  qs += '&empId='  + encodeURIComponent(empId);
+  fetch(url + qs).then(function(r){ return r.json(); }).then(function(d){
+    _hrLoanContractPayments = d.data || [];
+    cb && cb();
+  }).catch(function(){ cb && cb(); });
+}
+
+// ── Admin: render sub-tab 8 ────────────────────────────────────────────
+function _hrRenderLoanContracts() {
+  var panel = document.getElementById('hrPanel8');
+  if (!panel) return;
+  panel.innerHTML = '<div style="padding:8px 4px;color:var(--t3);font-size:.85rem">⏳ กำลังโหลด...</div>';
+  _hrLoanContractsLoad(null, function() {
+    _hrLoanContractPaymentsLoad(null, null, function() {
+      panel.innerHTML = _hrLoanContractsPanelHtml();
+    });
+  });
+}
+
+function _hrLoanContractsPanelHtml() {
+  var totalActive = _hrLoanContracts.filter(function(l){ return l.status==='active'; });
+  var totalOutstanding = totalActive.reduce(function(s,l){ return s + l.outstanding; }, 0);
+
+  var html = '<div style="padding:0 4px">' +
+    // summary row
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">' +
+      _lcStatBox('📋', 'สัญญาทั้งหมด', _hrLoanContracts.length, '#6366f1') +
+      _lcStatBox('🟢', 'กำลังผ่อน', totalActive.length, '#10b981') +
+      _lcStatBox('💰', 'ยอดค้างรวม', '฿'+_hrFmt(totalOutstanding), '#f59e0b') +
+    '</div>' +
+    // header + add button
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+      '<div style="font-size:1rem;font-weight:700;color:var(--t1)">📋 รายการสัญญาเงินกู้</div>' +
+      '<button onclick="hrLoanContractAdd()" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.88rem;font-weight:600">➕ เพิ่มสัญญา</button>' +
+    '</div>';
+
+  if (!_hrLoanContracts.length) {
+    html += '<div style="padding:40px;text-align:center;color:var(--t3)">ยังไม่มีสัญญาเงินกู้</div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:12px">';
+    _hrLoanContracts.forEach(function(lc) {
+      html += _hrLoanContractCardHtml(lc);
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function _lcStatBox(icon, label, val, color) {
+  return '<div style="background:var(--bg2);border-radius:12px;padding:14px 16px;text-align:center">' +
+    '<div style="font-size:1.3rem;margin-bottom:4px">' + icon + '</div>' +
+    '<div style="font-size:1.1rem;font-weight:800;color:' + color + '">' + val + '</div>' +
+    '<div style="font-size:.72rem;color:var(--t3);margin-top:2px">' + label + '</div>' +
+  '</div>';
+}
+
+function _hrLoanContractCardHtml(lc) {
+  var paid = lc.originalAmount - lc.outstanding;
+  var pct = lc.originalAmount > 0 ? Math.min(100, Math.round(paid / lc.originalAmount * 100)) : 0;
+  var isActive = lc.status === 'active';
+  var statusBadge = isActive
+    ? '<span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:600">🟢 กำลังผ่อน</span>'
+    : '<span style="background:#f1f5f9;color:#475569;border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:600">🔒 ปิดแล้ว</span>';
+  var typeBadge = lc.type === 'advance'
+    ? '<span style="background:#e0e7ff;color:#3730a3;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700">เบิก</span>'
+    : '<span style="background:#fce7f3;color:#9d174d;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700">กู้</span>';
+  var empPayments = _hrLoanContractPayments.filter(function(p){ return p.loanId === lc.loanId; });
+  var barColor = pct >= 100 ? '#10b981' : pct >= 60 ? '#6366f1' : '#f59e0b';
+
+  return '<div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">' +
+    // header
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
+      '<div>' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">' +
+          typeBadge + statusBadge +
+          '<span style="font-size:.73rem;color:var(--t3)">' + lc.loanId + '</span>' +
+        '</div>' +
+        '<div style="font-size:1.1rem;font-weight:800;color:var(--t1)">฿' + _hrFmt(lc.outstanding) + ' คงค้าง</div>' +
+        '<div style="font-size:.85rem;color:var(--t2);margin-top:2px">👤 ' + lc.empName + '</div>' +
+        '<div style="font-size:.78rem;color:var(--t3);margin-top:1px">📌 ' + lc.reason + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;flex-shrink:0">' +
+        '<div style="font-size:.72rem;color:var(--t3)">หักต่องวด</div>' +
+        '<div style="font-size:1rem;font-weight:700;color:var(--t1)">฿' + _hrFmt(lc.installmentAmt) + '</div>' +
+        '<div style="font-size:.72rem;color:var(--t3);margin-top:2px">วันที่ ' + lc.payDays + '</div>' +
+      '</div>' +
+    '</div>' +
+    // progress
+    '<div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--t3);margin-bottom:4px">' +
+        '<span>จ่ายแล้ว ฿' + _hrFmt(paid) + '</span>' +
+        '<span>ทั้งหมด ฿' + _hrFmt(lc.originalAmount) + ' (' + pct + '%)</span>' +
+      '</div>' +
+      '<div style="background:var(--bc-card);border-radius:99px;height:7px;overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:99px;transition:width .4s"></div>' +
+      '</div>' +
+    '</div>' +
+    // payments history (last 3)
+    (empPayments.length > 0
+      ? '<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;font-size:.75rem">' +
+          '<div style="font-weight:600;color:var(--t2);margin-bottom:5px">ประวัติการหัก</div>' +
+          empPayments.slice(-3).reverse().map(function(p){
+            return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bc-input)">' +
+              '<span style="color:var(--t3)">' + (p.periodLabel||p.payDate) + '</span>' +
+              '<span style="color:#059669;font-weight:600">−฿' + _hrFmt(p.amount) + '</span>' +
+            '</div>';
+          }).join('') +
+        '</div>'
+      : '') +
+    // action buttons
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--bc-input);padding-top:10px">' +
+      (isActive
+        ? '<button onclick="hrLoanContractRecordPayment(\'' + lc.loanId + '\')" style="flex:1;background:#0f172a;color:#fff;border:none;border-radius:8px;padding:7px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.84rem;font-weight:600">💳 บันทึกการหัก</button>'
+        : '') +
+      '<button onclick="hrViewLoanContract(\'' + lc.loanId + '\')" style="flex:1;background:var(--bg2);color:var(--t2);border:1px solid var(--bc-input);border-radius:8px;padding:7px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.84rem">📄 ดูสัญญา</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── Add contract form ─────────────────────────────────────────────────
+function hrLoanContractAdd() {
+  var empOptions = (_hrEmps||[]).map(function(e){
+    return '<option value="' + e.empId + '">' + e.name + ' (' + (e.dept||'') + ')</option>';
+  }).join('');
+  Swal.fire({
+    title: 'เพิ่มสัญญาเงินกู้',
+    html:
+      '<div style="text-align:left;display:flex;flex-direction:column;gap:10px;font-size:.88rem;font-family:\'Sarabun\',sans-serif">' +
+      '<label>พนักงาน<br><select id="lc_empId" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:.88rem">' +
+        '<option value="">-- เลือก --</option>' + empOptions +
+      '</select></label>' +
+      '<label>ประเภท<br><select id="lc_type" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit">' +
+        '<option value="loan">กู้เงิน</option><option value="advance">เบิกเงิน</option>' +
+      '</select></label>' +
+      '<label>ยอดคงค้าง (บาท)<br><input id="lc_outstanding" type="number" placeholder="8819" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '<label>หักต่องวด (บาท)<br><input id="lc_installAmt" type="number" placeholder="1750" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '<label>วันหัก (เช่น 1,16)<br><input id="lc_payDays" value="1,16" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '<label>วัตถุประสงค์<br><input id="lc_reason" placeholder="เช่น ค่าใช้จ่ายตรวจ DNA" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '</div>',
+    showCancelButton: true, confirmButtonText: '💾 บันทึก', cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#4f46e5',
+    preConfirm: function() {
+      var empId = document.getElementById('lc_empId').value;
+      var outstanding = parseFloat(document.getElementById('lc_outstanding').value);
+      var installAmt = parseFloat(document.getElementById('lc_installAmt').value);
+      if (!empId) { Swal.showValidationMessage('กรุณาเลือกพนักงาน'); return false; }
+      if (!outstanding || outstanding <= 0) { Swal.showValidationMessage('กรุณาใส่ยอดคงค้าง'); return false; }
+      if (!installAmt || installAmt <= 0) { Swal.showValidationMessage('กรุณาใส่ยอดหักต่องวด'); return false; }
+      var empRec = (_hrEmps||[]).find(function(e){ return String(e.empId) === empId; }) || {};
+      return {
+        empId: empId, empName: empRec.name || '',
+        type: document.getElementById('lc_type').value,
+        outstanding: outstanding, originalAmount: outstanding,
+        installmentAmt: installAmt,
+        payDays: document.getElementById('lc_payDays').value || '1,16',
+        reason: document.getElementById('lc_reason').value,
+        status: 'active'
+      };
+    }
+  }).then(function(result) {
+    if (!result.isConfirmed) return;
+    _hrPOST('saveHRLoanContract', result.value).then(function(r) {
+      if (r.status === 'ok') {
+        Swal.fire({ icon:'success', title:'บันทึกแล้ว', timer:1200, showConfirmButton:false });
+        _hrRenderLoanContracts();
+      } else {
+        Swal.fire({ icon:'error', title:'ผิดพลาด', text: r.message });
+      }
+    });
+  });
+}
+
+// ── Record payment ────────────────────────────────────────────────────
+function hrLoanContractRecordPayment(loanId) {
+  var lc = (_hrLoanContracts||[]).find(function(l){ return l.loanId === loanId; });
+  if (!lc) return;
+  var today = (function(){
+    var d=new Date();
+    var be=d.getFullYear()+543;
+    var m=String(d.getMonth()+1).padStart(2,'0');
+    var dd=String(d.getDate()).padStart(2,'0');
+    return dd+'/'+m+'/'+be;
+  })();
+  Swal.fire({
+    title: 'บันทึกการหัก',
+    html:
+      '<div style="text-align:left;display:flex;flex-direction:column;gap:10px;font-size:.88rem;font-family:\'Sarabun\',sans-serif">' +
+      '<div style="background:#f0f4ff;border-radius:8px;padding:10px 12px">' +
+        '<div style="font-weight:700">👤 ' + lc.empName + '</div>' +
+        '<div style="color:#475569">' + lc.loanId + ' | ยอดค้าง ฿' + _hrFmt(lc.outstanding) + '</div>' +
+      '</div>' +
+      '<label>ยอดที่หัก (บาท)<br><input id="pay_amt" type="number" value="' + lc.installmentAmt + '" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '<label>งวดที่ / ป้ายกำกับ<br><input id="pay_period" placeholder="เช่น 01/07/2569 หรือ งวด 1/6" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '<label>วันที่หัก<br><input id="pay_date" value="' + today + '" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '<label>หมายเหตุ<br><input id="pay_note" placeholder="(ไม่บังคับ)" style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit"></label>' +
+      '</div>',
+    showCancelButton: true, confirmButtonText: '💳 บันทึก', cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#0f172a',
+    preConfirm: function() {
+      var amt = parseFloat(document.getElementById('pay_amt').value);
+      if (!amt || amt <= 0) { Swal.showValidationMessage('ใส่ยอดที่หัก'); return false; }
+      if (amt > lc.outstanding + 0.01) { Swal.showValidationMessage('ยอดหักเกินกว่ายอดค้าง ฿'+_hrFmt(lc.outstanding)); return false; }
+      return {
+        loanId: loanId, empId: lc.empId, amount: amt,
+        periodLabel: document.getElementById('pay_period').value,
+        payDate: document.getElementById('pay_date').value,
+        note: document.getElementById('pay_note').value,
+        recordedBy: (_hrSession && _hrSession.name) || 'HR'
+      };
+    }
+  }).then(function(result) {
+    if (!result.isConfirmed) return;
+    _hrPOST('recordHRLoanPayment', result.value).then(function(r) {
+      if (r.status === 'ok') {
+        var msg = r.closed ? '✅ ปิดสัญญาเรียบร้อย ยอดครบ!' : '💳 บันทึกการหักแล้ว\nยอดคงค้าง: ฿' + _hrFmt(r.outstandingAfter);
+        Swal.fire({ icon:'success', title:'สำเร็จ', text: msg, timer:2000, showConfirmButton:false });
+        _hrRenderLoanContracts();
+      } else {
+        Swal.fire({ icon:'error', title:'ผิดพลาด', text: r.message });
+      }
+    });
+  });
+}
+
+// ── View contract modal (ทั้ง admin + emp) ───────────────────────────
+function hrViewLoanContract(loanId) {
+  var lc = (_hrLoanContracts||[]).find(function(l){ return l.loanId === loanId; });
+  if (!lc) { Swal.fire({icon:'error',title:'ไม่พบสัญญา'}); return; }
+  var empPayments = (_hrLoanContractPayments||[]).filter(function(p){ return p.loanId === loanId; });
+  var paid = lc.originalAmount - lc.outstanding;
+  var pct = lc.originalAmount > 0 ? Math.min(100, Math.round(paid / lc.originalAmount * 100)) : 0;
+
+  // สร้างตารางงวด (คาดการณ์)
+  var scheduleRows = '';
+  var remaining = lc.outstanding;
+  var installAmt = lc.installmentAmt;
+  var startDate = new Date();
+  // หาวันหักถัดไป
+  var payDaysArr = String(lc.payDays||'1,16').split(',').map(function(d){ return parseInt(d)||1; });
+  var nextDay = payDaysArr[0];
+  var d = new Date(); d.setDate(1);
+  // สร้างตาราง forecast
+  var periodIdx = 1;
+  var maxRows = 24; // max 24 งวด
+  while (remaining > 0 && periodIdx <= maxRows) {
+    var amt = Math.min(remaining, installAmt);
+    remaining = Math.round((remaining - amt) * 100) / 100;
+    var matchPay = empPayments.find(function(p){ return p.periodLabel && p.periodLabel.includes && periodIdx === empPayments.indexOf(p)+1; });
+    var found = empPayments[periodIdx-1];
+    var statusHtml = found
+      ? '<span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:1px 8px;font-size:.72rem">✅ หักแล้ว</span>'
+      : '<span style="background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 8px;font-size:.72rem">รอหัก</span>';
+    var periodLabel = found ? (found.periodLabel || 'งวด '+periodIdx) : 'งวด '+periodIdx;
+    scheduleRows += '<tr style="' + (remaining===0?'background:#f0fdf4':periodIdx%2?'':'background:var(--bg2)') + '">' +
+      '<td style="padding:5px 8px;text-align:center;font-size:.78rem">' + periodIdx + '</td>' +
+      '<td style="padding:5px 8px;font-size:.78rem">' + periodLabel + '</td>' +
+      '<td style="padding:5px 8px;text-align:right;font-size:.78rem">฿' + _hrFmt(amt) + '</td>' +
+      '<td style="padding:5px 8px;text-align:right;font-size:.78rem">฿' + _hrFmt(remaining) + '</td>' +
+      '<td style="padding:5px 8px;text-align:center">' + statusHtml + '</td>' +
+    '</tr>';
+    periodIdx++;
+  }
+
+  var html =
+    '<div style="text-align:left;font-family:\'Sarabun\',sans-serif;font-size:.85rem;padding:4px 0">' +
+    // info grid
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:14px;padding:12px;background:var(--bg2);border-radius:10px">' +
+      '<div><div style="font-size:.7rem;color:var(--t3)">พนักงาน</div><div style="font-weight:700">' + lc.empName + '</div></div>' +
+      '<div><div style="font-size:.7rem;color:var(--t3)">เลขที่สัญญา</div><div style="font-weight:600;font-size:.82rem">' + lc.loanId + '</div></div>' +
+      '<div><div style="font-size:.7rem;color:var(--t3)">ยอดเดิม</div><div style="font-weight:700;color:#3730a3">฿' + _hrFmt(lc.originalAmount) + '</div></div>' +
+      '<div><div style="font-size:.7rem;color:var(--t3)">ยอดคงค้าง</div><div style="font-weight:700;color:' + (lc.outstanding>0?'#dc2626':'#059669') + '">฿' + _hrFmt(lc.outstanding) + '</div></div>' +
+      '<div><div style="font-size:.7rem;color:var(--t3)">หักต่องวด</div><div style="font-weight:600">฿' + _hrFmt(lc.installmentAmt) + '</div></div>' +
+      '<div><div style="font-size:.7rem;color:var(--t3)">วันหัก</div><div style="font-weight:600">ทุกวันที่ ' + lc.payDays + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:.8rem;color:var(--t2);margin-bottom:10px;padding:6px 10px;background:#fffbeb;border-radius:8px">📌 ' + lc.reason + '</div>' +
+    // progress
+    '<div style="margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--t3);margin-bottom:5px">' +
+        '<span>จ่ายแล้ว ฿' + _hrFmt(paid) + '</span><span>' + pct + '%</span>' +
+      '</div>' +
+      '<div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + (pct>=100?'#10b981':'#6366f1') + ';border-radius:99px"></div>' +
+      '</div>' +
+    '</div>' +
+    // schedule table
+    '<div style="font-size:.8rem;font-weight:700;color:var(--t2);margin-bottom:6px">ตารางการผ่อนชำระ</div>' +
+    '<div style="overflow-x:auto;max-height:240px;overflow-y:auto">' +
+      '<table style="width:100%;border-collapse:collapse">' +
+        '<thead style="position:sticky;top:0;background:var(--bg-card)">' +
+          '<tr><th style="padding:5px 8px;font-size:.73rem;color:var(--t3);border-bottom:1px solid var(--bc-input)">งวด</th>' +
+          '<th style="padding:5px 8px;font-size:.73rem;color:var(--t3);border-bottom:1px solid var(--bc-input)">งวด/วันที่</th>' +
+          '<th style="padding:5px 8px;font-size:.73rem;color:var(--t3);border-bottom:1px solid var(--bc-input);text-align:right">หัก</th>' +
+          '<th style="padding:5px 8px;font-size:.73rem;color:var(--t3);border-bottom:1px solid var(--bc-input);text-align:right">คงเหลือ</th>' +
+          '<th style="padding:5px 8px;font-size:.73rem;color:var(--t3);border-bottom:1px solid var(--bc-input)">สถานะ</th></tr>' +
+        '</thead>' +
+        '<tbody>' + scheduleRows + '</tbody>' +
+      '</table>' +
+    '</div>' +
+    '</div>';
+
+  Swal.fire({
+    title: '📄 สัญญาเงินกู้',
+    html: html,
+    width: 560,
+    confirmButtonText: '🖨️ พิมพ์สัญญา',
+    cancelButtonText: 'ปิด',
+    showCancelButton: true,
+    confirmButtonColor: '#4f46e5',
+  }).then(function(result) {
+    if (result.isConfirmed) hrPrintLoanContract(loanId);
+  });
+}
+
+// ── Print contract ────────────────────────────────────────────────────
+function hrPrintLoanContract(loanId) {
+  var lc = (_hrLoanContracts||[]).find(function(l){ return l.loanId === loanId; });
+  if (!lc) return;
+  var empPayments = (_hrLoanContractPayments||[]).filter(function(p){ return p.loanId === loanId; });
+  var _slipCo = {}; try { _slipCo = JSON.parse(localStorage.getItem('ptts_company_cfg')||'{}'); } catch(e){}
+  var company = _slipCo.name || localStorage.getItem('ptts_company_name') || 'PTS Smart Factory';
+
+  // สร้างตารางผ่อน
+  var schedRows = '';
+  var rem = lc.outstanding;
+  var inst = lc.installmentAmt;
+  var idx = 1;
+  while (rem > 0 && idx <= 36) {
+    var amt = Math.min(rem, inst);
+    rem = Math.round((rem - amt)*100)/100;
+    var found = empPayments[idx-1];
+    var pl = found ? (found.periodLabel||'งวด '+idx) : 'งวด '+idx;
+    var st = found ? '<span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:1px 8px;font-size:.72rem">✅ หักแล้ว</span>'
+                   : '<span style="background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 8px;font-size:.72rem">รอหัก</span>';
+    schedRows += '<tr style="' + (idx%2?'':'background:#f8fafc') + (rem===0?';background:#f0fdf4':'') + '">' +
+      '<td style="padding:5px 10px;text-align:center">' + idx + '</td>' +
+      '<td style="padding:5px 10px">' + pl + '</td>' +
+      '<td style="padding:5px 10px;text-align:right">฿' + _hrFmt(amt) + '</td>' +
+      '<td style="padding:5px 10px;text-align:right">฿' + _hrFmt(rem) + '</td>' +
+      '<td style="padding:5px 10px;text-align:center">' + st + '</td>' +
+    '</tr>';
+    idx++;
+  }
+
+  var html = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">' +
+    '<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">' +
+    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:\'Sarabun\',sans-serif;font-size:14px;color:#1e293b;padding:36px 48px}' +
+    'h2{font-size:1.1rem;font-weight:700;text-align:center;margin-bottom:4px}' +
+    '.sub{font-size:.82rem;color:#64748b;text-align:center;margin-bottom:20px}' +
+    '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin:14px 0}' +
+    '.irow .lbl{font-size:.72rem;color:#64748b}.irow .val{font-weight:600;font-size:.9rem}' +
+    '.hl{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:10px;padding:12px 16px;margin:14px 0}' +
+    '.hl .amount{font-size:1.4rem;font-weight:800;color:#3730a3}' +
+    'table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.82rem}' +
+    'th{background:#f8fafc;padding:6px 10px;border:1px solid #e2e8f0;font-weight:600;font-size:.75rem;color:#475569}' +
+    'td{padding:6px 10px;border:1px solid #e2e8f0}' +
+    '.terms{font-size:.78rem;line-height:1.9;color:#475569;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:14px 0}' +
+    '.terms ol{padding-left:18px}' +
+    '.sign-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px}' +
+    '.sign-box{text-align:center;border-top:1px solid #334155;padding-top:6px;margin-top:40px}' +
+    '.sign-box .nm{font-weight:600;font-size:.85rem}.sign-box .rl{font-size:.72rem;color:#64748b}' +
+    '@media print{body{padding:20px 32px}}</style></head><body>' +
+    '<h2>สัญญากู้เงิน</h2>' +
+    '<div class="sub">' + company + ' &nbsp;|&nbsp; เลขที่: ' + lc.loanId + ' &nbsp;|&nbsp; วันที่: ' + lc.startDate + '</div>' +
+    '<div class="info-grid">' +
+      '<div class="irow"><div class="lbl">ชื่อพนักงาน</div><div class="val">' + lc.empName + '</div></div>' +
+      '<div class="irow"><div class="lbl">รหัสพนักงาน</div><div class="val">' + lc.empId + '</div></div>' +
+      '<div class="irow" style="grid-column:1/-1"><div class="lbl">วัตถุประสงค์</div><div class="val">' + lc.reason + '</div></div>' +
+    '</div>' +
+    '<div class="hl">' +
+      '<div style="font-size:.78rem;color:#6366f1;margin-bottom:4px">ยอดคงค้าง ณ วันทำสัญญา</div>' +
+      '<div class="amount">฿' + _hrFmt(lc.outstanding) + '</div>' +
+      '<div style="display:flex;gap:24px;margin-top:8px;font-size:.82rem;flex-wrap:wrap">' +
+        '<div><span style="color:#6366f1">หักต่องวด</span> <b>฿' + _hrFmt(lc.installmentAmt) + '</b></div>' +
+        '<div><span style="color:#6366f1">วันหัก</span> <b>ทุกวันที่ ' + lc.payDays + '</b></div>' +
+        '<div><span style="color:#6366f1">เริ่มหัก</span> <b>' + lc.startDate + '</b></div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="font-size:.82rem;font-weight:700;margin-bottom:6px">ตารางการผ่อนชำระ</div>' +
+    '<table><thead><tr><th>งวด</th><th>งวด/วันที่</th><th style="text-align:right">ยอดหัก</th><th style="text-align:right">คงเหลือ</th><th>สถานะ</th></tr></thead>' +
+    '<tbody>' + schedRows + '</tbody></table>' +
+    '<div class="terms"><ol>' +
+      '<li>ผู้กู้ยินยอมให้บริษัทหักเงินเดือนตามตารางข้างต้นทุกงวดโดยอัตโนมัติ</li>' +
+      '<li>ยอดหักต่องวดอาจปรับเปลี่ยนได้โดยแจ้งล่วงหน้า ยอดรวมต้องครบตามสัญญา</li>' +
+      '<li>หากผู้กู้ลาออกหรือพ้นสภาพพนักงาน ยอดคงค้างทั้งหมดถึงกำหนดชำระทันที</li>' +
+      '<li>สัญญาฉบับนี้ทำขึ้น 2 ชุด ผู้กู้และบริษัทเก็บฝ่ายละ 1 ชุด</li>' +
+    '</ol></div>' +
+    '<div class="sign-row">' +
+      '<div class="sign-box"><div class="nm">' + lc.empName + '</div><div class="rl">ผู้กู้</div><div style="font-size:.72rem;color:#94a3b8">วันที่ ......../......../........</div></div>' +
+      '<div class="sign-box"><div class="nm">................................................................</div><div class="rl">ผู้อนุมัติ / ' + company + '</div><div style="font-size:.72rem;color:#94a3b8">วันที่ ......../......../........</div></div>' +
+    '</div>' +
+    '<script>(function(){if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){window.print();});}else{setTimeout(function(){window.print();},700);}})();<\/script>' +
+    '</body></html>';
+
+  var win = window.open('','_blank');
+  if (!win) { alert('กรุณาอนุญาต popup'); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+// ── Employee view: สัญญาของฉัน ────────────────────────────────────────
+function _hrEmpMyLoansSection() {
+  var myLoans = (_hrLoanContracts||[]).filter(function(l){ return l.status==='active'; });
+  if (!myLoans.length) return '';
+
+  var cards = myLoans.map(function(lc) {
+    var paid = lc.originalAmount - lc.outstanding;
+    var pct = lc.originalAmount > 0 ? Math.min(100, Math.round(paid / lc.originalAmount * 100)) : 0;
+    var myPays = (_hrLoanContractPayments||[]).filter(function(p){ return p.loanId === lc.loanId; });
+    var typeBadge = lc.type === 'advance'
+      ? '<span style="background:#e0e7ff;color:#3730a3;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700">เบิก</span>'
+      : '<span style="background:#fce7f3;color:#9d174d;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700">กู้</span>';
+    // คำนวณงวดที่เหลือ
+    var remPeriods = lc.installmentAmt > 0 ? Math.ceil(lc.outstanding / lc.installmentAmt) : '—';
+
+    return '<div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        typeBadge +
+        '<span style="font-size:.78rem;font-weight:700;color:var(--t2)">' + lc.loanId + '</span>' +
+        '<span style="font-size:.75rem;color:var(--t3)">📌 ' + lc.reason + '</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div style="background:linear-gradient(135deg,#fee2e2,#fecaca);border-radius:10px;padding:10px 12px">' +
+          '<div style="font-size:.7rem;color:#9b1c1c">ยอดคงค้าง</div>' +
+          '<div style="font-size:1.2rem;font-weight:800;color:#dc2626">฿' + _hrFmt(lc.outstanding) + '</div>' +
+        '</div>' +
+        '<div style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-radius:10px;padding:10px 12px">' +
+          '<div style="font-size:.7rem;color:#1e40af">หักต่องวด</div>' +
+          '<div style="font-size:1.2rem;font-weight:800;color:#1d4ed8">฿' + _hrFmt(lc.installmentAmt) + '</div>' +
+          '<div style="font-size:.68rem;color:#3b82f6;margin-top:1px">วันที่ ' + lc.payDays + ' | เหลือ ~' + remPeriods + ' งวด</div>' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:.73rem;color:var(--t3);margin-bottom:4px">' +
+          '<span>ผ่อนไปแล้ว ' + pct + '%</span>' +
+          '<span>' + myPays.length + ' งวด จากทั้งหมด</span>' +
+        '</div>' +
+        '<div style="background:var(--bc-card);border-radius:99px;height:7px;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:' + (pct>=100?'#10b981':'#6366f1') + ';border-radius:99px"></div>' +
+        '</div>' +
+      '</div>' +
+      '<button onclick="hrViewLoanContract(\'' + lc.loanId + '\')" style="width:100%;background:var(--bg2);color:var(--t2);border:1px solid var(--bc-input);border-radius:8px;padding:7px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.84rem">📄 ดูสัญญา + ตารางผ่อน</button>' +
+    '</div>';
+  }).join('');
+
+  return '<div style="margin-bottom:20px">' +
+    '<div style="font-size:.95rem;font-weight:700;color:var(--t1);margin-bottom:10px;display:flex;align-items:center;gap:6px">' +
+      '<span style="background:#fce7f3;color:#9d174d;border-radius:8px;padding:3px 10px;font-size:.82rem">📋 สัญญาเงินกู้ของฉัน</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">' + cards + '</div>' +
+    '<hr style="border:none;border-top:1px solid var(--bc-input);margin:16px 0">' +
+  '</div>';
+}
+

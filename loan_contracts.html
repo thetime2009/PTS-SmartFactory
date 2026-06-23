@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>สัญญากู้เงินพนักงาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
+
+  .page-controls{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 32px;background:#fff;border-bottom:1px solid #e2e8f0;
+    position:sticky;top:0;z-index:99
+  }
+  .page-controls h1{font-size:1rem;font-weight:600;color:#1e293b}
+  .btn-print{
+    background:#4f46e5;color:#fff;border:none;border-radius:8px;
+    padding:8px 20px;font-family:'Sarabun',sans-serif;font-size:.9rem;
+    font-weight:600;cursor:pointer
+  }
+  .contract-wrap{
+    max-width:794px;margin:28px auto;display:flex;flex-direction:column;gap:28px;
+    padding:0 16px
+  }
+
+  .contract{
+    background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);
+    padding:44px 52px;page-break-after:always
+  }
+  .contract-header{text-align:center;margin-bottom:28px}
+  .contract-header h2{font-size:1.2rem;font-weight:700;letter-spacing:.5px;margin-bottom:4px}
+  .contract-header .ref{font-size:.82rem;color:#64748b}
+
+  .company-line{
+    display:flex;align-items:baseline;gap:6px;margin-bottom:12px;font-size:.88rem
+  }
+  .label{color:#64748b;flex-shrink:0}
+  .value{font-weight:600;border-bottom:1px dashed #cbd5e1;flex:1;padding-bottom:1px}
+
+  .section-title{
+    font-size:.82rem;font-weight:700;color:#4f46e5;letter-spacing:.4px;
+    margin:18px 0 10px;padding-bottom:5px;border-bottom:1.5px solid #e0e7ff
+  }
+
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-bottom:4px}
+  .info-row{display:flex;flex-direction:column;gap:2px}
+  .info-row .lbl{font-size:.75rem;color:#64748b}
+  .info-row .val{font-size:.88rem;font-weight:600;border-bottom:1px dashed #cbd5e1;padding-bottom:1px}
+
+  .highlight-box{
+    background:#f0f4ff;border:1px solid #c7d2fe;border-radius:10px;
+    padding:14px 18px;margin:14px 0
+  }
+  .highlight-box .main-amount{font-size:1.5rem;font-weight:700;color:#3730a3}
+  .highlight-box .sub-row{display:flex;gap:24px;margin-top:8px;flex-wrap:wrap}
+  .highlight-box .sub-item .lbl{font-size:.72rem;color:#6366f1}
+  .highlight-box .sub-item .val{font-size:.9rem;font-weight:600;color:#312e81}
+
+  table.schedule{width:100%;border-collapse:collapse;margin-top:8px}
+  table.schedule th{
+    background:#f8fafc;font-size:.78rem;font-weight:600;color:#475569;
+    padding:7px 10px;border:1px solid #e2e8f0;text-align:center
+  }
+  table.schedule td{
+    padding:7px 10px;border:1px solid #e2e8f0;font-size:.82rem;text-align:center
+  }
+  table.schedule tr:nth-child(even) td{background:#fafafa}
+  table.schedule td.last-row{background:#fffbeb;font-weight:600;color:#92400e}
+  .status-paid{background:#d1fae5;color:#065f46;border-radius:99px;padding:2px 8px;font-size:.72rem}
+  .status-pending{background:#fef3c7;color:#92400e;border-radius:99px;padding:2px 8px;font-size:.72rem}
+
+  .terms{
+    font-size:.8rem;line-height:1.9;color:#475569;
+    border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;margin-top:14px
+  }
+  .terms ol{padding-left:18px}
+  .terms li{margin-bottom:3px}
+
+  .sign-section{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px}
+  .sign-box{text-align:center}
+  .sign-line{border-top:1px solid #334155;padding-top:6px;margin-top:44px}
+  .sign-box .name{font-weight:600;font-size:.85rem}
+  .sign-box .role{font-size:.75rem;color:#64748b}
+  .sign-box .date-line{font-size:.75rem;color:#94a3b8;margin-top:4px}
+
+  .note{font-size:.75rem;color:#94a3b8;text-align:center;margin-top:20px;border-top:1px dashed #e2e8f0;padding-top:12px}
+
+  @media print{
+    body{background:#fff}
+    .page-controls{display:none}
+    .contract-wrap{margin:0;padding:0;gap:0;max-width:100%}
+    .contract{
+      box-shadow:none;border-radius:0;
+      padding:32px 40px;
+      page-break-after:always;
+      border:none
+    }
+    .contract:last-child{page-break-after:auto}
+  }
+</style>
+</head>
+<body>
+
+<div class="page-controls">
+  <h1>สัญญากู้เงินพนักงาน — 2 ฉบับ</h1>
+  <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ทั้ง 2 ฉบับ</button>
+</div>
+
+<div class="contract-wrap">
+
+<!-- ══════════════════════════════════
+     สัญญาที่ 1 — วีระพัฒน์ วันเวียน
+════════════════════════════════════ -->
+<div class="contract">
+  <div class="contract-header">
+    <h2>สัญญากู้เงิน</h2>
+    <div class="ref">เลขที่สัญญา: LN-2569-001 &nbsp;|&nbsp; วันที่: 23 มิถุนายน 2569</div>
+  </div>
+
+  <div class="company-line">
+    <span class="label">ทำขึ้นที่:</span>
+    <span class="value">บริษัท พีทีเอส สมาร์ท แฟคทอรี่ จำกัด</span>
+  </div>
+
+  <div class="section-title">ข้อมูลผู้กู้</div>
+  <div class="info-grid">
+    <div class="info-row"><span class="lbl">ชื่อ-นามสกุล</span><span class="val">วีระพัฒน์ วันเวียน</span></div>
+    <div class="info-row"><span class="lbl">แผนก</span><span class="val">ฝ่ายผลิต</span></div>
+    <div class="info-row"><span class="lbl">เลขบัตรประชาชน</span><span class="val">&nbsp;</span></div>
+    <div class="info-row"><span class="lbl">โทรศัพท์</span><span class="val">&nbsp;</span></div>
+    <div class="info-row" style="grid-column:1/-1"><span class="lbl">ที่อยู่</span><span class="val">&nbsp;</span></div>
+  </div>
+
+  <div class="section-title">รายละเอียดการกู้</div>
+  <div class="highlight-box">
+    <div style="font-size:.8rem;color:#6366f1;margin-bottom:2px">วัตถุประสงค์: ค่าใช้จ่ายตรวจ DNA กับลูกสาว</div>
+    <div class="main-amount">฿8,819.00</div>
+    <div style="font-size:.75rem;color:#6366f1;margin-top:2px">ยอดคงค้าง ณ วันที่ทำสัญญา</div>
+    <div class="sub-row">
+      <div class="sub-item"><div class="lbl">หักต่องวด</div><div class="val">฿1,750.00</div></div>
+      <div class="sub-item"><div class="lbl">จำนวนงวด</div><div class="val">6 งวด</div></div>
+      <div class="sub-item"><div class="lbl">วันหัก</div><div class="val">ทุกวันที่ 1 และ 16</div></div>
+      <div class="sub-item"><div class="lbl">งวดแรก</div><div class="val">01/07/2569</div></div>
+      <div class="sub-item"><div class="lbl">งวดสุดท้าย</div><div class="val">16/09/2569</div></div>
+    </div>
+  </div>
+
+  <div class="section-title">ตารางการผ่อนชำระ</div>
+  <table class="schedule">
+    <thead>
+      <tr><th>งวดที่</th><th>วันที่หัก</th><th>ยอดหัก</th><th>ยอดคงเหลือ</th><th>สถานะ</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>01/07/2569</td><td>฿1,750.00</td><td>฿7,069.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr><td>2</td><td>16/07/2569</td><td>฿1,750.00</td><td>฿5,319.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr><td>3</td><td>01/08/2569</td><td>฿1,750.00</td><td>฿3,569.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr><td>4</td><td>16/08/2569</td><td>฿1,750.00</td><td>฿1,819.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr><td>5</td><td>01/09/2569</td><td>฿1,750.00</td><td>฿69.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr class="last-row"><td>6</td><td>16/09/2569</td><td>฿69.00</td><td>฿0.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+    </tbody>
+  </table>
+  <div style="font-size:.75rem;color:#94a3b8;margin-top:5px">* ยอดหักอาจเปลี่ยนแปลงได้ตามที่ตกลง ยอดรวมต้องเท่ากับ ฿8,819.00</div>
+
+  <div class="terms">
+    <ol>
+      <li>ผู้กู้ยินยอมให้บริษัทหักเงินเดือนตามตารางข้างต้นทุกงวดโดยอัตโนมัติ</li>
+      <li>ยอดหักต่องวดอาจปรับเปลี่ยนได้โดยแจ้งล่วงหน้า ยอดรวมต้องครบ ฿8,819.00</li>
+      <li>หากผู้กู้ลาออกหรือพ้นสภาพพนักงาน ยอดคงค้างทั้งหมดถึงกำหนดชำระทันที</li>
+      <li>สัญญาฉบับนี้ทำขึ้น 2 ชุด มีผลเท่าเทียมกัน ผู้กู้และบริษัทเก็บฝ่ายละ 1 ชุด</li>
+    </ol>
+  </div>
+
+  <div class="sign-section">
+    <div class="sign-box">
+      <div class="sign-line">
+        <div class="name">วีระพัฒน์ วันเวียน</div>
+        <div class="role">ผู้กู้</div>
+        <div class="date-line">วันที่ ......./......./.........</div>
+      </div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-line">
+        <div class="name">........................................................</div>
+        <div class="role">ผู้มีอำนาจลงนาม / บริษัท พีทีเอส สมาร์ท แฟคทอรี่ จำกัด</div>
+        <div class="date-line">วันที่ ......./......./.........</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">พยาน 1: ................................................ &nbsp;&nbsp; พยาน 2: ................................................</div>
+</div>
+
+<!-- ══════════════════════════════════
+     สัญญาที่ 2 — กิตติเดช กลิ่นหวาน
+════════════════════════════════════ -->
+<div class="contract">
+  <div class="contract-header">
+    <h2>สัญญากู้เงิน</h2>
+    <div class="ref">เลขที่สัญญา: LN-2569-002 &nbsp;|&nbsp; วันที่: 23 มิถุนายน 2569</div>
+  </div>
+
+  <div class="company-line">
+    <span class="label">ทำขึ้นที่:</span>
+    <span class="value">บริษัท พีทีเอส สมาร์ท แฟคทอรี่ จำกัด</span>
+  </div>
+
+  <div class="section-title">ข้อมูลผู้กู้</div>
+  <div class="info-grid">
+    <div class="info-row"><span class="lbl">ชื่อ-นามสกุล</span><span class="val">กิตติเดช กลิ่นหวาน</span></div>
+    <div class="info-row"><span class="lbl">แผนก</span><span class="val">&nbsp;</span></div>
+    <div class="info-row"><span class="lbl">เลขบัตรประชาชน</span><span class="val">&nbsp;</span></div>
+    <div class="info-row"><span class="lbl">โทรศัพท์</span><span class="val">&nbsp;</span></div>
+    <div class="info-row" style="grid-column:1/-1"><span class="lbl">ที่อยู่</span><span class="val">&nbsp;</span></div>
+  </div>
+
+  <div class="section-title">รายละเอียดการกู้</div>
+  <div class="highlight-box">
+    <div style="font-size:.8rem;color:#6366f1;margin-bottom:2px">วัตถุประสงค์: กู้ซื้ออุปกรณ์ปั้มบาดาล ติดตั้งที่บ้านให้แม่</div>
+    <div class="main-amount">฿3,250.00</div>
+    <div style="font-size:.75rem;color:#6366f1;margin-top:2px">ยอดคงค้าง ณ วันที่ทำสัญญา</div>
+    <div class="sub-row">
+      <div class="sub-item"><div class="lbl">หักต่องวด</div><div class="val">฿750.00</div></div>
+      <div class="sub-item"><div class="lbl">จำนวนงวด</div><div class="val">5 งวด</div></div>
+      <div class="sub-item"><div class="lbl">วันหัก</div><div class="val">ทุกวันที่ 1 และ 16</div></div>
+      <div class="sub-item"><div class="lbl">งวดแรก</div><div class="val">01/07/2569</div></div>
+      <div class="sub-item"><div class="lbl">งวดสุดท้าย</div><div class="val">01/09/2569</div></div>
+    </div>
+  </div>
+
+  <div class="section-title">ตารางการผ่อนชำระ</div>
+  <table class="schedule">
+    <thead>
+      <tr><th>งวดที่</th><th>วันที่หัก</th><th>ยอดหัก</th><th>ยอดคงเหลือ</th><th>สถานะ</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>01/07/2569</td><td>฿750.00</td><td>฿2,500.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr><td>2</td><td>16/07/2569</td><td>฿750.00</td><td>฿1,750.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr><td>3</td><td>01/08/2569</td><td>฿750.00</td><td>฿1,000.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr><td>4</td><td>16/08/2569</td><td>฿750.00</td><td>฿250.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+      <tr class="last-row"><td>5</td><td>01/09/2569</td><td>฿250.00</td><td>฿0.00</td><td><span class="status-pending">รอหัก</span></td></tr>
+    </tbody>
+  </table>
+  <div style="font-size:.75rem;color:#94a3b8;margin-top:5px">* ยอดหักอาจเปลี่ยนแปลงได้ตามที่ตกลง ยอดรวมต้องเท่ากับ ฿3,250.00</div>
+
+  <div class="terms">
+    <ol>
+      <li>ผู้กู้ยินยอมให้บริษัทหักเงินเดือนตามตารางข้างต้นทุกงวดโดยอัตโนมัติ</li>
+      <li>ยอดหักต่องวดอาจปรับเปลี่ยนได้โดยแจ้งล่วงหน้า ยอดรวมต้องครบ ฿3,250.00</li>
+      <li>หากผู้กู้ลาออกหรือพ้นสภาพพนักงาน ยอดคงค้างทั้งหมดถึงกำหนดชำระทันที</li>
+      <li>สัญญาฉบับนี้ทำขึ้น 2 ชุด มีผลเท่าเทียมกัน ผู้กู้และบริษัทเก็บฝ่ายละ 1 ชุด</li>
+    </ol>
+  </div>
+
+  <div class="sign-section">
+    <div class="sign-box">
+      <div class="sign-line">
+        <div class="name">กิตติเดช กลิ่นหวาน</div>
+        <div class="role">ผู้กู้</div>
+        <div class="date-line">วันที่ ......./......./.........</div>
+      </div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-line">
+        <div class="name">........................................................</div>
+        <div class="role">ผู้มีอำนาจลงนาม / บริษัท พีทีเอส สมาร์ท แฟคทอรี่ จำกัด</div>
+        <div class="date-line">วันที่ ......./......./.........</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">พยาน 1: ................................................ &nbsp;&nbsp; พยาน 2: ................................................</div>
+</div>
+
+</div><!-- /contract-wrap -->
+
+<script>
+(function(){
+  document.fonts && document.fonts.ready.then(function(){});
+})();
+</script>
+</body>
+</html>
