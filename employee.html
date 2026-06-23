@@ -371,7 +371,7 @@
         <div class="ph-sub">หน้าพนักงาน</div>
       </div>
       <div class="ph-right">
-        <span class="emp-ver-chip">v1.5</span>
+        <span class="ph-chip ver">v1.5</span>
         <span class="ph-chip" id="empConnChip" style="display:none">✓ Online</span>
         <button class="theme-fab" onclick="location.reload()" title="รีเฟรช" style="font-size:1rem">🔄</button>
       </div>
@@ -497,7 +497,13 @@ function _empCheckOnline() {
   var chip = document.getElementById('empConnChip');
   fetch(url + '?action=ping', { method: 'GET' })
     .then(function(r) { return r.json(); })
-    .then(function() { if (chip) { chip.style.display = ''; chip.textContent = '✓ Online'; } })
+    .then(function() {
+      if (chip) {
+        chip.style.display = '';
+        chip.textContent = '✓ Online';
+        chip.style.cssText = 'font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#4ade80;border:1px solid #16a34a;color:#052e16;letter-spacing:.3px';
+      }
+    })
     .catch(function() {});
 }
 
