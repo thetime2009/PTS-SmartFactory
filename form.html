@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v10.93</span>
+      <span class="ph-chip ver">v10.94</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3626,9 +3626,20 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
-    ref: '#REV-20260623-AH',
+    ref: '#REV-20260623-AI',
     date: '23/06/2569',
     current: true,
+    items: [
+      'employee.html v2.0: เพิ่ม Service Worker registration + auto-update เมื่อมีเวอร์ชันใหม่',
+      'employee.html v2.0: เพิ่ม <link rel=manifest href=employee-manifest.json>',
+      'employee-manifest.json: สร้างใหม่ start_url=employee.html สำหรับ PWA หน้าจอโฮม',
+      'sw.js v5.12: เพิ่ม employee.html + employee-manifest.json ใน APP_SHELL',
+    ]
+  },
+  {
+    ref: '#REV-20260623-AH',
+    date: '23/06/2569',
+    current: false,
     items: [
       'employee.html v1.9: แก้ warning Script URL ขึ้นซ้อน 2 ชั้น — ล้าง errEl เมื่อ empUrlNote แสดงอยู่แล้ว',
     ]

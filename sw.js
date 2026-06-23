@@ -1,11 +1,13 @@
 // Service Worker — PTS Cost Breakdown
 // แคชไฟล์หลักของแอป เพื่อให้เปิดได้แม้ออฟไลน์ และทำให้ติดตั้งเป็นแอปได้
 
-const CACHE_NAME = 'pts-cost-cache-v5.11';
+const CACHE_NAME = 'pts-cost-cache-v5.12';
 const APP_SHELL = [
   './',
   './index.html',
   './form.html',
+  './employee.html',
+  './employee-manifest.json',
   './manifest.json',
   './PTS.png',
 ];
