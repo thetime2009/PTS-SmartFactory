@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-// hr.js v4.6  —  HR Module
+// hr.js v4.40  —  HR Module
 // นำเข้าข้อมูลสแกนหน้า | สรุปเวลางาน | พนักงาน | ตั้งค่า | สลิปเงินเดือน
 // ══════════════════════════════════════════════════════════════
 
@@ -1100,6 +1100,8 @@ function _hrPayTableHtml(rows) {
           'style="flex:1;min-width:60px;padding:6px 2px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:8px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.77rem;font-weight:600">🧾 สลิป</button>' +
         (qrBtnHtml ? '<div style="width:100%">' + qrBtnHtml + '</div>' : '') +
         (loanBtnsHtml ? '<div style="width:100%">' + loanBtnsHtml + '</div>' : '') +
+        '<button onclick="hrRecordSalaryPayment(\'' + id + '\',\'' + (e.name||'') + '\',' + ps.net.toFixed(2) + ')" ' +
+          'style="width:100%;margin-top:2px;padding:7px 4px;background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.82rem;font-weight:700">💳 บันทึกโอนเงินเดือน</button>' +
       '</div>' +
     '</div>';
   }
@@ -1197,11 +1199,9 @@ function hrShowPromptPayQR(phone, amount, nameEncoded, empId) {
       '<div id="hrQRCanvas" style="display:inline-block;padding:10px;background:#fff;border:2px solid #e2e8f0;border-radius:12px;margin-bottom:14px"></div>' +
       '<div style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:10px 20px;border-radius:10px;font-size:1.25rem;font-weight:800">฿' + _hrFmt(amount) + '</div>' +
       '<div style="font-size:.7rem;color:#94a3b8;margin-top:8px;margin-bottom:14px">สแกนเพื่อโอนเงินเดือน — พร้อมเพย์</div>' +
-      '<div style="display:flex;gap:8px;margin-top:2px">' +
-        '<button onclick="document.getElementById(\'hrQRModal\').remove();setTimeout(function(){var t=document.createElement(\'div\');t.style.cssText=\'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:10px 24px;border-radius:12px;font-family:Sarabun,sans-serif;font-size:.9rem;font-weight:700;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.2)\';t.textContent=\'✅ บันทึกการโอนแล้ว\';document.body.appendChild(t);setTimeout(function(){t.remove();},2500);},50)" ' +
-          'style="flex:1;padding:10px;background:#059669;color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.88rem;font-weight:700">✅ ยืนยันโอนแล้ว</button>' +
+      '<div style="margin-top:2px">' +
         '<button onclick="document.getElementById(\'hrQRModal\').remove()" ' +
-          'style="flex:1;padding:10px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.88rem;font-weight:600">ยกเลิก</button>' +
+          'style="width:100%;padding:10px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.88rem;font-weight:700">ปิด — กลับไปแนบสลิป</button>' +
       '</div>' +
     '</div>';
   document.body.appendChild(ovl);
@@ -1493,9 +1493,11 @@ function _hrRenderCal() {
       '<select id="hrCalYear" onchange="_hrCalDraw()" style="padding:8px 14px;border-radius:9px;border:1px solid var(--bc-input);background:var(--bg);color:var(--t1);font-family:\'Sarabun\',sans-serif;font-size:.9rem;font-weight:700">' +
         years.map(function(y){ return '<option value="'+y+'"'+(y===defY?' selected':'')+'>'+y+' ('+(y-543)+')</option>'; }).join('') +
       '</select>' +
-      '<button onclick="_hrCalLoad()" style="padding:8px 16px;border-radius:9px;background:rgba(99,102,241,.12);color:#818cf8;border:1px solid rgba(99,102,241,.3);font-family:\'Sarabun\',sans-serif;font-size:.84rem;cursor:pointer">🔄 โหลดวันหยุด</button>' +
+      ((_hrSession && _hrSession.role !== 'emp') ?
+        '<button onclick="_hrCalLoad()" style="padding:8px 16px;border-radius:9px;background:rgba(99,102,241,.12);color:#818cf8;border:1px solid rgba(99,102,241,.3);font-family:\'Sarabun\',sans-serif;font-size:.84rem;cursor:pointer">🔄 โหลดวันหยุด</button>' : '') +
       '<button onclick="_hrCalPrint()" style="padding:8px 20px;border-radius:9px;background:var(--c1);color:#fff;border:none;font-family:\'Sarabun\',sans-serif;font-size:.84rem;font-weight:700;cursor:pointer">🖨️ พิมพ์ปฏิทิน</button>' +
-      '<span style="font-size:.74rem;color:var(--t3)">💡 คลิกวันที่เพื่อเพิ่ม / แก้ไข / ลบวันหยุด</span>' +
+      ((_hrSession && _hrSession.role !== 'emp') ?
+        '<span style="font-size:.74rem;color:var(--t3)">💡 คลิกวันที่เพื่อเพิ่ม / แก้ไข / ลบวันหยุด</span>' : '') +
     '</div>' +
     // ── calendar grid ──
     '<div id="hrCalGrid"></div>' +
@@ -1620,7 +1622,7 @@ function _hrCalDraw() {
 
       html += '<div onclick="_hrCalClick(\''+esc+'\',\''+nEsc+'\')" ' +
         'style="min-height:36px;border-right:1px solid var(--bc-input);border-bottom:1px solid var(--bc-input);background:'+bg+';cursor:pointer;padding:2px 3px;position:relative" ' +
-        'onmouseover="this.style.filter=\'brightness(.93)\'" onmouseout="this.style.filter=\'\'">' +
+        'onmouseover="this.style.filter=\'brightness(.93)\'" onmouseout="this.style.filter=\'\'">'+
         '<div style="font-size:.72rem;font-weight:'+(hol?'700':'400')+';color:'+fc+'">'+d+'</div>' +
         (hol ? '<div style="font-size:.52rem;color:'+fc+';line-height:1.2;overflow:hidden;max-height:18px;word-break:break-all">'+hol.name+'</div>' : '') +
       '</div>';
@@ -1632,6 +1634,17 @@ function _hrCalDraw() {
 }
 
 function _hrCalClick(dateStr, existingName) {
+  // employee: read-only — แสดงชื่อวันหยุดเฉยๆ ไม่มีแก้ไข/ลบ
+  if (_hrSession && _hrSession.role === 'emp') {
+    if (!existingName) return;
+    Swal.fire({
+      title: '📅 ' + dateStr.slice(0,5),
+      text: existingName,
+      confirmButtonText: 'ปิด',
+      confirmButtonColor: '#4f46e5',
+    });
+    return;
+  }
   if (existingName) {
     Swal.fire({
       title: '📅 ' + dateStr.substring(0,5),
@@ -2711,17 +2724,19 @@ function _hrRenderLoans() {
   // emp เห็นเฉพาะตัวเอง, manager เห็นทุกคน
   const params = _hrSession.role === 'emp' ? { empId: _hrSession.empId } : {};
   // โหลด employees พร้อมกัน (manager ต้องการชื่อพนักงาน)
-  var calls = [_hrGET('getLoanRequests', params)];
-  if (_hrSession.role === 'manager' && !_hrEmps.length) calls.push(_hrGET('getHREmployees'));
-  // โหลด loan contracts + payments (สำหรับ employee แสดงสัญญาของตัวเอง)
   var lcParams = _hrSession.role === 'emp' ? { empId: _hrSession.empId } : {};
+  // เสมอโหลด employees ใหม่เพื่อให้รูปพนักงานอัปเดตทุกครั้งที่ refresh
+  var _needEmps = _hrSession.role === 'manager';
+  var calls = [_hrGET('getLoanRequests', params)];
+  if (_needEmps) calls.push(_hrGET('getHREmployees'));
   calls.push(_hrGET('getHRLoanContracts', lcParams));
   calls.push(_hrGET('getHRLoanPayments', lcParams));
   Promise.all(calls).then(function(results) {
-    _hrLoans = (results[0] && results[0].data) || [];
-    if (results[1] && results[1].data && _hrSession.role === 'manager') _hrEmps = results[1].data || [];
-    _hrLoanContracts = (results[results.length-2] && results[results.length-2].data) || [];
-    _hrLoanContractPayments = (results[results.length-1] && results[results.length-1].data) || [];
+    var _ri = 0;
+    _hrLoans = (results[_ri++] && results[_ri-1].data) || [];
+    if (_needEmps) _hrEmps = (results[_ri++] && results[_ri-1].data) || _hrEmps;
+    _hrLoanContracts         = (results[_ri++] && results[_ri-1].data) || [];
+    _hrLoanContractPayments  = (results[_ri]   && results[_ri].data)   || [];
     p.innerHTML = _hrLoansPanelHtml();
     _hrLoansBindEvents();
   }).catch(function(e) {
@@ -2743,8 +2758,7 @@ function _hrLoanStatusCard(filter, icon, label, count, accent, bg) {
 function _hrLoansPanelHtml() {
   const isManager = _hrSession && _hrSession.role === 'manager';
   const sessionName = _hrSession ? (_hrSession.name || _hrSession.empId) : '';
-  // นับแต่ละสถานะ
-  // คำนวณยอดสะสม — นับเฉพาะที่โอนจ่ายแล้ว (closed) เท่านั้น
+  // ยอดสะสม — นับเฉพาะ closed
   var totalAdvance = 0, totalLoan = 0;
   _hrLoans.forEach(function(l) {
     if (l.status !== 'closed') return;
@@ -2753,48 +2767,184 @@ function _hrLoansPanelHtml() {
     else if (l.type === 'loan') totalLoan += amt;
   });
 
-  return '<div style="padding:0 4px">' +
-    // session info bar (ซ่อนใน employee.html เพราะมี session bar ของตัวเองแล้ว — ยังคงไว้สำหรับ form.html)
+  // ── summary cards (ทั้ง manager และ emp) ──
+  // คำนวณ budget bar สำหรับ employee
+  var budgetBarHtml = '';
+  var _budgetForBar = !isManager ? parseFloat((_hrSession && _hrSession.advanceBudget) || 0) : 0;
+  if (_budgetForBar > 0) {
+    var _nowYM = (function(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); })();
+    var _usedBar = 0;
+    _hrLoans.forEach(function(x){
+      if (x.type !== 'advance' || x.status === 'rejected') return;
+      var rd = String(x.requestDate||''); var rdKey = '';
+      if (rd.length >= 10 && rd[2] === '/') {
+        var beY = parseInt(rd.slice(6,10)); var ceY = beY > 2500 ? beY - 543 : beY;
+        rdKey = ceY + '-' + rd.slice(3,5);
+      } else { var _dp = new Date(rd); if (!isNaN(_dp)) rdKey = _dp.getFullYear() + '-' + String(_dp.getMonth()+1).padStart(2,'0'); }
+      if (rdKey === _nowYM) _usedBar += parseFloat(x.amount||0);
+    });
+    var _remainBar = Math.max(0, _budgetForBar - _usedBar);
+    var _pctBar = Math.min(100, _budgetForBar > 0 ? Math.round(_usedBar / _budgetForBar * 100) : 0);
+    var _barClr = _pctBar >= 90 ? '#ef4444' : _pctBar >= 60 ? '#f59e0b' : '#10b981';
+    budgetBarHtml =
+      '<div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:12px;padding:12px 16px;margin-bottom:14px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+          '<div style="font-size:.8rem;font-weight:700;color:#166534">📊 วงเงินเบิก/เดือนนี้</div>' +
+          '<div style="font-size:.8rem;font-weight:700;color:' + (_remainBar===0?'#ef4444':'#059669') + '">เหลือ ฿' + _hrFmt(_remainBar) + '</div>' +
+        '</div>' +
+        '<div style="background:#bbf7d0;border-radius:99px;height:8px;overflow:hidden;margin-bottom:6px">' +
+          '<div style="height:100%;width:' + _pctBar + '%;background:' + _barClr + ';border-radius:99px;transition:width .4s"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:.74rem;color:#16a34a">' +
+          '<span>เบิกแล้ว ฿' + _hrFmt(_usedBar) + ' (' + _pctBar + '%)</span>' +
+          '<span>วงเงิน ฿' + _hrFmt(_budgetForBar) + '</span>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // รวมยอดแยกตามพนักงาน (เฉพาะ closed)
+  var _empTotals = {};
+  _hrLoans.forEach(function(l) {
+    if (l.status !== 'closed') return;
+    var n = l.empName || l.empId || '?';
+    if (!_empTotals[n]) _empTotals[n] = 0;
+    _empTotals[n] += parseFloat(l.transferAmount || l.amount || 0);
+  });
+  var _empRows = Object.keys(_empTotals).sort().map(function(n) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(129,140,248,.25)">' +
+      '<span style="font-size:.82rem;color:#3730a3;font-weight:600">👤 ' + n + '</span>' +
+      '<span style="font-size:.85rem;font-weight:800;color:#4338ca">฿' + _hrFmt(_empTotals[n]) + '</span>' +
+    '</div>';
+  }).join('');
+  var _closedCount = _hrLoans.filter(function(l){ return l.status==='closed'; }).length;
+
+  var summaryHtml =
+    '<div style="margin-bottom:14px">' +
+      '<div style="background:linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 100%);border:2px solid #818cf8;border-radius:12px;padding:14px 16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
+          '<div>' +
+            '<div style="font-size:.75rem;font-weight:600;color:#4338ca;margin-bottom:2px">💸 ยอดเงินเบิกสะสม (โอนแล้ว)</div>' +
+            '<div style="font-size:1.4rem;font-weight:900;color:#3730a3">฿' + _hrFmt(totalAdvance + totalLoan) + '</div>' +
+          '</div>' +
+          '<div style="background:#818cf8;color:#fff;border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:700">' + _closedCount + ' รายการ</div>' +
+        '</div>' +
+        (_empRows ? '<div style="margin-top:6px">' + _empRows + '</div>' : '') +
+      '</div>' +
+    '</div>' + budgetBarHtml;
+
+  // ── session bar ──
+  var sessionBar =
     '<div id="hrLoanSessionBar" style="display:flex;align-items:center;justify-content:space-between;background:' + (isManager ? 'rgba(79,70,229,.07)' : 'rgba(8,145,178,.07)') + ';border:1px solid ' + (isManager ? 'rgba(79,70,229,.2)' : 'rgba(8,145,178,.2)') + ';border-radius:10px;padding:8px 14px;margin-bottom:14px">' +
       '<div style="font-size:.84rem;color:var(--t2)">' +
         (isManager ? '🔑 <b>ผู้จัดการ</b>' : '👤 ' + sessionName) +
       '</div>' +
       '<button onclick="hrLogout()" style="background:transparent;color:var(--t3);border:1px solid var(--bc-input);border-radius:6px;padding:4px 12px;cursor:pointer;font-family:inherit;font-size:.78rem">🔓 ออกจากระบบ</button>' +
-    '</div>' +
-    // ── สรุปยอดสะสม 2 ช่อง ──
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
-      '<div style="background:linear-gradient(135deg,#e0e7ff 0%,#c7d2fe 100%);border:2px solid #818cf8;border-radius:12px;padding:14px 16px">' +
-        '<div style="font-size:.75rem;font-weight:600;color:#4338ca;margin-bottom:4px">💸 ยอดเงินเบิกสะสม</div>' +
-        '<div style="font-size:1.4rem;font-weight:900;color:#3730a3">฿' + _hrFmt(totalAdvance) + '</div>' +
-        '<div style="font-size:.72rem;color:#6366f1;margin-top:3px">รวม ' + _hrLoans.filter(function(l){ return l.type==='advance' && l.status!=='rejected'; }).length + ' รายการ</div>' +
+    '</div>';
+
+  // ── ถ้าเป็น manager — layout เดิม ──
+  if (isManager) {
+    return '<div style="padding:0 4px">' +
+      sessionBar + summaryHtml +
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">' +
+        '<div style="font-size:1.05rem;font-weight:700;color:var(--t1)">💰 เบิกล่วงหน้า</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button onclick="hrLoanNew()" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:inherit;font-size:.9rem">➕ ยื่นคำขอใหม่</button>' +
+          '<button onclick="_hrRenderLoans()" style="background:transparent;color:var(--t3);border:1px solid var(--bc-input);border-radius:8px;padding:7px 14px;cursor:pointer;font-family:inherit;font-size:.9rem">🔄 รีเฟรช</button>' +
+        '</div>' +
       '</div>' +
-      '<div style="background:linear-gradient(135deg,#fce7f3 0%,#fbcfe8 100%);border:2px solid #f472b6;border-radius:12px;padding:14px 16px">' +
-        '<div style="font-size:.75rem;font-weight:600;color:#9d174d;margin-bottom:4px">🏦 ยอดเงินกู้สะสม</div>' +
-        '<div style="font-size:1.4rem;font-weight:900;color:#831843">฿' + _hrFmt(totalLoan) + '</div>' +
-        '<div style="font-size:.72rem;color:#ec4899;margin-top:3px">รวม ' + _hrLoans.filter(function(l){ return l.type==='loan' && l.status!=='rejected'; }).length + ' รายการ</div>' +
+      '<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:.82rem;color:var(--t3)">📅 เดือน:</span>' +
+        '<select id="hrLoanMonthSel" onchange="hrLoanSetMonth(this.value)" ' +
+          'style="border-radius:8px;padding:4px 10px;font-size:.82rem;border:1px solid var(--bc-input);background:var(--bg1);color:var(--t1);font-family:inherit;cursor:pointer">' +
+          '<option value="">ทุกเดือน</option>' +
+          (function(){
+            var months = {};
+            (_hrLoans||[]).forEach(function(l){
+              var rd = String(l.requestDate||'');
+              var ym = ''; var label = '';
+              if (rd.length >= 10 && rd[2] === '/') {
+                var beY = parseInt(rd.slice(6,10)); var ceY = beY > 2500 ? beY-543 : beY;
+                ym = ceY + '-' + rd.slice(3,5);
+                var thMon = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+                label = thMon[parseInt(rd.slice(3,5))||0] + ' ' + beY;
+              } else { var d=new Date(rd); if(!isNaN(d)){ ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); label=ym; } }
+              if (ym) months[ym] = label;
+            });
+            return Object.keys(months).sort().reverse().map(function(ym){
+              return '<option value="'+ym+'"'+(ym===_hrLoanCurMonth?' selected':'')+'>'+months[ym]+'</option>';
+            }).join('');
+          })()+
+        '</select>' +
+      '</div>' +
+      '<div id="hrLoanFilter" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">' +
+        _hrLoanFilterBtn('all',      'ทั้งหมด') +
+        _hrLoanFilterBtn('pending',  '⏳ รออนุมัติ') +
+        _hrLoanFilterBtn('approved', '✅ รอโอนจ่าย') +
+        _hrLoanFilterBtn('rejected', '❌ ปฏิเสธ') +
+        _hrLoanFilterBtn('closed',   '✅ โอนแล้ว') +
+      '</div>' +
+      '<div id="hrLoanTable">' + _hrLoanTableHtml('all') + '</div>' +
+    '</div>';
+  }
+
+  // ── employee view ──
+  return '<div style="padding:0 4px">' +
+    sessionBar + summaryHtml +
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">' +
+      '<div style="font-size:1rem;font-weight:700;color:var(--t1)">💸 คำขอเบิกล่วงหน้า</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button onclick="hrLoanNew()" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:inherit;font-size:.88rem;font-weight:600">➕ ยื่นคำขอใหม่</button>' +
+        '<button onclick="_hrRenderLoans()" style="background:transparent;color:var(--t3);border:1px solid var(--bc-input);border-radius:8px;padding:7px 12px;cursor:pointer;font-family:inherit;font-size:.88rem">🔄</button>' +
       '</div>' +
     '</div>' +
-    // header bar
-    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">' +
-      '<div style="font-size:1.05rem;font-weight:700;color:var(--t1)">💰 เบิกล่วงหน้า</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-        '<button onclick="hrLoanNew()" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:inherit;font-size:.9rem">➕ ยื่นคำขอใหม่</button>' +
-        '<button onclick="_hrRenderLoans()" style="background:transparent;color:var(--t3);border:1px solid var(--bc-input);border-radius:8px;padding:7px 14px;cursor:pointer;font-family:inherit;font-size:.9rem">🔄 รีเฟรช</button>' +
+    '<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:.82rem;color:var(--t3)">📅 เดือน:</span>' +
+        '<select id="hrLoanMonthSel" onchange="hrLoanSetMonth(this.value)" ' +
+          'style="border-radius:8px;padding:4px 10px;font-size:.82rem;border:1px solid var(--bc-input);background:var(--bg1);color:var(--t1);font-family:inherit;cursor:pointer">' +
+          '<option value="">ทุกเดือน</option>' +
+          (function(){
+            var months = {};
+            (_hrLoans||[]).forEach(function(l){
+              var rd = String(l.requestDate||'');
+              var ym = ''; var label = '';
+              if (rd.length >= 10 && rd[2] === '/') {
+                var beY = parseInt(rd.slice(6,10)); var ceY = beY > 2500 ? beY-543 : beY;
+                ym = ceY + '-' + rd.slice(3,5);
+                var thMon = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+                label = thMon[parseInt(rd.slice(3,5))||0] + ' ' + beY;
+              } else { var d=new Date(rd); if(!isNaN(d)){ ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); label=ym; } }
+              if (ym) months[ym] = label;
+            });
+            return Object.keys(months).sort().reverse().map(function(ym){
+              return '<option value="'+ym+'"'+(ym===_hrLoanCurMonth?' selected':'')+'>'+months[ym]+'</option>';
+            }).join('');
+          })()+
+        '</select>' +
       '</div>' +
-    '</div>' +
-    // filter tabs
-    // แสดงสัญญาเงินกู้ของฉัน (เฉพาะ emp)
-    (!isManager ? _hrEmpMyLoansSection() : '') +
-    '<div id="hrLoanFilter" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">' +
+      '<div id="hrLoanFilter" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">' +
       _hrLoanFilterBtn('all',      'ทั้งหมด') +
       _hrLoanFilterBtn('pending',  '⏳ รออนุมัติ') +
-      _hrLoanFilterBtn('approved', '✅ อนุมัติ') +
+      _hrLoanFilterBtn('approved', '✅ รอโอนจ่าย') +
       _hrLoanFilterBtn('rejected', '❌ ปฏิเสธ') +
-      _hrLoanFilterBtn('closed',   '🔒 ปิดแล้ว') +
+      _hrLoanFilterBtn('closed',   '✅ โอนแล้ว') +
     '</div>' +
-    // table
     '<div id="hrLoanTable">' + _hrLoanTableHtml('all') + '</div>' +
   '</div>';
+}
+
+function hrEmpLoanSubSwitch(n) {
+  var p1 = document.getElementById('hrEmpLoanPanel1');
+  var p2 = document.getElementById('hrEmpLoanPanel2');
+  var t1 = document.getElementById('hrEmpLoanTab1');
+  var t2 = document.getElementById('hrEmpLoanTab2');
+  if (!p1 || !p2) return;
+  // toggle panels
+  p1.style.cssText = (n === 1) ? 'display:block' : 'display:none';
+  p2.style.cssText = (n === 2) ? 'display:block' : 'display:none';
+  // toggle tab buttons — ใช้ hex color โดยตรง (ไม่ใช้ CSS var)
+  var base = 'flex:1;padding:9px 6px;cursor:pointer;font-family:inherit;font-size:.9rem;font-weight:600;border:none;border-radius:10px;transition:background .18s';
+  if (t1) t1.style.cssText = base + (n === 1 ? ';background:#3b82f6;color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.35)' : ';background:#f1f5f9;color:#64748b');
+  if (t2) t2.style.cssText = base + (n === 2 ? ';background:#3b82f6;color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.35)' : ';background:#f1f5f9;color:#64748b');
 }
 
 function _hrLoanFilterBtn(val, label) {
@@ -2806,6 +2956,16 @@ function _hrLoanFilterBtn(val, label) {
 }
 
 let _hrLoanCurFilter = 'all';
+let _hrLoanCurMonth  = '';   // '' = ทุกเดือน, 'YYYY-MM' = เดือนที่เลือก
+
+function hrLoanSetMonth(ym) {
+  _hrLoanCurMonth = ym;
+  var sel = document.getElementById('hrLoanMonthSel');
+  if (sel) sel.value = ym;
+  var tbl = document.getElementById('hrLoanTable');
+  if (tbl) tbl.innerHTML = _hrLoanTableHtml(_hrLoanCurFilter);
+}
+
 function hrLoanSetFilter(val) {
   _hrLoanCurFilter = val;
   ['all','pending','approved','rejected','closed'].forEach(function(k) {
@@ -2849,7 +3009,28 @@ function _hrLoanDaysSince(dateStr) {
 }
 
 function _hrLoanTableHtml(filter) {
-  const rows = filter === 'all' ? _hrLoans : _hrLoans.filter(function(l) { return l.status === filter; });
+  // helper: parse requestDate → CE ym string 'YYYY-MM'
+  function _loanYM(l) {
+    var rd = String(l.requestDate||'');
+    if (rd.length >= 10 && rd[2] === '/') {
+      var beY = parseInt(rd.slice(6,10)); var ceY = beY > 2500 ? beY-543 : beY;
+      return ceY + '-' + rd.slice(3,5);
+    }
+    var d = new Date(rd); return isNaN(d) ? '' : d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  }
+  // helper: parse requestDate → timestamp for sorting
+  function _loanTs(l) {
+    var rd = String(l.requestDate||'');
+    if (rd.length >= 10 && rd[2] === '/') {
+      var p = rd.split(/[ /]/); var beY = parseInt(p[2]); var ceY = beY > 2500 ? beY-543 : beY;
+      return new Date(ceY, parseInt(p[1])-1, parseInt(p[0]), parseInt((p[3]||'0:0').split(':')[0]), parseInt((p[3]||'0:0').split(':')[1]||0)).getTime();
+    }
+    var d = new Date(rd); return isNaN(d) ? 0 : d.getTime();
+  }
+  var base = _hrLoans.slice().sort(function(a,b){ return _loanTs(b) - _loanTs(a); }); // newest first
+  if (filter !== 'all') base = base.filter(function(l){ return l.status === filter; });
+  if (_hrLoanCurMonth) base = base.filter(function(l){ return _loanYM(l) === _hrLoanCurMonth; });
+  const rows = base;
   if (!rows.length) return '<div style="padding:32px;text-align:center;color:var(--t3)">ไม่มีรายการ</div>';
 
   const isEmp = _hrSession && _hrSession.role === 'emp';
@@ -2857,9 +3038,9 @@ function _hrLoanTableHtml(filter) {
 
   const statusStyle = {
     pending:  { bg:'#fef3c7', color:'#92400e', label:'⏳ รออนุมัติ' },
-    approved: { bg:'#d1fae5', color:'#065f46', label:'✅ อนุมัติแล้ว' },
+    approved: { bg:'#cffafe', color:'#155e75', label:'✅ อนุมัติแล้ว — รอโอนจ่าย' },
     rejected: { bg:'#fee2e2', color:'#991b1b', label:'❌ ปฏิเสธ' },
-    closed:   { bg:'#f1f5f9', color:'#475569', label:'🔒 ปิดแล้ว' },
+    closed:   { bg:'#d1fae5', color:'#065f46', label:'✅ โอนแล้ว' },
   };
   const typeStyle = {
     advance: { bg:'#e0e7ff', color:'#3730a3', label:'เบิก' },
@@ -2877,7 +3058,17 @@ function _hrLoanTableHtml(filter) {
     var ringClr = dayRingColor[l.status] || '#64748b';
     var ts      = typeStyle[l.type] || { bg:'#f1f5f9', color:'#475569', label: l.type };
 
-    // ── day circle ──
+    // ── employee photo avatar (admin only) ──
+    var _lEmp  = (_hrEmps||[]).find(function(e){ return String(e.empId)===String(l.empId); }) || {};
+    var _lThumb = _hrDriveThumb(_lEmp.profileUrl || '');
+    var _lInit  = (_lEmp.name||l.empName||'?').trim().charAt(0).toUpperCase();
+    var _lAvatarSize = 68;
+    var photoAvatar = isEmp ? '' : (_lThumb
+      ? '<img src="' + _lThumb + '" alt="photo" style="width:' + _lAvatarSize + 'px;height:' + _lAvatarSize + 'px;border-radius:50%;object-fit:cover;border:3px solid ' + ringClr + ';box-shadow:0 2px 8px rgba(0,0,0,.15);display:block" ' +
+          'onerror="this.outerHTML=\'<div style=&quot;width:' + _lAvatarSize + 'px;height:' + _lAvatarSize + 'px;border-radius:50%;background:' + ringClr + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;border:3px solid ' + ringClr + '&quot;>' + _lInit + '</div>\'">' 
+      : '<div style="width:' + _lAvatarSize + 'px;height:' + _lAvatarSize + 'px;border-radius:50%;background:' + ringClr + '22;border:3px solid ' + ringClr + ';display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:' + ringClr + '">' + _lInit + '</div>');
+
+    // ── day circle (ใต้รูป) ──
     var dayCircle = l.status === 'closed'
       ? '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
           'width:52px;height:52px;border-radius:50%;background:#d1fae5;border:3px solid #10b981;flex-shrink:0">' +
@@ -2899,7 +3090,7 @@ function _hrLoanTableHtml(filter) {
         '</div>';
     } else if (l.status === 'approved' && isManagerView) {
       actionArea =
-        '<button onclick="hrLoanClose(\'' + l.requestId + '\')" style="width:100%;background:#0f172a;color:#fff;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:.84rem;font-family:inherit;font-weight:600">💳 บันทึกโอนเงิน / ปิดรายการ</button>';
+        '<button onclick="hrLoanClose(\'' + l.requestId + '\')" style="width:100%;background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:.84rem;font-family:inherit;font-weight:600">✅ อนุมัติแล้ว — รอโอนเงิน</button>';
     } else if (l.status === 'closed') {
       var xfAmt  = parseFloat(l.transferAmount || l.amount || 0);
       var xfDate = l.closedDate || l.transferDate || '';
@@ -2925,6 +3116,15 @@ function _hrLoanTableHtml(filter) {
       actionArea = '<div style="font-size:.8rem;color:#dc2626">❌ ปฏิเสธแล้ว</div>';
     }
 
+    // ── ปุ่มลบ: admin ลบได้ทุก status, employee ลบได้เฉพาะ pending ──
+    var canDelete = isManagerView || (l.status === 'pending');
+    var deleteBtn = canDelete
+      ? '<button onclick="hrDeleteLoanRequest(\''+l.requestId+'\')" '
+          + 'style="width:100%;background:transparent;color:#ef4444;border:1px solid #fca5a5;border-radius:8px;'
+          + 'padding:6px 10px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:600;margin-top:2px">'
+          + '🗑️ ลบใบเบิกนี้</button>'
+      : '';
+
     return '<div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
       // ── header row ──
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
@@ -2935,48 +3135,18 @@ function _hrLoanTableHtml(filter) {
           '</div>' +
           '<div style="font-size:1.2rem;font-weight:800;color:var(--t1)">฿' + _hrFmt(l.amount) + '</div>' +
           (function(){
-            var n = l.empName || ((_hrEmps||[]).find(function(e){ return String(e.empId)===String(l.empId); })||{}).name || l.empId;
-            return !isEmp ? '<div style="font-size:.85rem;font-weight:600;color:var(--t2);margin-top:2px">👤 ' + n + '</div>' : '';
-          })() +
-          (function(){
-            if (l.type !== 'advance') return '';
-            // หา advanceBudget ของพนักงานคนนี้
-            var empRec = (_hrEmps||[]).find(function(e){ return String(e.empId)===String(l.empId); }) || {};
-            var budget = parseFloat(empRec.advanceBudget || (_hrSession && _hrSession.empId === String(l.empId) ? _hrSession.advanceBudget : 0) || 0);
-            if (!budget) return '';
-            // คำนวณยอดเบิกแล้วเดือนปัจจุบัน (pending+approved+closed ที่ requestDate อยู่เดือนนี้)
-            var nowYM = (function(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); })();
-            var used = 0;
-            (_hrLoans||[]).forEach(function(x){
-              if (String(x.empId) !== String(l.empId)) return;
-              if (x.type !== 'advance') return;
-              if (x.status === 'rejected') return;
-              // parse requestDate dd/MM/yyyy BE → CE ym
-              var rd = String(x.requestDate||'');
-              var parts = rd.split(/[\/ ]/);
-              if (parts.length >= 3) {
-                var beY = parseInt(parts[2]); var m = parts[1];
-                var ceY = beY > 2500 ? beY - 543 : beY;
-                var ym = ceY + '-' + (m.length===1?'0':'') + m;
-                if (ym === nowYM) used += parseFloat(x.amount||0);
-              }
-            });
-            var remain = Math.max(0, budget - used);
-            var pct = Math.min(100, budget > 0 ? Math.round(used/budget*100) : 0);
-            var barColor = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981';
-            return '<div style="margin-top:6px;background:var(--bg2);border-radius:8px;padding:7px 10px;font-size:.75rem">' +
-              '<div style="display:flex;justify-content:space-between;color:var(--t3);margin-bottom:4px">' +
-                '<span>วงเงิน/เดือน <b style="color:var(--t1)">฿' + _hrFmt(budget) + '</b></span>' +
-                '<span style="color:' + (remain===0?'#ef4444':'#059669') + ';font-weight:700">เหลือ ฿' + _hrFmt(remain) + '</span>' +
-              '</div>' +
-              '<div style="background:var(--bc-card);border-radius:99px;height:5px;overflow:hidden">' +
-                '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:99px;transition:width .3s"></div>' +
-              '</div>' +
-              '<div style="color:var(--t4);margin-top:3px">เบิกแล้ว ฿' + _hrFmt(used) + ' (' + pct + '%)</div>' +
-            '</div>';
+            var n = l.empName || (_lEmp.name) || l.empId;
+            return !isEmp ? '<div style="font-size:.85rem;font-weight:600;color:var(--t2);margin-top:2px">' + n + '</div>' : '';
           })() +
         '</div>' +
-        dayCircle +
+        (isEmp
+          ? dayCircle
+          : '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">' +
+              photoAvatar +
+              (l.status !== 'closed'
+                ? '<div style="font-size:.6rem;color:' + ringClr + ';font-weight:700;text-align:center">' + days + ' วัน</div>'
+                : '') +
+            '</div>') +
       '</div>' +
       // ── details ──
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:.8rem">' +
@@ -2989,6 +3159,7 @@ function _hrLoanTableHtml(filter) {
       '</div>' +
       // ── action ──
       (actionArea ? '<div style="border-top:1px solid var(--bc-input);padding-top:10px">' + actionArea + '</div>' : '') +
+      (canDelete ? deleteBtn : '') +
     '</div>';
   }).join('');
 
@@ -3122,10 +3293,15 @@ function hrLoanTypeChanged() {
           var rd = String(l.requestDate || '');
           var rdKey = '';
           if (rd.length >= 10 && rd[2] === '/') {
+            // format: dd/MM/yyyy
             var beYr = parseInt(rd.slice(6,10));
-            var ceYr = beYr > 2500 ? beYr - 543 : beYr; // แปลง BE → CE
+            var ceYr = beYr > 2500 ? beYr - 543 : beYr;
             rdKey = ceYr + '-' + rd.slice(3,5);
-          } else { rdKey = rd.slice(0,7); }
+          } else {
+            // Apps Script Date string หรือ ISO — ให้ Date() parse
+            var _dp = new Date(rd);
+            if (!isNaN(_dp)) rdKey = _dp.getFullYear() + '-' + String(_dp.getMonth()+1).padStart(2,'0');
+          }
           if (rdKey === nowMon) used += parseFloat(l.amount) || 0;
         });
         const remain = Math.max(0, budget - used);
@@ -3155,7 +3331,7 @@ function hrLoanApprove(requestId) {
     html: '<div style="text-align:left;font-family:Sarabun,sans-serif">' +
       '<div style="margin-bottom:10px">' +
         '<label style="font-size:.85rem;color:var(--t2)">ชื่อผู้อนุมัติ</label>' +
-        '<input id="apFBy" type="text" placeholder="คุณสุรศักดิ์" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
+        '<input id="apFBy" type="text" value="สุรศักดิ์" placeholder="คุณสุรศักดิ์" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
       '</div>' +
       '<div style="margin-bottom:10px">' +
         '<label style="font-size:.85rem;color:var(--t2)">หักจากงวดเดือน (เช่น 2026-07)</label>' +
@@ -3173,12 +3349,17 @@ function hrLoanApprove(requestId) {
     preConfirm: function() {
       const by = (document.getElementById('apFBy').value || '').trim();
       if (!by) { Swal.showValidationMessage('กรุณาใส่ชื่อผู้อนุมัติ'); return false; }
-      return {
-        requestId: requestId,
-        approvedBy: by,
-        deductMonth: document.getElementById('apFMon').value || '',
-        notes: document.getElementById('apFNote').value || ''
-      };
+      Swal.showLoading();
+      return new Promise(function(resolve) {
+        setTimeout(function() {
+          resolve({
+            requestId: requestId,
+            approvedBy: by,
+            deductMonth: document.getElementById('apFMon').value || '',
+            notes: document.getElementById('apFNote').value || ''
+          });
+        }, 80);
+      });
     }
   }).then(function(res) {
     if (!res.isConfirmed) return;
@@ -3194,6 +3375,28 @@ function hrLoanApprove(requestId) {
 }
 
 // ── ปฏิเสธ ───────────────────────────────────────────────────
+function hrDeleteLoanRequest(requestId) {
+  Swal.fire({
+    icon: 'warning',
+    title: '🗑️ ลบใบเบิกล่วงหน้า?',
+    html: 'เลขที่ <b>' + requestId + '</b><br><span style="font-size:.85rem;color:#6b7280">การลบไม่สามารถกู้คืนได้</span>',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonText: '🗑️ ลบเลย',
+  }).then(function(res) {
+    if (!res.isConfirmed) return;
+    _hrPOST('deleteLoanRequest', { requestId: requestId }).then(function(r) {
+      if (r && r.status === 'ok') {
+        Swal.fire({ icon: 'success', title: 'ลบสำเร็จ', timer: 1200, showConfirmButton: false });
+        _hrRenderLoans();
+      } else {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: (r && r.message) || '' });
+      }
+    });
+  });
+}
+
 function hrLoanReject(requestId) {
   Swal.fire({
     title: '❌ ปฏิเสธคำขอ',
@@ -3244,23 +3447,34 @@ function hrLoanClose(requestId) {
       '</div>'
     : inp('clMon', 'หักเงินเดือนงวด (yyyy-MM)', 'month', loan.deductMonth || '', '');
 
+  // หาเบอร์โทรพนักงานสำหรับ QR
+  var _loanEmpRec = (_hrEmps||[]).find(function(e){ return String(e.empId)===String(loan.empId); }) || {};
+  var _loanPhone  = (_loanEmpRec.phone||'').replace(/[^0-9]/g,'');
+  var _loanName   = loan.empName || _loanEmpRec.name || '';
+  var _loanAmt    = parseFloat(loan.amount||0);
+  var qrBtnInModal = _loanPhone
+    ? '<button type="button" onclick="(function(){ var a=parseFloat(document.getElementById(\'clAmt\').value)||' + '0; hrShowPromptPayQR(\''+_loanPhone+'\',a,\''+encodeURIComponent(_loanName)+'\',\''+loan.empId+'\'); })()" ' +
+        'style="width:100%;margin-bottom:10px;padding:9px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.88rem;font-weight:700">🔲 สร้าง QR พร้อมเพย์</button>'
+    : '<div style="margin-bottom:8px;padding:7px 10px;background:#fef3c7;border-radius:8px;font-size:.8rem;color:#92400e">⚠️ ไม่พบเบอร์โทรพนักงาน — ไม่สามารถสร้าง QR ได้</div>';
+
   Swal.fire({
     title: '💳 บันทึกการโอนเงิน',
     html:
       '<div style="text-align:left;font-family:\'Sarabun\',sans-serif;font-size:.92rem">' +
+      qrBtnInModal +
       inp('clDate', 'วันที่โอนเงิน', 'date', new Date().toISOString().slice(0,10), '') +
       inp('clAmt',  'จำนวนที่โอน (บาท)', 'number', loan.amount || '', '0', 'min="0"') +
       inp('clNote', 'หมายเหตุ / เลขที่ใบโอน', 'text', '', 'เช่น ref. โอน') +
       deductHtml +
-      '<div style="margin-bottom:4px"><label style="font-weight:600;display:block;margin-bottom:4px;font-size:.88rem">📷 แนบรูปใบโอนเงิน (ถ้ามี)</label>' +
+      '<div style="margin-bottom:4px"><label style="font-weight:700;display:block;margin-bottom:4px;font-size:.88rem;color:#dc2626">📷 แนบรูปใบโอนเงิน <span style=\"color:#dc2626\">*</span> (จำเป็น)</label>' +
         '<input id="clSlip" type="file" accept="image/*" style="width:100%;font-family:inherit;font-size:.85rem;padding:4px 0">' +
         '<div id="clSlipStatus" style="font-size:.8rem;color:var(--t3);margin-top:4px"></div>' +
       '</div>' +
       '</div>',
     showCancelButton: true,
-    confirmButtonText: '✅ ปิดรายการ',
+    confirmButtonText: '✅ ยืนยันการโอน',
     cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: '#0f172a',
+    confirmButtonColor: '#0891b2',
     preConfirm: function() {
       var d = document.getElementById('clDate').value;
       var a = parseFloat(document.getElementById('clAmt').value);
@@ -3276,11 +3490,14 @@ function hrLoanClose(requestId) {
       };
       var fileInput = document.getElementById('clSlip');
       if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-        return Promise.resolve(baseData);
+        Swal.showValidationMessage('📎 กรุณาแนบรูปสลิปการโอนเงินก่อน Save');
+        return false;
       }
       var file = fileInput.files[0];
       var statusEl = document.getElementById('clSlipStatus');
-      if (statusEl) statusEl.textContent = '⏳ กำลังอัปโหลดรูป...';
+      // แสดง loading ขณะอัปโหลด
+      Swal.showLoading();
+      if (statusEl) statusEl.textContent = '⏳ กำลังอัปโหลดรูปสลิป...';
       return new Promise(function(resolve) {
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -3565,6 +3782,52 @@ async function hrRecordLoanDeductFromPayroll(loanId, empId, amount, periodLabel)
 // ═══════════════════════════════════════════════════════════════════════
 // HR LOAN CONTRACTS MODULE
 
+async function hrRecordSalaryPayment(empId, empName, netPay) {
+  var mon = _hrSumMon || (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); })();
+  var prdLabel = _hrSumPeriod === 'p1' ? 'งวด 1' : _hrSumPeriod === 'p2' ? 'งวด 2' : 'ทั้งเดือน';
+  var todayStr = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+  const { value: v, isConfirmed } = await Swal.fire({
+    title: '💳 บันทึกโอนเงินเดือน',
+    html:
+      '<div style="font-family:Sarabun,sans-serif;font-size:.88rem;text-align:left;line-height:2">' +
+      '👤 <b>' + empName + '</b> | ' + prdLabel + ' ' + mon + '<br>' +
+      '<label style="font-weight:600">วันที่โอน</label><br>' +
+      '<input id="sp_date" type="date" value="' + todayStr + '" style="width:100%;border-radius:8px;border:1px solid var(--bc-input);padding:6px 10px;font-size:.9rem;font-family:Sarabun,sans-serif;box-sizing:border-box"><br>' +
+      '<label style="font-weight:600">ยอดที่โอน (฿)</label><br>' +
+      '<input id="sp_amt" type="number" value="' + netPay.toFixed(2) + '" step="0.01" style="width:100%;border-radius:8px;border:1px solid var(--bc-input);padding:6px 10px;font-size:.9rem;font-family:Sarabun,sans-serif;box-sizing:border-box"><br>' +
+      '<label style="font-weight:600">หมายเหตุ</label><br>' +
+      '<input id="sp_note" type="text" placeholder="เช่น โอนผ่าน KBank" style="width:100%;border-radius:8px;border:1px solid var(--bc-input);padding:6px 10px;font-size:.9rem;font-family:Sarabun,sans-serif;box-sizing:border-box">' +
+      '</div>',
+    showCancelButton: true,
+    confirmButtonText: '✅ บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#0891b2',
+    preConfirm: function() {
+      return {
+        transferDate: document.getElementById('sp_date').value,
+        amount: parseFloat(document.getElementById('sp_amt').value)||0,
+        note: document.getElementById('sp_note').value.trim()
+      };
+    }
+  });
+  if (!isConfirmed || !v) return;
+  try {
+    var res = await _hrPOST('recordSalaryPayment', {
+      empId: empId, empName: empName,
+      month: mon, period: _hrSumPeriod||'all',
+      amount: v.amount, transferDate: v.transferDate,
+      note: v.note, recordedBy: 'admin'
+    });
+    if (res && res.status === 'ok') {
+      Swal.fire({ icon:'success', title:'บันทึกแล้ว', text:'โอนเงินเดือน ' + empName + ' เรียบร้อย', timer:2000, showConfirmButton:false });
+    } else {
+      Swal.fire({ icon:'error', title:'ผิดพลาด', text: (res&&res.message)||'ไม่ทราบสาเหตุ' });
+    }
+  } catch(e) {
+    Swal.fire({ icon:'error', title:'ผิดพลาด', text: String(e) });
+  }
+}
+
 async function hrRecordAdvReqDeductFromPayroll(requestId, empId, amount, periodLabel) {
   const { value: formVals, isConfirmed } = await Swal.fire({
     title: 'บันทึกหักเงินเบิก',
@@ -3719,63 +3982,80 @@ function _hrLoanContractCardHtml(lc) {
   var paid = lc.originalAmount - lc.outstanding;
   var pct = lc.originalAmount > 0 ? Math.min(100, Math.round(paid / lc.originalAmount * 100)) : 0;
   var isActive = lc.status === 'active';
-  var statusBadge = isActive
-    ? '<span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:600">🟢 กำลังผ่อน</span>'
-    : '<span style="background:#f1f5f9;color:#475569;border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:600">🔒 ปิดแล้ว</span>';
-  var typeBadge = lc.type === 'advance'
-    ? '<span style="background:#e0e7ff;color:#3730a3;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700">เบิก</span>'
-    : '<span style="background:#fce7f3;color:#9d174d;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700">กู้</span>';
-  var empPayments = _hrLoanContractPayments.filter(function(p){ return p.loanId === lc.loanId; });
   var barColor = pct >= 100 ? '#10b981' : pct >= 60 ? '#6366f1' : '#f59e0b';
+  var accentColor = lc.type === 'advance' ? '#6366f1' : '#ec4899';
+  var typeLabel   = lc.type === 'advance' ? 'เบิก' : 'กู้';
+  var empPayments = _hrLoanContractPayments.filter(function(p){ return p.loanId === lc.loanId; });
 
-  return '<div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">' +
-    // header
-    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
-      '<div>' +
-        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">' +
-          typeBadge + statusBadge +
-          '<span style="font-size:.73rem;color:var(--t3)">' + lc.loanId + '</span>' +
+  // employee photo (admin only)
+  var _lcEmp   = (_hrEmps||[]).find(function(e){ return String(e.empId)===String(lc.empId); }) || {};
+  var _lcThumb = _hrDriveThumb(_lcEmp.profileUrl || '');
+  var _lcInit  = (lc.empName||'?').trim().charAt(0).toUpperCase();
+  var _lcIsAdmin = _hrSession && _hrSession.role === 'manager';
+  var avatarHtml = !_lcIsAdmin ? '' : (_lcThumb
+    ? '<img src="' + _lcThumb + '" onerror="this.style.display=\'none\'" alt="photo" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.8);box-shadow:0 2px 8px rgba(0,0,0,.2)">'
+    : '<div style="width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.25);border:3px solid rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:#fff">' + _lcInit + '</div>');
+
+  return (
+    '<div style="background:var(--bg-card);border:1.5px solid var(--bc-card);border-radius:16px;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.07)">' +
+    // ── gradient header ──
+    '<div style="background:linear-gradient(135deg,' + accentColor + ' 0%,' + accentColor + 'bb 100%);padding:14px 16px;display:flex;align-items:center;gap:12px">' +
+      (_lcIsAdmin && avatarHtml ? '<div style="flex-shrink:0">' + avatarHtml + '</div>' : '') +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">' +
+          '<span style="background:rgba(255,255,255,.2);color:#fff;border-radius:6px;padding:2px 9px;font-size:.74rem;font-weight:700">' + typeLabel + '</span>' +
+          (isActive
+            ? '<span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:600">🟢 กำลังผ่อน</span>'
+            : '<span style="background:#fff;color:#059669;border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:600">✅ โอนแล้ว</span>') +
         '</div>' +
-        '<div style="font-size:1.1rem;font-weight:800;color:var(--t1)">฿' + _hrFmt(lc.outstanding) + ' คงค้าง</div>' +
-        '<div style="font-size:.85rem;color:var(--t2);margin-top:2px">👤 ' + lc.empName + '</div>' +
-        '<div style="font-size:.78rem;color:var(--t3);margin-top:1px">📌 ' + lc.reason + '</div>' +
+        '<div style="font-size:1.2rem;font-weight:900;color:#fff;line-height:1.2">฿' + _hrFmt(lc.outstanding) + '<span style="font-size:.7rem;font-weight:400;opacity:.8;margin-left:5px">คงค้าง</span></div>' +
+        '<div style="font-size:.8rem;color:rgba(255,255,255,.85);margin-top:2px">' + lc.empName + '</div>' +
       '</div>' +
       '<div style="text-align:right;flex-shrink:0">' +
-        '<div style="font-size:.72rem;color:var(--t3)">หักต่องวด</div>' +
-        '<div style="font-size:1rem;font-weight:700;color:var(--t1)">฿' + _hrFmt(lc.installmentAmt) + '</div>' +
-        '<div style="font-size:.72rem;color:var(--t3);margin-top:2px">วันที่ ' + lc.payDays + '</div>' +
+        '<div style="font-size:.64rem;color:rgba(255,255,255,.7)">หักต่องวด</div>' +
+        '<div style="font-size:1rem;font-weight:800;color:#fff">฿' + _hrFmt(lc.installmentAmt) + '</div>' +
+        '<div style="font-size:.64rem;color:rgba(255,255,255,.7);margin-top:2px">วันที่ ' + lc.payDays + '</div>' +
       '</div>' +
     '</div>' +
-    // progress
-    '<div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--t3);margin-bottom:4px">' +
-        '<span>จ่ายแล้ว ฿' + _hrFmt(paid) + '</span>' +
-        '<span>ทั้งหมด ฿' + _hrFmt(lc.originalAmount) + ' (' + pct + '%)</span>' +
+    // ── body ──
+    '<div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
+      // loan id + reason
+      '<div style="display:flex;justify-content:space-between;font-size:.77rem;color:var(--t3)">' +
+        '<span>' + lc.loanId + '</span>' +
+        '<span style="color:var(--t2)">📌 ' + (lc.reason||'—') + '</span>' +
       '</div>' +
-      '<div style="background:var(--bc-card);border-radius:99px;height:7px;overflow:hidden">' +
-        '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:99px;transition:width .4s"></div>' +
+      // progress
+      '<div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:.74rem;color:var(--t3);margin-bottom:5px">' +
+          '<span>จ่ายแล้ว <b style="color:' + barColor + '">฿' + _hrFmt(paid) + '</b></span>' +
+          '<span>ทั้งหมด ฿' + _hrFmt(lc.originalAmount) + ' <b style="color:' + barColor + '">(' + pct + '%)</b></span>' +
+        '</div>' +
+        '<div style="background:var(--bc-card);border-radius:99px;height:8px;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,' + barColor + ',' + barColor + 'aa);border-radius:99px;transition:width .5s"></div>' +
+        '</div>' +
       '</div>' +
-    '</div>' +
-    // payments history (last 3)
-    (empPayments.length > 0
-      ? '<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;font-size:.75rem">' +
-          '<div style="font-weight:600;color:var(--t2);margin-bottom:5px">ประวัติการหัก</div>' +
-          empPayments.slice(-3).reverse().map(function(p){
-            return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bc-input)">' +
-              '<span style="color:var(--t3)">' + (p.periodLabel||p.payDate) + '</span>' +
-              '<span style="color:#059669;font-weight:600">−฿' + _hrFmt(p.amount) + '</span>' +
-            '</div>';
-          }).join('') +
-        '</div>'
-      : '') +
-    // action buttons
-    '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--bc-input);padding-top:10px">' +
-      (isActive
-        ? '<button onclick="hrLoanContractRecordPayment(\'' + lc.loanId + '\')" style="flex:1;background:#0f172a;color:#fff;border:none;border-radius:8px;padding:7px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.84rem;font-weight:600">💳 บันทึกการหัก</button>'
+      // payment history
+      (empPayments.length > 0
+        ? '<div style="background:var(--bg2);border-radius:10px;padding:9px 12px">' +
+            '<div style="font-size:.74rem;font-weight:700;color:var(--t2);margin-bottom:6px">📜 ประวัติการหัก</div>' +
+            empPayments.slice(-3).reverse().map(function(p){
+              return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bc-input);font-size:.76rem">' +
+                '<span style="color:var(--t3)">' + (p.periodLabel||p.payDate) + '</span>' +
+                '<span style="color:#059669;font-weight:700">−฿' + _hrFmt(p.amount) + '</span>' +
+              '</div>';
+            }).join('') +
+          '</div>'
         : '') +
-      '<button onclick="hrViewLoanContract(\'' + lc.loanId + '\')" style="flex:1;background:var(--bg2);color:var(--t2);border:1px solid var(--bc-input);border-radius:8px;padding:7px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.84rem">📄 ดูสัญญา</button>' +
+      // action buttons
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        (isActive
+          ? '<button onclick="hrLoanContractRecordPayment(\'' + lc.loanId + '\')" style="flex:1;background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;border-radius:10px;padding:9px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.86rem;font-weight:700;box-shadow:0 2px 8px rgba(8,145,178,.25)">💳 บันทึกการหัก</button>'
+          : '') +
+        '<button onclick="hrViewLoanContract(\'' + lc.loanId + '\')" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:10px;padding:9px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.86rem;font-weight:700;box-shadow:0 2px 8px rgba(124,58,237,.2)">📄 ดูสัญญา</button>' +
+      '</div>' +
     '</div>' +
-  '</div>';
+    '</div>'
+  );
 }
 
 // ── Add contract form ─────────────────────────────────────────────────

@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v11.02</span>
+      <span class="ph-chip ver">v11.32</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3476,7 +3476,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="core.js?v=9.00"></script>
 <script src="data.js?v=8.94"></script>
-<script src="formcalc.js?v=9.07"></script>
+<script src="formcalc.js?v=9.08"></script>
 <script src="aifeatures.js?v=8.94"></script>
 <script src="theme.js?v=9.10"></script>
 <script src="order.js?v=9.78"></script>
@@ -3486,7 +3486,7 @@
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="hr.js?v=4.13"></script>
+<script src="hr.js?v=4.40"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -3631,9 +3631,219 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
   {
+    ref: '#REV-20260624-V',
+    date: '24/06/2569',
+    current: true,
+    items: [
+      'hr.js v4.32: การ์ดสัญญาเงินกู้ — รีดีไซน์ header gradient + รูปวงกลมพนักงาน (admin)',
+      'hr.js v4.32: ปุ่ม บันทึกการหัก → gradient ฟ้า, ดูสัญญา → gradient ม่วง',
+    ]
+  },
+  {
+    ref: '#REV-20260624-U',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.31: แก้บั๊ก _hrRenderLoans — employees โหลดใหม่ทุก refresh ป้องกัน results index ผิด ทำให้รูปไม่โชว์',
+    ]
+  },
+  {
+    ref: '#REV-20260624-T',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.30: ป้ายสถานะ ปิดแล้ว → ✅ โอนแล้ว (สีเขียว)',
+      'hr.js v4.30: การ์ดเบิก/กู้ admin — ขยายรูปพนักงานเป็น 68px',
+      'hr.js v4.30: การ์ดเบิก/กู้ employee — กลับใช้ day circle เดิม ไม่แสดงรูป',
+    ]
+  },
+  {
+    ref: '#REV-20260624-S',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.29: การ์ดเบิก/กู้ — เพิ่มรูปวงกลมพนักงาน (circular avatar) แทน day circle ด้านขวาบน',
+      'hr.js v4.29: hrLoanClose — ปุ่ม confirmButton เปลี่ยนชื่อเป็น ✅ ยืนยันการโอน',
+      'hr.js v4.29: hrShowPromptPayQR — ลดเหลือปุ่มเดียว ปิด — กลับไปแนบสลิป',
+    ]
+  },
+  {
+    ref: '#REV-20260624-R',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.28: hrLoanClose — เพิ่มปุ่ม 🔲 สร้าง QR พร้อมเพย์ ใน dialog บันทึกการโอนเงิน',
+      'hr.js v4.28: hrLoanClose — บังคับแนบรูปสลิปการโอนเงินก่อน Save (required)',
+    ]
+  },
+  {
+    ref: '#REV-20260624-Q',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.27: ปุ่มโอนเงินเบิก — เปลี่ยนจากสีดำเป็น gradient ฟ้า (#0891b2→#06b6d4)',
+      'hr.js v4.27: เปลี่ยนชื่อปุ่มเป็น ✅ อนุมัติแล้ว — รอโอนเงิน',
+    ]
+  },
+  {
+    ref: '#REV-20260624-P',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'Code.gs: เพิ่ม HR_SalaryPayments sheet + recordSalaryPayment + getSalaryPayments',
+      'hr.js v4.26: เพิ่มปุ่ม 💳 บันทึกโอนเงินเดือน ในการ์ดสรุปเงินเดือน (admin)',
+      'hr.js v4.26: hrRecordSalaryPayment — Swal กรอกวันที่/จำนวน/หมายเหตุ + POST',
+      'employee.html v2.5: สลิปเงินเดือน — ถ้ายังไม่โอน แสดง 🕐 เงินเดือนยังไม่ออก',
+      'employee.html v2.5: สลิปเงินเดือน — ถ้าโอนแล้ว แสดง banner สีเขียว + ประวัติการโอน',
+    ]
+  },
+  {
+    ref: '#REV-20260624-O',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.25: ปฏิทิน employee — ซ่อนปุ่ม 🔄 โหลดวันหยุด และ hint คลิกแก้ไข',
+      'hr.js v4.25: เหลือเฉพาะปุ่ม 🖨️ พิมพ์ปฏิทิน สำหรับ employee',
+    ]
+  },
+  {
+    ref: '#REV-20260624-N',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.24: แก้ bug ปฏิทินพัง — revert ขาด + concatenation ใน _hrCalDraw',
+    ]
+  },
+  {
+    ref: '#REV-20260624-M',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.23: ปฏิทิน employee — อ่านได้อย่างเดียว คลิกวันหยุดดูชื่อได้ ไม่มีแก้ไข/ลบ',
+      'hr.js v4.23: คลิกวันปกติ (ไม่มีวันหยุด) ไม่เกิดอะไร',
+    ]
+  },
+  {
+    ref: '#REV-20260624-L',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'employee.html v2.4: ตารางผ่อน — แถวประมาณการเปลี่ยนเป็นสีเทาชัด (#f8fafc/#475569) อ่านง่ายขึ้น',
+      'employee.html v2.4: เพิ่มปุ่ม 📄 ดูสัญญาอย่างเป็นทางการ — เรียก hrViewLoanContract (modal+พิมพ์)',
+    ]
+  },
+  {
+    ref: '#REV-20260624-K',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'employee.html v2.3: สัญญาเงินกู้ — เพิ่มตารางผ่อนชำระ (งวด/วันที่/จำนวน/คงค้าง/หมายเหตุ)',
+      'employee.html v2.3: แถวสีเขียว = จ่ายแล้ว, แถวสีเทา (dim) = ประมาณการที่เหลือ',
+      'employee.html v2.3: ตารางอ่านอย่างเดียว ไม่มีปุ่มแก้ไข',
+      'employee.html v2.3: ลบปุ่ม ดูสัญญา + ตารางผ่อน ออก (table อยู่ inline แล้ว)',
+    ]
+  },
+  {
+    ref: '#REV-20260624-J',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.22: แก้ _hrLoanCurMonth is not defined — เพิ่ม let _hrLoanCurMonth + hrLoanSetMonth() ที่ขาดหายไป',
+    ]
+  },
+  {
+    ref: '#REV-20260624-I',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.21: sort ใบเบิกล่วงหน้า — ล่าสุดอยู่หน้าสุด (requestDate descending)',
+      'hr.js v4.21: เพิ่ม dropdown กรองเดือน (📅 เดือน) เหนือ filter status — ทุกเดือน / เลือกเดือนได้',
+      'hr.js v4.21: hrLoanSetMonth() + _hrLoanCurMonth — filter เดือนทำงานร่วมกับ filter status',
+    ]
+  },
+  {
+    ref: '#REV-20260624-H',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.20: ย้าย budget bar (วงเงิน/เดือน, เหลือ, เบิกแล้ว%) จากในการ์ด request ไปอยู่ summary ด้านบน',
+      'hr.js v4.20: แสดง budget bar แค่ครั้งเดียว (เขียว) — เฉพาะ employee ที่มีวงเงิน (advanceBudget > 0)',
+    ]
+  },
+  {
+    ref: '#REV-20260624-G',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.19: หน้าเบิกล่วงหน้า — ตัด card "ยอดเงินกู้สะสม" ออก เหลือแค่ยอดเบิก',
+      'employee.html: กู้คืนไฟล์จากการ truncate (Edit tool) — ต่อ _empLoadAttTable + _empAttTableHtml + <\/script><\/body>',
+    ]
+  },
+  {
+    ref: '#REV-20260624-F',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'employee.html v2.1: เพิ่ม tab หลัก "📋 สัญญาเงินกู้" ต่อหลังเบิกล่วงหน้า (top nav + bottom nav)',
+      'employee.html v2.1: เพิ่ม _empRenderContracts() — โหลด+แสดงสัญญาเงินกู้ active ของพนักงาน',
+      'hr.js v4.18: ลบ sub-tab ออกจากหน้าเบิกล่วงหน้า — เหลือแค่ request list เดิม',
+    ]
+  },
+  {
+    ref: '#REV-20260624-E',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.17: hrEmpLoanSubSwitch — เปลี่ยนจาก CSS var เป็น hex color (#3b82f6) ป้องกัน CSS variable ไม่ resolve บน mobile',
+      'hr.js v4.17: panel toggle ใช้ display:block แทน empty string — reliable ทุก browser',
+    ]
+  },
+  {
+    ref: '#REV-20260624-D',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.16: employee เบิกล่วงหน้า — แยกเป็น 2 sub-tab: 💸 เบิกล่วงหน้า | 📋 สัญญาเงินกู้',
+      'hr.js v4.16: เพิ่ม hrEmpLoanSubSwitch() toggle sub-tab สำหรับ employee view',
+      'hr.js v4.16: manager view คงเดิม — เห็นทุก request ในหน้าเดียว',
+    ]
+  },
+  {
+    ref: '#REV-20260624-C',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'formcalc.js v9.08: แก้ช่องหมายเหตุ (f_remark) ไม่ถูก clear หลังบันทึก — _clearRemarkChips() ล้าง textarea ด้วย',
+    ]
+  },
+  {
+    ref: '#REV-20260624-B',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.15: เพิ่มปุ่ม 🗑️ ลบใบเบิกล่วงหน้า — admin ลบได้ทุก status, employee ลบได้เฉพาะ pending',
+      'hr.js v4.15: เพิ่มฟังก์ชัน hrDeleteLoanRequest — Swal confirm ก่อนลบ + reload card list',
+      'Code.gs: เพิ่ม action deleteLoanRequest — ลบแถว LoanRequests ตาม requestId',
+    ]
+  },
+  {
+    ref: '#REV-20260624-A',
+    date: '24/06/2569',
+    current: false,
+    items: [
+      'hr.js v4.14: หักเบิกล่วงหน้า (LoanRequests) ในหน้าสรุปเงินเดือน — โหลด approved requests พร้อมสัญญาเงินกู้',
+      'hr.js v4.14: เพิ่มปุ่ม 💳 บันทึกหักเบิกล่วงหน้า — ปิด request ผ่าน hrRecordAdvReqDeductFromPayroll',
+      'hr.js v4.14: เปลี่ยนชื่อแท็บ "เบิก/กู้" → "เบิกล่วงหน้า" ทั้งระบบ',
+      'hr.js v4.14: ยอดสะสมเบิก — นับเฉพาะ status=closed (โอนจ่ายแล้ว) เท่านั้น',
+      'hr.js v4.14: แก้ budget validation — เก็บ remain/used ใน dataset หลัง hrLoanTypeChanged คำนวณ',
+      'hr.js v4.14: รองรับ date format ของ Apps Script Date object ใน hrLoanTypeChanged',
+      'Code.gs: getLoanRequests — แก้ date format bug (Sheets auto-parse → Date object) ด้วย instanceof Date check',
+    ]
+  },
+  {
     ref: '#REV-20260623-AQ',
     date: '23/06/2569',
-    current: true,
+    current: false,
     items: [
       'hr.js v4.13: สรุปเงินเดือน — เพิ่มแถวหักเงินกู้ในการ์ดพนักงาน',
       'hr.js v4.13: เพิ่มปุ่ม "💳 บันทึกหัก" ต่อสัญญาในการ์ดสรุปเงินเดือน',

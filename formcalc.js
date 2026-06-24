@@ -1416,6 +1416,7 @@ function syncRemarkChips() {
 function _clearRemarkChips() {
   document.querySelectorAll('#remarkChips input[type=checkbox]').forEach(cb => cb.checked = false);
   document.querySelectorAll('#remarkChips .rchip-num').forEach(n => n.value = '');
+  if ($('f_remark')) $('f_remark').value = '';
 }
 
 function _resetFormSilent() {
