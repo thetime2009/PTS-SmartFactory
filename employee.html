@@ -423,8 +423,8 @@
             <label>งวด</label>
             <div class="emp-period-btns" id="empPeriodBtns">
               <button class="emp-period-btn sel" data-val="all"  onclick="empPeriodSel(this)">ทั้งเดือน</button>
-              <button class="emp-period-btn"     data-val="p1"   onclick="empPeriodSel(this)">งวด 1 (11–25)</button>
-              <button class="emp-period-btn"     data-val="p2"   onclick="empPeriodSel(this)">งวด 2 (26–10)</button>
+              <button class="emp-period-btn"     data-val="p1"   id="empPeriodBtnP1" onclick="empPeriodSel(this)">งวด 1</button>
+              <button class="emp-period-btn"     data-val="p2"   id="empPeriodBtnP2" onclick="empPeriodSel(this)">งวด 2</button>
             </div>
           </div>
         </div>
@@ -487,6 +487,16 @@ window.addEventListener('DOMContentLoaded', function() {
   var yyyymm = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   var slipMonEl = document.getElementById('empSlipMonth');
   if (slipMonEl) slipMonEl.value = yyyymm;
+
+  // อัปเดต label ปุ่มงวด ให้ตรงกับ HR_PAY_DEF จริง
+  (function() {
+    var pc = (typeof _hrPayCfg === 'function') ? _hrPayCfg() : null;
+    if (!pc) return;
+    var b1 = document.getElementById('empPeriodBtnP1');
+    var b2 = document.getElementById('empPeriodBtnP2');
+    if (b1) b1.textContent = 'งวด 1 (' + pc.p1.start + '–' + pc.p1.end + ')';
+    if (b2) b2.textContent = 'งวด 2 (' + pc.p2.start + '–' + pc.p2.end + ')';
+  })();
 
   // ตรวจว่าตั้ง Script URL ไว้หรือยัง
   var url = localStorage.getItem('ptts_script_url') || '';
@@ -955,10 +965,14 @@ function _empLoadSlipPreview() {
   Promise.all([
     Promise.all(months.map(function(m) { return _hrGET('getHRAttendance', { month: m }); })),
     (_hrEmps && _hrEmps.length) ? Promise.resolve({ data: _hrEmps }) : _hrGET('getHREmployees'),
-    _hrGET('getSalaryPayments', { empId: empId })
+    _hrGET('getSalaryPayments', { empId: empId }),
+    _hrGET('getHRLoanContracts', { empId: empId }).catch(function(){ return {data:[]}; }),
+    _hrGET('getLoanRequests', { empId: empId, status: 'approved' }).catch(function(){ return {data:[]}; })
   ]).then(function(results) {
     var allAtt = results[0].reduce(function(a, r) { return a.concat(r.data || []); }, []);
     if (results[1] && results[1].data) _hrEmps = results[1].data;
+    var _lc = results[3]; _hrLoanContracts = Array.isArray(_lc) ? _lc : ((_lc && _lc.data) ? _lc.data : []);
+    var _lr = results[4]; _hrLoans = Array.isArray(_lr) ? _lr : ((_lr && _lr.data) ? _lr.data : []);
     var salPays = (results[2] && results[2].data) || [];
 
     // กรองประวัติโอนเดือนนี้ + period นี้ (newest first จาก server แล้ว)
@@ -1001,6 +1015,9 @@ function _empLoadSlipPreview() {
           '<div style="font-size:.9rem;font-weight:700">฿' + fmt(latestPay.amount) + '</div>' +
           '<div style="font-size:.72rem;opacity:.85">วันที่ ' + latestPay.transferDate + (latestPay.note ? ' · ' + latestPay.note : '') + '</div>' +
         '</div>' +
+        (latestPay.slipUrl
+          ? '<a href="' + latestPay.slipUrl + '" target="_blank" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:6px 12px;font-size:.8rem;font-weight:700;text-decoration:none;white-space:nowrap">🧾 ดูใบโอน</a>'
+          : '') +
       '</div>';
 
     // ประวัติโอนทั้งหมดของเดือนนี้ (newest first)
@@ -1024,7 +1041,12 @@ function _empLoadSlipPreview() {
           '</table></div></div>'
       : '';
 
-    var slipHtml = att.length ? _empSlipPreviewHtml(ps, mon) : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:.85rem">ไม่พบข้อมูลเวลางานเดือนนี้</div>';
+    var slipBase = att.length ? _empSlipPreviewHtml(ps, mon) : '<div style="padding:16px;text-align:center;color:var(--t3);font-size:.85rem">ไม่พบข้อมูลเวลางานเดือนนี้</div>';
+    var slipHtml = '<div style="position:relative">'
+      + slipBase
+      + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;transform:rotate(-30deg)">'
+      + '<span style="font-size:2.4rem;font-weight:900;color:rgba(34,197,94,0.22);white-space:nowrap;letter-spacing:3px;font-family:Sarabun,sans-serif">✅ โอนแล้ว</span>'
+      + '</div></div>';
     preview.innerHTML = bannerHtml + slipHtml + histHtml;
 
   }).catch(function(e) {
@@ -1055,6 +1077,9 @@ function _empSlipPreviewHtml(ps, mon) {
   if (ps.otPaySun > 0) earRows += payRow('OT อาทิตย์ (' + ps.otSunH + ' ชม.)', ps.otPaySun, false);
   earRows += payRow('รวมรายได้', ps.gross, true);
   if (ps.absentDeduct > 0) earRows += payRow('ขาดงาน ' + ps.absent + ' วัน', -ps.absentDeduct, false);
+  if (ps.loanDeductItems && ps.loanDeductItems.length > 0) {
+    ps.loanDeductItems.forEach(function(ld) { earRows += payRow(ld.label, -ld.amount, false); });
+  }
 
   var periodLabel = ps.periodLabel || ('ประจำเดือน ' + (ps.monthLabel || mon));
 

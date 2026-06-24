@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v11.33</span>
+      <span class="ph-chip ver">v11.66</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -1523,27 +1523,23 @@
         </button>
         <div class="field"><label>แนบไฟล์ PO</label>
           <input type="file" id="ord_poFile" accept="image/*,.pdf" style="display:none" onchange="_ordPoFileChanged('ord')">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button type="button" onclick="$('ord_poFile').click()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit">
-              📤 แนบ PO
-            </button>
-            <span id="ord_poFileName" style="font-size:.76rem;color:var(--t3)">ยังไม่ได้เลือกไฟล์ใด</span>
-            <button type="button" id="ord_poFileClear" onclick="_ordClearPoFile('ord')" title="ลบไฟล์"
-              style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
-          </div>
+          <label id="ord_poDropZone" onclick="$('ord_poFile').click()" style="display:flex;align-items:center;gap:10px;border:2px dashed #d1d5db;border-radius:8px;padding:10px 12px;cursor:pointer;background:#fafafa;transition:border-color .2s,background .2s">
+            <span id="ord_poDropIcon" style="font-size:1.5rem;flex-shrink:0">📤</span>
+            <span id="ord_poFileName" style="font-size:.82rem;color:#6b7280;flex:1">คลิกเพื่อเลือกไฟล์ PO (รูปภาพ / PDF)...</span>
+            <button type="button" id="ord_poFileClear" onclick="event.stopPropagation();_ordClearPoFile('ord')" title="ลบไฟล์"
+              style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;padding:2px 4px;flex-shrink:0">✕</button>
+          </label>
         </div>
         <div class="field" style="margin-top:8px">
           <label>รูป Drawing (แบบงาน)</label>
           <img id="ord_jobImg1Preview" style="display:none;width:100%;max-height:200px;object-fit:contain;border-radius:10px;border:1px solid var(--bc-div);margin-bottom:8px;background:var(--bg1,#fff)">
           <input type="file" id="ord_jobImg1" accept="image/*" style="display:none" onchange="_ordJobImgChanged('ord')">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button type="button" onclick="$('ord_jobImg1').click()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:8px;background:#0f766e;color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit">
-              🖼️ แนบ Drawing
-            </button>
-            <span id="ord_jobImg1Name" style="font-size:.76rem;color:var(--t3)">ยังไม่ได้เลือกไฟล์ใด</span>
-            <button type="button" id="ord_jobImg1Clear" onclick="_ordClearJobImg('ord')" title="ลบไฟล์"
-              style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
-          </div>
+          <label id="ord_drawDropZone" onclick="$('ord_jobImg1').click()" style="display:flex;align-items:center;gap:10px;border:2px dashed #d1d5db;border-radius:8px;padding:10px 12px;cursor:pointer;background:#fafafa;transition:border-color .2s,background .2s">
+            <span id="ord_drawDropIcon" style="font-size:1.5rem;flex-shrink:0">🖼️</span>
+            <span id="ord_jobImg1Name" style="font-size:.82rem;color:#6b7280;flex:1">คลิกเพื่อเลือกรูป Drawing...</span>
+            <button type="button" id="ord_jobImg1Clear" onclick="event.stopPropagation();_ordClearJobImg('ord')" title="ลบไฟล์"
+              style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;padding:2px 4px;flex-shrink:0">✕</button>
+          </label>
         </div>
       </div>
     </div>
@@ -1742,24 +1738,24 @@
         ✏️ แก้ไขรูป
       </button>
       <input type="file" id="gord_poFile" accept="image/*,.pdf" style="display:none" onchange="_ordPoFileChanged('gord')">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn" onclick="$('gord_poFile').click()" style="padding:6px 14px;font-size:.78rem">เลือกไฟล์</button>
-        <span id="gord_poFileName" style="font-size:.76rem;color:var(--t3)">ยังไม่ได้เลือกไฟล์ใด</span>
-        <button type="button" id="gord_poFileClear" onclick="_ordClearPoFile('gord')" title="ลบไฟล์"
-          style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
-      </div>
+      <label id="gord_poDropZone" onclick="$('gord_poFile').click()" style="display:flex;align-items:center;gap:10px;border:2px dashed #d1d5db;border-radius:8px;padding:10px 12px;cursor:pointer;background:#fafafa;transition:border-color .2s,background .2s">
+        <span id="gord_poDropIcon" style="font-size:1.5rem;flex-shrink:0">📤</span>
+        <span id="gord_poFileName" style="font-size:.82rem;color:#6b7280;flex:1">คลิกเพื่อเลือกไฟล์ PO (รูปภาพ / PDF)...</span>
+        <button type="button" id="gord_poFileClear" onclick="event.stopPropagation();_ordClearPoFile('gord')" title="ลบไฟล์"
+          style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;padding:2px 4px;flex-shrink:0">✕</button>
+      </label>
     </div>
 
     <div class="field" style="margin-bottom:12px">
       <label>รูป Drawing (แบบงาน) (ถ้ามี)</label>
       <img id="gord_jobImg1Preview" style="display:none;width:100%;max-height:200px;object-fit:contain;border-radius:10px;border:1px solid var(--bc-div);margin-bottom:8px;background:var(--bg1,#fff)">
       <input type="file" id="gord_jobImg1" accept="image/*" style="display:none" onchange="_ordJobImgChanged('gord')">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn" onclick="$('gord_jobImg1').click()" style="padding:6px 14px;font-size:.78rem">เลือกไฟล์</button>
-        <span id="gord_jobImg1Name" style="font-size:.76rem;color:var(--t3)">ยังไม่ได้เลือกไฟล์ใด</span>
-        <button type="button" id="gord_jobImg1Clear" onclick="_ordClearJobImg('gord')" title="ลบไฟล์"
-          style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
-      </div>
+      <label id="gord_drawDropZone" onclick="$('gord_jobImg1').click()" style="display:flex;align-items:center;gap:10px;border:2px dashed #d1d5db;border-radius:8px;padding:10px 12px;cursor:pointer;background:#fafafa;transition:border-color .2s,background .2s">
+        <span id="gord_drawDropIcon" style="font-size:1.5rem;flex-shrink:0">🖼️</span>
+        <span id="gord_jobImg1Name" style="font-size:.82rem;color:#6b7280;flex:1">คลิกเพื่อเลือกรูป Drawing...</span>
+        <button type="button" id="gord_jobImg1Clear" onclick="event.stopPropagation();_ordClearJobImg('gord')" title="ลบไฟล์"
+          style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;padding:2px 4px;flex-shrink:0">✕</button>
+      </label>
     </div>
 
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -1956,12 +1952,12 @@
       <div class="field"><label>H (mm)</label><input type="number" id="ordEdit_h" step="0.01" placeholder="—"></div>
       <div class="field" style="grid-column:1/-1"><label>แนบไฟล์ PO</label>
         <input type="file" id="ordEdit_poFile" accept="image/*,.pdf" style="display:none" onchange="_ordPoFileChanged('ordEdit')">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn" onclick="$('ordEdit_poFile').click()" style="padding:6px 14px;font-size:.78rem">เลือกไฟล์</button>
-          <span id="ordEdit_poFileName" style="font-size:.76rem;color:var(--t3)">ยังไม่ได้เลือกไฟล์ใด</span>
-          <button type="button" id="ordEdit_poFileClear" onclick="_ordClearPoFile('ordEdit')" title="ลบไฟล์"
-            style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
-        </div>
+        <label id="ordEdit_poDropZone" onclick="$('ordEdit_poFile').click()" style="display:flex;align-items:center;gap:10px;border:2px dashed #d1d5db;border-radius:8px;padding:10px 12px;cursor:pointer;background:#fafafa;transition:border-color .2s,background .2s">
+          <span id="ordEdit_poDropIcon" style="font-size:1.5rem;flex-shrink:0">📤</span>
+          <span id="ordEdit_poFileName" style="font-size:.82rem;color:#6b7280;flex:1">คลิกเพื่อเลือกไฟล์ PO (รูปภาพ / PDF)...</span>
+          <button type="button" id="ordEdit_poFileClear" onclick="event.stopPropagation();_ordClearPoFile('ordEdit')" title="ลบไฟล์"
+            style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;padding:2px 4px;flex-shrink:0">✕</button>
+        </label>
         <img id="ordEdit_poFilePreview" style="display:none;max-width:300px;max-height:180px;margin-top:6px;border-radius:6px;border:1px solid var(--bc-div)">
         <button type="button" id="ordEdit_poEditBtn" onclick="_ordOpenPoEditor('ordEdit')"
           style="display:none;align-items:center;gap:6px;padding:5px 12px;margin-top:6px;border-radius:7px;border:1px solid #3b82f6;background:rgba(59,130,246,.12);color:#60a5fa;cursor:pointer;font-family:Sarabun,sans-serif;font-size:.75rem;font-weight:700;width:fit-content">
@@ -1971,12 +1967,12 @@
       </div>
       <div class="field" style="grid-column:1/-1"><label>รูป Drawing (แบบงาน)</label>
         <input type="file" id="ordEdit_jobImg1" accept="image/*" style="display:none" onchange="_ordJobImgChanged('ordEdit')">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn" onclick="$('ordEdit_jobImg1').click()" style="padding:6px 14px;font-size:.78rem">เลือกไฟล์</button>
-          <span id="ordEdit_jobImg1Name" style="font-size:.76rem;color:var(--t3)">ยังไม่ได้เลือกไฟล์ใด</span>
-          <button type="button" id="ordEdit_jobImg1Clear" onclick="_ordClearJobImg('ordEdit')" title="ลบไฟล์"
-            style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
-        </div>
+        <label id="ordEdit_drawDropZone" onclick="$('ordEdit_jobImg1').click()" style="display:flex;align-items:center;gap:10px;border:2px dashed #d1d5db;border-radius:8px;padding:10px 12px;cursor:pointer;background:#fafafa;transition:border-color .2s,background .2s">
+          <span id="ordEdit_drawDropIcon" style="font-size:1.5rem;flex-shrink:0">🖼️</span>
+          <span id="ordEdit_jobImg1Name" style="font-size:.82rem;color:#6b7280;flex:1">คลิกเพื่อเลือกรูป Drawing...</span>
+          <button type="button" id="ordEdit_jobImg1Clear" onclick="event.stopPropagation();_ordClearJobImg('ordEdit')" title="ลบไฟล์"
+            style="display:none;border:none;background:none;color:#ef4444;font-size:1rem;cursor:pointer;padding:2px 4px;flex-shrink:0">✕</button>
+        </label>
         <img id="ordEdit_jobImg1Preview" style="display:none;max-width:120px;max-height:120px;margin-top:6px;border-radius:6px;border:1px solid var(--bc-div)">
         <div id="ordEdit_jobImg1LinkWrap" style="margin-top:4px;font-size:.74rem"></div>
       </div>
@@ -3474,7 +3470,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="core.js?v=9.00"></script>
+<script src="core.js?v=9.01"></script>
 <script src="data.js?v=8.94"></script>
 <script src="formcalc.js?v=9.08"></script>
 <script src="aifeatures.js?v=8.94"></script>
@@ -3486,7 +3482,7 @@
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="hr.js?v=4.41"></script>
+<script src="hr.js?v=4.71"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -3630,7 +3626,202 @@
 // ===== ประวัติการแก้ไขงาน (Dev Logs) =====
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
-      { ref:'#REV-20260624-W', date:'2026-06-24', current: true,
+      { ref:'#REV-20260625-B', date:'2026-06-25', current: true,
+        items:[
+          'hr.js: ลบ section "รายการหัก (แก้ได้เฉพาะ 🔵)" ออกจาก dialog ยืนยันโอนเงินเดือน',
+          'hr.js: dialog ยืนยันแสดงเฉพาะ วันที่โอน + ยอดสุทธิ + หมายเหตุ + แนบสลิป',
+          'form.html v11.66',
+        ] },
+      { ref:'#REV-20260625-A', date:'2026-06-25', current: false,
+        items:[
+          'core.js v9.01: mobile bottom bar เปลี่ยนจาก flat list เป็น group icons (ฝ่ายขาย/จัดซื้อ/ผลิต/บัญชี/HR/ตั้งค่า)',
+          'core.js v9.01: กด group icon → slide-up drawer แสดง tab ในกลุ่ม (เหมือน sidebar desktop)',
+          'core.js v9.01: _toggleMobDrawer(), _closeMobDrawer(), backdrop ปิด drawer',
+          'style.css: CSS .mob-drawer-mode, .mob-drawer-header, .mob-drawer-backdrop (mobile only)',
+          'form.html v11.65: อัป core.js?v=9.00 → v9.01',
+        ] },
+      { ref:'#REV-20260624-BB', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.71: สัญญาเงินกู้ — ฟอร์มพิมพ์: วันที่สั้นลง (ภาษาไทย พ.ศ.) ทั้งหัวเอกสารและ "เริ่มหัก"',
+          'hr.js v4.71: ตารางผ่อนชำระ — เปลี่ยน "รอหัก" → "รอจ่าย", "หักแล้ว" → "จ่ายแล้ว" ทั้งใน modal และ print',
+          'form.html v11.64: อัป hr.js?v=4.70 → v4.71',
+        ] },
+      { ref:'#REV-20260624-BA', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.70: สัญญาเงินกู้ — การ์ด closed มีลายน้ำ "✅ ชำระครบแล้ว" + header สีเทา + badge "ปิดแล้ว · วันที่"',
+          'hr.js v4.70: เพิ่ม toggle "แสดง/ซ่อนสัญญาปิดแล้ว" (default ซ่อน) + _lcToggleClosed()',
+          'form.html v11.63: อัป hr.js?v=4.69 → v4.70',
+        ] },
+      { ref:'#REV-20260624-AZ', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.69: การ์ดสรุปเงินเดือน — ยอดหักเงินกู้/เบิกล่วงหน้าเปลี่ยนจาก label เป็น textbox แก้ได้ inline net อัปเดต realtime',
+          'hr.js v4.69: ปุ่ม QR โอน + ยืนยันโอนแล้ว — อ่านยอดจาก textbox ล่าสุด ไม่ใช้ค่าคงที่ตอน render',
+          'hr.js v4.69: เพิ่ม _hrPCRecalc() + hrConfirmPayrollFromCard() — helper functions',
+          'form.html v11.62: อัป hr.js?v=4.68 → v4.69',
+        ] },
+      { ref:'#REV-20260624-AY', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.68: _hrCalcSSO() — อัปเพดานประกันสังคม 15,000 → 17,500 บาท (ปี 2569) สูงสุด 875 บาท/เดือน',
+          'form.html v11.61: อัป hr.js?v=4.67 → v4.68',
+        ] },
+      { ref:'#REV-20260624-AX', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.67: เบิกล่วงหน้า — เปลี่ยน "ยอดสะสม" → "ยอดเบิกเดือนนี้" นับเฉพาะ requestDate ในเดือนปัจจุบัน รีเซ็ตทุกเดือน',
+          'hr.js v4.67: แถวรายชื่อพนักงาน (_empRows) ซ่อนใน employee view เหลือเฉพาะ manager',
+        ] },
+      { ref:'#REV-20260624-AW', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.66: loan card — เพิ่ม watermark "💰 หักจากสลิปแล้ว" แบบ diagonal overlay บนการ์ดที่ deducted=true',
+        ] },
+      { ref:'#REV-20260624-AV', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.65: loan card badge — ถ้า deducted=true แสดง "💰 หักสลิปแล้ว" แทน "โอนแล้ว — รอหักสลิป" ให้สอดคล้องกับ box ล่าง',
+        ] },
+      { ref:'#REV-20260624-AU', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.64: hrLoanApprove + hrDeleteLoanRequest — เพิ่ม _hrPayLoadAndRender() ให้สรุปเงินเดือนอัปอัตโนมัติหลังอนุมัติ/ลบ',
+        ] },
+      { ref:'#REV-20260624-AT', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.63: hrConfirmPayroll — เพิ่ม warning popup เมื่อ HR ใส่ยอดหักเป็น 0 พร้อมรายการที่จะค้างไปงวดถัดไป',
+        ] },
+      { ref:'#REV-20260624-AS', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.62: hrConfirmPayroll — เพิ่มตารางรายการหักใน dialog ให้แก้ยอดได้ (เงินกู้+เบิกล่วงหน้า) ยอดสุทธิ recalc realtime',
+          'hr.js v4.62: payrollDeductLoans — ใช้ adjusted amounts แทน original amounts',
+        ] },
+      { ref:'#REV-20260624-AR', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.61: สรุปเงินเดือน — โหลด getLoanRequests ทุก status (ไม่กรองแค่ approved) ให้ closed items เข้า _hrLoans สำหรับคำนวณหักสลิป',
+        ] },
+      { ref:'#REV-20260624-AQ', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.60: loan card — แก้ deductMonth แสดงเป็น "มิ.ย. 2569" แทน Date string ยาว',
+          'Code.gs: getLoanRequests — format deductMonth Date object → yyyy-MM',
+        ] },
+      { ref:'#REV-20260624-AP', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.59: _hrCalcPayslip — หักเบิกล่วงหน้า status=closed ที่ deductMonth ตรงกับเดือนที่คำนวณ',
+          'hr.js v4.59: hrConfirmPayroll — เรียก markAdvanceDeducted หลัง confirm payroll สำเร็จ',
+          'hr.js v4.59: loan card — badge "รอหักสลิป" / "หักสลิปแล้ว + วันที่" ตาม status closed/deducted',
+          'Code.gs: เพิ่ม markAdvanceDeducted action + คอลัมน์ deducted/deductedDate ใน LoanRequests',
+        ] },
+      { ref:'#REV-20260624-AO', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.58: สรุปเวลางาน — เพิ่ม info box อธิบายวิธีอ่านตัวเลขในการ์ด (มา/ขาด/รายเดือน/รายวัน)',
+          'form.html v11.51: อัป hr.js?v=4.57 → v4.58',
+        ] },
+      { ref:'#REV-20260624-AN', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.57: _hrPayCycleCard — งวด 2 แสดง label dynamic: (เดือนก่อน)/(เดือนนี้) เมื่อ cross-month, ว่าง/(เดือนเดียวกัน) เมื่อ same-month',
+          'hr.js: hrP2UpdateLabel() — อัป label real-time เมื่อกรอกช่องวันที่',
+          'hr.js: dropdown งวด 2 แสดง label ถูกต้องตาม mode',
+          'form.html v11.50: อัป hr.js?v=4.56 → v4.57',
+        ] },
+      { ref:'#REV-20260624-AM', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.56: _hrFilterByPeriod — แก้ bug งวด 2 same-month (16-31) ให้ใช้ single-month filter แทน cross-month',
+          'form.html v11.49: อัป hr.js?v=4.55 → v4.56',
+        ] },
+      { ref:'#REV-20260624-AL', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.55: HR_LEAVE_DEF + _hrLeaveCfg() — config กฎการลา/ขาดงาน (localStorage ptts_hr_leave_cfg)',
+          'hr.js: _hrCalcPayslip — อ่าน leaveCfg แทน hardcode: absent/off × monthly(หัก/อัตรา)/daily(ได้ค่าแรง)',
+          'hr.js: _hrSlipHtml — เพิ่มแถว offDeduct + รวมใน totalDeduct',
+          'hr.js: _hrRenderSettings — เพิ่ม card 📋 กฎการลา/ขาดงาน + hrSaveLeaveCfg()',
+          'form.html v11.48: อัป hr.js?v=4.54 → v4.55',
+        ] },
+      { ref:'#REV-20260624-AK', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.54: การ์ดพนักงาน — แสดง section 💰 รายได้อื่นๆ (allowances) เมื่อมีข้อมูล',
+          'form.html v11.47: อัป hr.js?v=4.53 → v4.54',
+        ] },
+      { ref:'#REV-20260624-AJ', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.53: _hrEmpModal — เพิ่ม section รายได้อื่นๆ (allowances) กรอกได้ N รายการ (ชื่อ+จำนวน)',
+          'hr.js: _hrEmpAllowAdd() + _hrEmpAllowRemove() — เพิ่ม/ลบแถว allowance ใน modal',
+          'hr.js: _hrCalcPayslip — รวม allowanceTotal เข้า gross + ส่ง allowances ใน return',
+          'hr.js: _hrSlipHtml — แสดง allowance rows แยกบรรทัดในส่วน รายได้',
+          'Code.gs: getHREmployees + saveHREmployee — รองรับ col allowances (col 21, JSON)',
+          'form.html v11.46: อัป hr.js?v=4.52 → v4.53',
+        ] },
+      { ref:'#REV-20260624-AI', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.52: HR_PAY_DEF — เปลี่ยน default งวด 1 (1-15 จ่าย 16), งวด 2 (16-31 จ่าย 1 เดือนถัดไป)',
+          'hr.js: _hrRenderSettings — อัป label, tip text, fallback ใน hrSavePayCfg ให้ตรงกับ default ใหม่',
+          'form.html v11.45: อัป hr.js?v=4.51 → v4.52',
+        ] },
+      { ref:'#REV-20260624-AH', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.51: payCard (admin) — เพิ่มปุ่ม 🧾 ดูใบโอน ใน badge เมื่อมี slipUrl',
+          'employee.html: bannerHtml — เพิ่มปุ่ม 🧾 ดูใบโอน ใน banner เมื่อ paid และมี slipUrl',
+          'form.html v11.44: อัป hr.js?v=4.50 → v4.51',
+        ] },
+      { ref:'#REV-20260624-AG', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.50: hrConfirmPayroll — ป้องกันโอนซ้ำ client-side (ตรวจ _hrSalaryPaid cache ก่อนเปิด popup)',
+          'Code.gs: recordSalaryPayment — ป้องกันบันทึกซ้ำ server-side (ตรวจ empId+month+period ก่อน appendRow)',
+          'form.html v11.43: อัป hr.js?v=4.49 → v4.50',
+        ] },
+      { ref:'#REV-20260624-AF', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.49: hrConfirmPayroll — auto ตัดยอดเงินกู้/เบิกหลังโอนเงินเดือน (payrollDeductLoans)',
+          'hr.js: payCard — ส่ง loanItems เป็น param 6 ให้ hrConfirmPayroll',
+          'Code.gs: เพิ่ม action payrollDeductLoans — ลด outstanding ใน HR_Loans + ปิด LoanRequests + บันทึก HR_LoanPayments',
+          'form.html v11.42: อัป hr.js?v=4.48 → v4.49',
+        ] },
+      { ref:'#REV-20260624-AE', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.48: เพิ่ม _hrCalcSSO() — คำนวณประกันสังคม 5% (สูงสุด ฿750/เดือน)',
+          'hr.js: _hrCalcPayslip() — auto-inject SSO deduction ถ้า emp.ssoEnabled = true',
+          'hr.js: _hrEmpModal() — เพิ่ม checkbox "หักประกันสังคม" ในฟอร์มพนักงาน',
+          'hr.js: การ์ดพนักงาน — badge แสดงสถานะ ประกันสังคม / ยังไม่หัก',
+          'Code.gs: HR_Employees — เพิ่มคอลัมน์ ssoEnabled (col 20), อ่าน/เขียนใน getHREmployees + saveHREmployee',
+          'form.html v11.41: อัป hr.js?v=4.47 → v4.48',
+        ] },
+      { ref:'#REV-20260624-AD', date:'2026-06-24', current: false,
+        items:[
+          'form.html + order.js: แนบไฟล์ PO / Drawing — เปลี่ยนจากปุ่ม+ชื่อไฟล์ เป็น styled dropzone (คลิกกล่อง + ✅ border เขียว เมื่อเลือกแล้ว) ทั้ง 3 จุด (ord, gord, ordEdit)',
+        ] },
+      { ref:'#REV-20260624-AC', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.47: hrLoanClose — เปลี่ยน input[file] สลิปเป็น styled upload area เหมือน hrConfirmPayroll (คลิกกล่อง + preview + border เขียวเมื่อเลือกแล้ว)',
+        ] },
+      { ref:'#REV-20260624-AB', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.46: payCard badge "รอยืนยัน" — เปลี่ยนเป็น orange gradient (#f97316→#ea580c) ตัวหนังสือขาว เข้ากับ header น้ำเงิน/teal',
+        ] },
+      { ref:'#REV-20260624-AA', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.45: hrConfirmPayroll — เพิ่มช่องแนบสลิปโอนเงิน (บังคับ) preview รูปทันที',
+          'hr.js v4.45: hrConfirmPayroll — ถ้าไม่แนบสลิป กด ยืนยัน ไม่ได้ (showValidationMessage)',
+          'hr.js v4.45: hrConfirmPayroll — อัปโหลดสลิป → Drive URL → บันทึกใน HR_SalaryPayments.slipUrl',
+        ] },
+      { ref:'#REV-20260624-Z', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.44: payCard — badge เปลี่ยนเป็น ✅ โอนแล้ว (วันที่) เมื่อโอนแล้ว, ซ่อนปุ่มโอน',
+          'hr.js v4.44: payCard — ปุ่มเปลี่ยนจาก "ยืนยันโอนเงินเดือนแล้ว" → "💸 บันทึกการโอนเงินเดือน"',
+          'hr.js v4.44: payCard — admin เห็นปุ่ม 🗑️ ลบประวัติการโอน',
+          'hr.js v4.44: เพิ่ม hrConfirmPayroll() — popup วันที่/ยอด/หมายเหตุ → บันทึก → reload',
+          'hr.js v4.44: เพิ่ม hrDeleteSalaryPayment() — ลบ record จาก HR_SalaryPayments',
+          'Code.gs: เพิ่ม action deleteSalaryPayment + function deleteSalaryPayment()',
+          '_hrPayLoadAndRender: โหลด getSalaryPayments พร้อมกัน → build paidMap ส่งเข้า payCard',
+        ] },
+      { ref:'#REV-20260624-Y', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.43: payCard — redesign รายละเอียดแยกรายรับ/รายจ่าย พร้อมยอดรวมรายรับ/รวมรายจ่าย',
+          'hr.js v4.43: payCard — ปุ่ม 3 ปุ่ม (ดูสลิป, QR โอน, ยืนยันโอน) พร้อม gradient สีสด',
+          'hr.js v4.43: แก้ quote escaping ใน onclick ด้วย &quot; — ไม่ขึ้น syntax error อีก',
+          'hr.js v4.43: ลบ payCard/sectionLabel ที่ซ้ำกัน (3 copies → 1)',
+        ] },
+      { ref:'#REV-20260624-X', date:'2026-06-24', current: false,
+        items:[
+          'hr.js v4.42: ตารางวันทำงาน (hrEditAtt) — เพิ่ม summary bar interactive (มา/ขาด/หยุด/สาย/OT) อัปเดต real-time',
+          'hr.js v4.42: เปลี่ยนชื่อปุ่ม แก้ไข → ตารางวันทำงาน',
+          'hr.js v4.42: badge เบิกล่วงหน้า fix hrBtn6→hrBtn7',
+          'employee.html v2.6: ไฮไลต์แถววันอาทิตย์ (แดง) / วันเสาร์ (เหลือง) ใน _empAttTableHtml',
+        ] },
+      { ref:'#REV-20260624-W', date:'2026-06-24', // current removed
         items:['hr.js v4.41: แก้ badge เบิกล่วงหน้า — เปลี่ยน hrBtn6 → hrBtn7 (หลังเพิ่ม sub-tab สรุปเงินเดือน badge ไปโผล่ที่ปฏิทินแทน)'] },
   {
     ref: '#REV-20260624-V',

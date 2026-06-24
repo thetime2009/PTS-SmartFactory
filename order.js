@@ -272,8 +272,11 @@ function _ordPoFileChanged(prefix) {
   if (!file) { _ordClearPoFile(prefix); return; }
   // ไฟล์ใหม่ — ล้าง blob เดิม (ถ้ามี)
   delete _ordPoFileBlobs[prefix];
-  if (nameEl)  nameEl.textContent = file.name;
+  if (nameEl)  { nameEl.textContent = file.name; nameEl.style.color = '#059669'; }
   if (clearEl) clearEl.style.display = 'inline-block';
+  if (iconEl)  iconEl.textContent = '✅';
+  const dzPo = $(prefix + '_poDropZone');
+  if (dzPo)  { dzPo.style.borderColor = '#059669'; dzPo.style.background = '#f0fdf4'; }
   if (imgEl) {
     if (file.type && file.type.startsWith('image/')) {
       imgEl.src = URL.createObjectURL(file);
@@ -294,10 +297,14 @@ function _ordClearPoFile(prefix) {
   const imgEl  = $(prefix + '_poFilePreview');
   const editBtn = $(prefix + '_poEditBtn');
   if (input)  input.value = '';
-  if (nameEl) nameEl.textContent = 'ยังไม่ได้เลือกไฟล์ใด';
+  if (nameEl) { nameEl.textContent = 'คลิกเพื่อเลือกไฟล์ PO (รูปภาพ / PDF)...'; nameEl.style.color = '#6b7280'; }
   if (clearEl) clearEl.style.display = 'none';
   if (imgEl) { imgEl.style.display = 'none'; imgEl.removeAttribute('src'); }
   if (editBtn) editBtn.style.display = 'none';
+  const icPo = $(prefix + '_poDropIcon');
+  if (icPo) icPo.textContent = '📤';
+  const dzPo2 = $(prefix + '_poDropZone');
+  if (dzPo2) { dzPo2.style.borderColor = '#d1d5db'; dzPo2.style.background = '#fafafa'; }
   delete _ordPoFileBlobs[prefix];
 }
 
@@ -327,8 +334,11 @@ function _ordJobImgChanged(prefix) {
   const imgEl   = $(prefix + '_jobImg1Preview');
   const iconEl  = $(prefix + '_drawDropIcon');
   if (!file) { _ordClearJobImg(prefix); return; }
-  if (nameEl)  nameEl.textContent = file.name;
+  if (nameEl)  { nameEl.textContent = file.name; nameEl.style.color = '#059669'; }
   if (clearEl) clearEl.style.display = 'inline-block';
+  if (iconEl)  iconEl.textContent = '✅';
+  const dzDr = $(prefix + '_drawDropZone');
+  if (dzDr)  { dzDr.style.borderColor = '#059669'; dzDr.style.background = '#f0fdf4'; }
   if (imgEl) {
     if (file.type && file.type.startsWith('image/')) {
       imgEl.src = URL.createObjectURL(file);
@@ -346,9 +356,13 @@ function _ordClearJobImg(prefix) {
   const clearEl = $(prefix + '_jobImg1Clear');
   const imgEl  = $(prefix + '_jobImg1Preview');
   if (input)  input.value = '';
-  if (nameEl) nameEl.textContent = 'ยังไม่ได้เลือกไฟล์ใด';
+  if (nameEl) { nameEl.textContent = 'คลิกเพื่อเลือกรูป Drawing...'; nameEl.style.color = '#6b7280'; }
   if (clearEl) clearEl.style.display = 'none';
   if (imgEl) { imgEl.style.display = 'none'; imgEl.removeAttribute('src'); }
+  const icDr = $(prefix + '_drawDropIcon');
+  if (icDr) icDr.textContent = '🖼️';
+  const dzDr2 = $(prefix + '_drawDropZone');
+  if (dzDr2) { dzDr2.style.borderColor = '#d1d5db'; dzDr2.style.background = '#fafafa'; }
 }
 
 // แปลงไฟล์เป็น base64 (ตัด prefix data:...;base64, ออก)

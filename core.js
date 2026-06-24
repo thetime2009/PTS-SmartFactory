@@ -307,6 +307,7 @@ function _saveTabCfg(order, hidden) {
 }
 
 let _activeTab = 'breakdown';
+let _mobDrawerGroup = null; // mobile: group drawer currently open
 
 // แท็บย่อยที่ถูกรวมไว้ใต้ปุ่ม "เพิ่มเติม" (ลดจำนวนปุ่มในแถบแท็บ)
 const SUB_TAB_IDS = ['labor', 'mold', 'api', 'mat', 'po', 'cust', 'invoice', 'supplier'];
@@ -387,37 +388,67 @@ function _renderTabBarInner() {
     return;
   }
 
-  let subItems = [];
-  let moreInserted = false;
-  const buttons = order.map(id => {
-    if (hidden.includes(id)) return '';
-    const def = TAB_DEFS.find(t=>t.id===id);
+  // ── Mobile: Group-based bottom bar (เหมือน desktop แต่แนวนอน) ──
+  const topBtns = TOP_SIDEBAR_ITEMS.map(it => {
+    if (hidden.includes(it.tab)) return '';
+    const def = TAB_DEFS.find(t=>t.id===it.tab);
     if (!def) return '';
-    if (!isDesktop && SUB_TAB_IDS.includes(id)) {
-      subItems.push(def);
-      if (moreInserted) return '';
-      moreInserted = true;
-      const isActive = SUB_TAB_IDS.includes(_activeTab);
-      return `<button class="tab-btn${isActive?' active':''}" id="tbtn-more" onclick="_toggleMoreMenu(event)">
-        <span class="t-icon">⋯</span><span class="t-label">เพิ่มเติม</span>
-      </button>`;
-    }
-    const isActive = id === _activeTab;
-    return `<button class="tab-btn${isActive?' active':''}" id="tbtn-${id}" onclick="switchTab('${id}')">
-      <span class="t-icon">${def.icon}</span><span class="t-label">${def.label}</span>
+    const icon  = it.icon  || def.icon;
+    const label = it.label || def.label;
+    const isActive = it.tab === _activeTab && !_mobDrawerGroup;
+    const viewArg = it.view ? `,'${it.view}'` : '';
+    const click = `_sbGoto('${it.tab}',null${viewArg});_closeMobDrawer()`;
+    return `<button class="tab-btn${isActive?' active':''}" onclick="${click}">
+      <span class="t-icon">${icon}</span><span class="t-label">${label}</span>
     </button>`;
   }).join('');
-  bar.innerHTML = sidebarHdr + buttons;
 
+  const groupBtns = GROUP_DEFS.map(g => {
+    const hasActive = g.items.some(it => !it.ph && it.tab === _activeTab && (!it.dept || it.dept === _activeHelpDept));
+    const isOpen = _mobDrawerGroup === g.id;
+    return `<button class="tab-btn${(hasActive || isOpen)?' active':''}" onclick="_toggleMobDrawer('${g.id}')">
+      <span class="t-icon">${g.icon}</span><span class="t-label">${g.label}</span>
+    </button>`;
+  }).join('');
+
+  bar.innerHTML = sidebarHdr + topBtns + groupBtns;
+
+  // Drawer
   const menu = $('moreMenu');
   if (menu) {
-    menu.innerHTML = subItems.map(def => {
-      const isActive = def.id === _activeTab;
-      return `<button class="tab-btn${isActive?' active':''}" id="tbtn-${def.id}" onclick="switchTab('${def.id}');_closeMoreMenu()">
-        <span class="t-icon">${def.icon}</span><span class="t-label">${def.label}</span>
-      </button>`;
-    }).join('');
+    if (_mobDrawerGroup) {
+      const g = GROUP_DEFS.find(x=>x.id===_mobDrawerGroup);
+      if (g) {
+        const drawerItems = g.items.map(it => {
+          if (it.ph) return `<button class="tab-btn" onclick="_placeholderAlert('${String(it.label||'').replace(/'/g,"\'")}')"><span class="t-icon">⏳</span><span class="t-label">${it.label}</span></button>`;
+          if (hidden.includes(it.tab)) return '';
+          const def = TAB_DEFS.find(t=>t.id===it.tab);
+          if (!def) return '';
+          const label = it.label || def.label;
+          const icon  = it.icon  || def.icon;
+          const isActive = it.dept
+            ? (it.tab === _activeTab && it.dept === _activeHelpDept)
+            : (it.tab === _activeTab && (it.subTab||null)===(_activeSubTab||null) && (it.view||null)===(_activeSbView||null));
+          const viewArg = it.view ? `,'${it.view}'` : '';
+          const click = it.dept
+            ? `_openDeptHelp('${it.dept}');_closeMobDrawer()`
+            : (it.subTab ? `_sbGoto('${it.tab}','${it.subTab}'${viewArg});_closeMobDrawer()` : `_sbGoto('${it.tab}',null${viewArg});_closeMobDrawer()`);
+          return `<button class="tab-btn${isActive?' active':''}" onclick="${click}">
+            <span class="t-icon">${icon}</span><span class="t-label">${label}</span>
+          </button>`;
+        }).join('');
+        menu.innerHTML = `<div class="mob-drawer-header">${g.icon} ${g.label}</div>${drawerItems}`;
+        menu.classList.add('mob-drawer-mode', 'show');
+      }
+    } else {
+      menu.innerHTML = '';
+      menu.classList.remove('mob-drawer-mode', 'show');
+    }
   }
+  // backdrop
+  let bd = document.getElementById('mobDrawerBackdrop');
+  if (!bd) { bd = document.createElement('div'); bd.id = 'mobDrawerBackdrop'; bd.className = 'mob-drawer-backdrop'; bd.onclick = _closeMobDrawer; document.body.appendChild(bd); }
+  bd.classList.toggle('show', !!_mobDrawerGroup);
 }
 
 // re-render tab bar เมื่อข้าม breakpoint เดสก์ท็อป (1024px) เพื่อสลับโหมด group/ไม่ group "เพิ่มเติม"
@@ -439,6 +470,15 @@ window.addEventListener('load', () => {
   }, 2500);
 });
 
+function _toggleMobDrawer(groupId) {
+  _mobDrawerGroup = (_mobDrawerGroup === groupId) ? null : groupId;
+  renderTabBar();
+}
+function _closeMobDrawer() {
+  if (!_mobDrawerGroup) return;
+  _mobDrawerGroup = null;
+  renderTabBar();
+}
 function _toggleMoreMenu(e) {
   const menu = $('moreMenu');
   const btn  = $('tbtn-more');
