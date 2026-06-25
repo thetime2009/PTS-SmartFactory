@@ -332,7 +332,7 @@
     </div>
     <div class="emp-login-title">PTS Smart Factory</div>
     <div class="emp-login-sub">ระบบพนักงาน — กรุณาเข้าสู่ระบบ</div>
-    <div style="margin-top:6px"><span style="font-size:.68rem;font-weight:700;padding:2px 10px;border-radius:999px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#6366f1;letter-spacing:.5px">v2.7</span></div>
+    <div style="margin-top:6px"><span style="font-size:.68rem;font-weight:700;padding:2px 10px;border-radius:999px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#6366f1;letter-spacing:.5px">v2.5</span></div>
 
     <div class="emp-login-field">
       <label>เบอร์โทรศัพท์</label>
@@ -1304,4 +1304,36 @@ function _empAttTableHtml(rows) {
       '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">เข้างาน</th>' +
       '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">ออกงาน</th>' +
       '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">สถานะ</th>' +
-      '<th style="padding:6px 4px;font-size:.72rem;color:var(
+      '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">สาย</th>' +
+      '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">OT</th>' +
+    '</tr></thead>' +
+    '<tbody>' + dayRows + '</tbody>' +
+  '</table></div>';
+}
+
+
+</script>
+
+
+<script>
+// ── Service Worker registration + auto-update ──────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    reg.addEventListener('updatefound', function() {
+      var newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', function() {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          newSW.postMessage({ type: 'SKIP_WAITING' });
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            window.location.reload();
+          });
+        }
+      });
+    });
+    reg.update();
+  });
+}
+</script>
+</body>
+</html>
