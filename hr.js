@@ -4506,7 +4506,7 @@ async function hrConfirmPayroll(id, nameEnc, net, month, period, loanEnc) {
       + '<input id="cp_amt" type="number" value="' + net.toFixed(2) + '" step="0.01" style="width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 10px;font-size:.9rem;font-family:Sarabun,sans-serif;box-sizing:border-box;margin-bottom:8px"><br>'
       + '<label style="font-weight:600;display:block;margin-bottom:2px">หมายเหตุ</label>'
       + '<input id="cp_note" type="text" placeholder="เช่น โอนผ่าน KBank" style="width:100%;border-radius:8px;border:1px solid #d1d5db;padding:6px 10px;font-size:.9rem;font-family:Sarabun,sans-serif;box-sizing:border-box;margin-bottom:8px"><br>'
-      + '<label style="font-weight:700;display:block;margin-bottom:4px;color:#dc2626">📎 แนบสลิปโอนเงิน <span style="color:#dc2626">*</span></label>'
+      + '<label style="font-weight:700;display:block;margin-bottom:4px;color:#dc2626">📎 แนบสลิปโอนเงิน <span style="color:#dc2626;font-size:.75rem">(บังคับ — พนักงานต้องใช้สลิป)</span></label>'
       + '<label id="cp_slip_label" style="display:flex;align-items:center;gap:8px;border:2px dashed #d1d5db;border-radius:8px;padding:10px 12px;cursor:pointer;background:#fafafa;transition:border-color .2s">'
         + '<input id="cp_slip" type="file" accept="image/*" style="display:none">'
         + '<span id="cp_slip_icon" style="font-size:1.4rem">\ud83d\uddbc\ufe0f</span>'
@@ -4551,6 +4551,11 @@ async function hrConfirmPayroll(id, nameEnc, net, month, period, loanEnc) {
     },
     preConfirm: function() {
       var inp = document.getElementById('cp_slip');
+      // บังคับแนบสลิป
+      if (!inp || !inp.files || !inp.files[0]) {
+        Swal.showValidationMessage('📎 กรุณาแนบสลิปโอนเงินก่อนยืนยัน');
+        return false;
+      }
       // อ่านยอดหักที่ปรับแล้ว
       var _adjItems = loanItems.map(function(x, i) {
         var el = document.getElementById('cp_ded_' + i);
@@ -4566,20 +4571,6 @@ async function hrConfirmPayroll(id, nameEnc, net, month, period, loanEnc) {
     }
   });
   if (!isConfirmed || !v) return;
-
-  // เตือนถ้าไม่แนบสลิป (ไม่บังคับ แต่ต้องยืนยัน)
-  if (!v.slipFile) {
-    var { isConfirmed: slipOk } = await Swal.fire({
-      icon: 'warning',
-      title: '⚠️ ไม่มีสลิปโอนเงิน',
-      text: 'ยืนยันบันทึกการโอนโดยไม่แนบสลิป?',
-      showCancelButton: true,
-      confirmButtonText: 'ยืนยัน ไม่มีสลิป',
-      cancelButtonText: '↩ กลับไปแนบสลิป',
-      confirmButtonColor: '#f97316'
-    });
-    if (!slipOk) return;
-  }
 
   Swal.fire({ title: '\u23f3 กำลังบันทึก...', allowOutsideClick: false, didOpen: function(){ Swal.showLoading(); } });
   try {

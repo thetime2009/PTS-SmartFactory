@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v11.80</span>
+      <span class="ph-chip ver">v11.81</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3482,7 +3482,7 @@
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="hr.js?v=4.78"></script>
+<script src="hr.js?v=4.79"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -3626,12 +3626,23 @@
 // ===== ประวัติการแก้ไขงาน (Dev Logs) =====
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
-      { ref:'#REV-20260625-Q', date:'2026-06-25', current: true,
+      { ref:'#REV-20260625-S', date:'2026-06-25', current: true,
+        items:[
+          'hr.js v4.79: hrConfirmPayroll — บังคับแนบสลิปทุกครั้ง (preConfirm validation)',
+          'form.html v11.81: hr.js?v=4.78 → v4.79',
+        ] },
+      { ref:'#REV-20260625-R', date:'2026-06-25', current: false,
+        items:[
+          'Code.gs: _fmtDateStr() — แก้ transferDate แสดงยาว (Sheets auto-convert เป็น Date object)',
+          'Code.gs: getSalaryPayments transferDate ใช้ _fmtDateStr() → "dd/MM/yyyy"',
+          'Code.gs: _getSalaryPaySh force col G (transferDate) เป็น plain text ด้วย',
+          'ต้อง Redeploy Code.gs',
+        ] },
+      { ref:'#REV-20260625-Q', date:'2026-06-25', current: false,
         items:[
           'Code.gs: _fmtYYYYMM() — แก้ getSalaryPayments month filter (Sheets auto-convert "2026-06" เป็น Date ทำให้ลายน้ำไม่แสดง)',
           'Code.gs: _getSalaryPaySh — force column D เป็น plain text ป้องกัน auto-date',
           'Code.gs: recordSalaryPayment duplicate check ใช้ _fmtYYYYMM() ด้วย',
-          'ต้อง Redeploy Code.gs',
         ] },
       { ref:'#REV-20260625-P', date:'2026-06-25', current: false,
         items:[
