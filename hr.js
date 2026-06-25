@@ -587,24 +587,10 @@ function hrConfirmImport() {
     return copy;
   });
 
-  var msg = 'จะบันทึก ' + rows.length + ' รายการ';
-  if (cutCount > 0) msg += '\n(ตัด OT ออก ' + cutCount + ' วัน — ไม่ได้เช็คอนุมัติ)';
+  var cutMsg = cutCount > 0 ? ' (ตัด OT ออก ' + cutCount + ' วัน — ไม่ได้เช็คอนุมัติ)' : '';
 
-  Swal.fire({
-    title: 'บันทึกข้อมูล?',
-    text: msg,
-    icon: 'question', showCancelButton: true,
-    confirmButtonText: '✅ บันทึก', cancelButtonText: 'ยกเลิก'
-  }).then(function(res) {
-    if (!res.isConfirmed) return;
-    _hrDoSave(rows);
-  });
-}
-
-// ── บันทึกจริง ────────────────────────────────────────────────
-function _hrDoSave(rows) {
-  // Step 1: checkOnly — ตรวจซ้ำก่อน
-  Swal.fire({ title: '⏳ กำลังตรวจข้อมูล...', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+  // ── Step 1: ตรวจซ้ำก่อนเลย (checkOnly) ──
+  Swal.fire({ title: '⏳ กำลังตรวจข้อมูลซ้ำ...', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
   _hrPOST('saveHRAttendance', { rows: rows, checkOnly: true }).then(function(chk) {
     Swal.hideLoading(); Swal.close();
     if (chk.status !== 'ok') { Swal.fire('❌ ผิดพลาด', chk.message || '', 'error'); return; }
@@ -613,50 +599,53 @@ function _hrDoSave(rows) {
     var skipList  = chk.skippedList || [];
     var newCount  = rows.length - skipCount;
 
-    function doActualSave() {
-      Swal.fire({ title: '⏳ กำลังบันทึก...', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
-      _hrPOST('saveHRAttendance', { rows: rows, skipExisting: true }).then(function(r) {
-        Swal.hideLoading(); Swal.close();
-        if (r.status === 'ok') {
-          var txt = 'เพิ่มใหม่ ' + r.saved + ' รายการ';
-          if (r.skipped) txt += ' · ข้ามซ้ำ ' + r.skipped + ' รายการ';
-          Swal.fire({ icon: 'success', title: '✅ บันทึกสำเร็จ', text: txt, timer: 2200, showConfirmButton: false });
-          _hrPreview = []; _hrAtt = [];
-          document.getElementById('hrImportPreview').innerHTML = '';
-          document.getElementById('hrImportActions').innerHTML = '';
-          setTimeout(function() { hrSubSwitch('2'); }, 2300);
-        } else {
-          Swal.fire('❌ ผิดพลาด', r.message || 'ไม่ทราบสาเหตุ', 'error');
-        }
-      }).catch(function(e) { Swal.hideLoading(); Swal.close(); Swal.fire('❌ Error', String(e), 'error'); });
-    }
-
-    if (skipCount === 0) {
-      // ไม่มีซ้ำ — บันทึกเลย
-      doActualSave();
-    } else {
-      // มีซ้ำ — แสดง popup เตือน
-      var listHtml = skipList.slice(0, 10).map(function(s) {
-        return '<li style="font-size:.82rem;color:#92400e">' + (s.name || s.empId) + ' — ' + s.date + '</li>';
+    // ── Step 2: แสดง popup confirm (รวม info ซ้ำด้วย) ──
+    var dupHtml = '';
+    if (skipCount > 0) {
+      var listHtml = skipList.slice(0, 8).map(function(s) {
+        return '<li style="font-size:.8rem;color:#92400e">' + (s.name || s.empId) + ' — ' + s.date + '</li>';
       }).join('');
-      if (skipList.length > 10) listHtml += '<li style="font-size:.78rem;color:#b45309">...และอีก ' + (skipList.length - 10) + ' รายการ</li>';
+      if (skipList.length > 8) listHtml += '<li style="font-size:.76rem;color:#b45309">...และอีก ' + (skipList.length - 8) + ' รายการ</li>';
+      dupHtml = '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:8px 10px;margin:8px 0;text-align:left">'
+        + '<div style="font-size:.82rem;font-weight:700;color:#92400e;margin-bottom:4px">⚠️ พบซ้ำ ' + skipCount + ' รายการ — จะข้ามไม่ทับ:</div>'
+        + '<ul style="margin:0;padding-left:16px;max-height:120px;overflow-y:auto">' + listHtml + '</ul>'
+        + '</div>';
+    }
+    var confirmHtml = '<div style="font-size:.88rem;color:#374151">จะเพิ่มใหม่ <b>' + newCount + ' รายการ</b>' + cutMsg + '</div>' + dupHtml;
 
-      Swal.fire({
-        title: '⚠️ พบข้อมูลซ้ำ ' + skipCount + ' รายการ',
-        html: '<div style="text-align:left;margin-bottom:8px;font-size:.88rem;color:#374151">รายการเหล่านี้มีอยู่ในชีตแล้ว จะ<b>ข้ามไป</b>เพื่อไม่ทับข้อมูลที่แก้ไขแล้ว:</div>'
-          + '<ul style="margin:0 0 10px 16px;padding:0;max-height:180px;overflow-y:auto;background:#fef3c7;border-radius:8px;padding:8px 8px 8px 24px">' + listHtml + '</ul>'
-          + '<div style="font-size:.85rem;color:#059669;font-weight:600">จะเพิ่มข้อมูลใหม่ ' + newCount + ' รายการ</div>',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: '✅ ดำเนินการต่อ (ข้ามซ้ำ)',
-        cancelButtonText: '❌ ยกเลิก',
-        confirmButtonColor: '#059669',
-      }).then(function(res) {
-        if (res.isConfirmed) doActualSave();
-      });
+    Swal.fire({
+      title: 'บันทึกข้อมูล?',
+      html: confirmHtml,
+      icon: skipCount > 0 ? 'warning' : 'question',
+      showCancelButton: true,
+      confirmButtonText: '✅ บันทึก', cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#059669',
+    }).then(function(res) {
+      if (!res.isConfirmed) return;
+      _hrDoSave(rows);
+    });
+  }).catch(function(e) { Swal.hideLoading(); Swal.close(); Swal.fire('❌ Error', String(e), 'error'); });
+}
+
+// ── บันทึกจริง (skipExisting เสมอ) ────────────────────────────
+function _hrDoSave(rows) {
+  Swal.fire({ title: '⏳ กำลังบันทึก...', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+  _hrPOST('saveHRAttendance', { rows: rows, skipExisting: true }).then(function(r) {
+    Swal.hideLoading(); Swal.close();
+    if (r.status === 'ok') {
+      var txt = 'เพิ่มใหม่ ' + r.saved + ' รายการ';
+      if (r.skipped) txt += ' · ข้ามซ้ำ ' + r.skipped + ' รายการ';
+      Swal.fire({ icon: 'success', title: '✅ บันทึกสำเร็จ', text: txt, timer: 2200, showConfirmButton: false });
+      _hrPreview = []; _hrAtt = [];
+      document.getElementById('hrImportPreview').innerHTML = '';
+      document.getElementById('hrImportActions').innerHTML = '';
+      setTimeout(function() { hrSubSwitch('2'); }, 2300);
+    } else {
+      Swal.fire('❌ ผิดพลาด', r.message || 'ไม่ทราบสาเหตุ', 'error');
     }
   }).catch(function(e) { Swal.hideLoading(); Swal.close(); Swal.fire('❌ Error', String(e), 'error'); });
 }
+
 
 // ── คำนวณ OT ใหม่เมื่อแก้เวลาใน Preview ────────────────────────
 function _hrRecalcRow(safeId, dateKey, dow) {

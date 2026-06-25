@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v11.86</span>
+      <span class="ph-chip ver">v11.87</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3482,7 +3482,7 @@
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="hr.js?v=4.84"></script>
+<script src="hr.js?v=4.85"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -3627,7 +3627,13 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
         { current: true,
-          ref: '#REV-20260625-Y',
+          ref: '#REV-20260625-Z',
+          date: '2026-06-25',
+          items: [
+            'hr.js v4.84→4.85: นำเข้าข้อมูล — ตรวจซ้ำก่อนเลย แสดงรายการซ้ำใน popup confirm เดียว ไม่ต้องกด 2 รอบ',
+          ]
+        },
+        { ref: '#REV-20260625-Y',
           date: '2026-06-25',
           items: [
             'hr.js v4.83→4.84: นำเข้าข้อมูล — ตรวจซ้ำก่อนบันทึก (checkOnly) แจ้งเตือนรายการซ้ำ ยืนยันแล้ว skipExisting=true ไม่ทับข้อมูลเดิม',
