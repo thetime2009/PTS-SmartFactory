@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v11.82</span>
+      <span class="ph-chip ver">v11.84</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3482,7 +3482,7 @@
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="hr.js?v=4.80"></script>
+<script src="hr.js?v=4.82"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.58"></script>
 <script src="invoice.js?v=9.03"></script>
@@ -3627,7 +3627,19 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
         { current: true,
-          ref: '#REV-20260625-U',
+          ref: '#REV-20260625-W',
+          date: '2026-06-25',
+          items: [
+            'hr.js v4.81→4.82: แก้สลิปขาด SSO — เพิ่ม pcAllDed_ hidden input เก็บ full loanDeductItems (รวม SSO) และ hrConfirmPayrollFromCard ใช้ full items แทน pcLd_* เพียงอย่างเดียว',
+          ]
+        },
+        { ref: '#REV-20260625-V',
+          date: '2026-06-25',
+          items: [
+            'hr.js v4.80→4.81: ยอดเบิกเดือนนี้ (โอนแล้ว) — exclude รายการที่หักสลิปแล้ว (deducted=true) ออกจาก totalAdvance, _empTotals, _closedCount',
+          ]
+        },
+        { ref: '#REV-20260625-U',
           date: '2026-06-25',
           items: [
             'hr.js v4.79→4.80: เพิ่มลายน้ำ ✅ โอนแล้ว (สีเขียว) บนการ์ดเบิกล่วงหน้าที่มีสถานะ closed',

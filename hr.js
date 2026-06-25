@@ -1190,8 +1190,10 @@ function _hrPayTableHtml(rows) {
       });
     }
     var baseForEdit = (ps.gross - (ps.offDeduct||0) - fixedDed).toFixed(2);
+    var _allDedJson = ''; try { _allDedJson = encodeURIComponent(JSON.stringify(ps.loanDeductItems || [])); } catch(e2) {}
     var dedSumHtml = dedHtml
       ? '<input type="hidden" id="pcBase_' + id + '" value="' + baseForEdit + '">'
+        + '<input type="hidden" id="pcAllDed_' + id + '" value="' + _allDedJson + '">'
         + '<div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;margin-top:5px;padding-top:5px;border-top:1px dashed var(--bc-input)">'
           + '<span style="color:#ef4444">\u0e23\u0e27\u0e21\u0e23\u0e32\u0e22\u0e2b\u0e31\u0e01</span>'
           + '<span id="pcTDed_' + id + '" style="color:#ef4444">&minus;\u0e3f' + _hrFmt(totalDed) + '</span></div>'
@@ -3257,6 +3259,7 @@ function _hrLoansPanelHtml() {
   var totalAdvance = 0, totalLoan = 0;
   _hrLoans.forEach(function(l) {
     if (l.status !== 'closed' && l.status !== 'deducted') return;
+    if (l.deducted) return; // หักแล้ว — ไม่นับ
     if (_loanReqYM(l) !== _nowYMSumm) return; // เฉพาะเดือนนี้
     var amt = parseFloat(l.transferAmount || l.amount || 0);
     if (l.type === 'advance') totalAdvance += amt;
@@ -3302,6 +3305,7 @@ function _hrLoansPanelHtml() {
   var _empTotals = {};
   _hrLoans.forEach(function(l) {
     if (l.status !== 'closed' && l.status !== 'deducted') return;
+    if (l.deducted) return; // หักแล้ว — ไม่นับ
     if (_loanReqYM(l) !== _nowYMSumm) return;
     var n = l.empName || l.empId || '?';
     if (!_empTotals[n]) _empTotals[n] = 0;
@@ -3313,7 +3317,7 @@ function _hrLoansPanelHtml() {
       '<span style="font-size:.85rem;font-weight:800;color:#4338ca">฿' + _hrFmt(_empTotals[n]) + '</span>' +
     '</div>';
   }).join('') : '';
-  var _closedCount = _hrLoans.filter(function(l){ return (l.status==='closed'||l.status==='deducted') && _loanReqYM(l)===_nowYMSumm; }).length;
+  var _closedCount = _hrLoans.filter(function(l){ return (l.status==='closed'||l.status==='deducted') && !l.deducted && _loanReqYM(l)===_nowYMSumm; }).length;
 
   var summaryHtml =
     '<div style="margin-bottom:14px">' +
@@ -4430,18 +4434,25 @@ async function hrConfirmPayrollFromCard(empId, nameEnc, month, period) {
   var empName  = decodeURIComponent(nameEnc || '');
   var netEl    = document.getElementById('pcNet_' + empId);
   var net      = netEl ? (parseFloat(netEl.getAttribute('data-net')) || 0) : 0;
-  var loanItems = [];
-  document.querySelectorAll('[id^="pcLd_' + empId + '_"]').forEach(function(inp) {
-    loanItems.push({
-      source:       inp.dataset.src  || '',
-      loanId:       inp.dataset.key  || '',
-      requestId:    inp.dataset.key  || '',
-      advanceClosed: inp.dataset.advc === '1',
-      label:        inp.dataset.lbl  || '',
-      amount:       parseFloat(inp.value) || 0
-    });
+
+  // อ่าน full loanDeductItems (รวม SSO + fixed items) จาก hidden input
+  var allDedEl = document.getElementById('pcAllDed_' + empId);
+  var allItems = [];
+  if (allDedEl) {
+    try { allItems = JSON.parse(decodeURIComponent(allDedEl.value || '%5B%5D')); } catch(e2) {}
+  }
+
+  // อัปเดตยอดสำหรับ items ที่เป็น editable (contract/request) จาก pcLd_* inputs
+  var editIdx = 0;
+  allItems.forEach(function(item) {
+    if (item.source === 'contract' || item.source === 'request') {
+      var inp = document.getElementById('pcLd_' + empId + '_' + editIdx);
+      if (inp) item.amount = parseFloat(inp.value) || 0;
+      editIdx++;
+    }
   });
-  var loanEnc = encodeURIComponent(JSON.stringify(loanItems));
+
+  var loanEnc = encodeURIComponent(JSON.stringify(allItems));
   await hrConfirmPayroll(empId, nameEnc, net, month, period, loanEnc);
 }
 
