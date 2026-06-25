@@ -5372,26 +5372,34 @@ function hrPrintLoanContract(loanId) {
   var _slipCo = {}; try { _slipCo = JSON.parse(localStorage.getItem('ptts_company_cfg')||'{}'); } catch(e){}
   var company = _slipCo.name || localStorage.getItem('ptts_company_name') || 'PTS Smart Factory';
 
-  // สร้างตารางผ่อน
+  // สร้างตารางผ่อน — actual payments ก่อน แล้ว forecast ที่เหลือ
   var schedRows = '';
+  var paidSortedP = empPayments.slice().sort(function(a,b){ return (a.payDate||'').localeCompare(b.payDate||''); });
+  // แถวที่จ่ายจริง
+  paidSortedP.forEach(function(pp, i) {
+    schedRows += '<tr style="background:#d1fae5">' +
+      '<td style="padding:5px 10px;text-align:center;color:#166534;font-weight:700">' + (i+1) + '</td>' +
+      '<td style="padding:5px 10px;color:#166534">' + (pp.payDate||'—') + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;color:#166534;font-weight:700">฿' + _hrFmt(pp.amount) + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;color:#166534">฿' + _hrFmt(pp.outstandingAfter) + '</td>' +
+      '<td style="padding:5px 10px;text-align:center"><span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:1px 8px;font-size:.72rem;border:1px solid #6ee7b7">✅ จ่ายแล้ว</span></td>' +
+    '</tr>';
+  });
+  // แถวประมาณการที่เหลือ
   var rem = lc.outstanding;
   var inst = lc.installmentAmt;
-  var idx = 1;
-  while (rem > 0 && idx <= 36) {
+  var futureI = paidSortedP.length + 1;
+  while (rem > 0 && futureI <= paidSortedP.length + 36) {
     var amt = Math.min(rem, inst);
     rem = Math.round((rem - amt)*100)/100;
-    var found = empPayments[idx-1];
-    var pl = found ? (found.periodLabel||'งวด '+idx) : 'งวด '+idx;
-    var st = found ? '<span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:1px 8px;font-size:.72rem">✅ จ่ายแล้ว</span>'
-                   : '<span style="background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 8px;font-size:.72rem">รอจ่าย</span>';
-    schedRows += '<tr style="' + (idx%2?'':'background:#f8fafc') + (rem===0?';background:#f0fdf4':'') + '">' +
-      '<td style="padding:5px 10px;text-align:center">' + idx + '</td>' +
-      '<td style="padding:5px 10px">' + pl + '</td>' +
-      '<td style="padding:5px 10px;text-align:right">฿' + _hrFmt(amt) + '</td>' +
-      '<td style="padding:5px 10px;text-align:right">฿' + _hrFmt(rem) + '</td>' +
-      '<td style="padding:5px 10px;text-align:center">' + st + '</td>' +
+    schedRows += '<tr style="' + (futureI%2===0?'background:#f8fafc':'') + '">' +
+      '<td style="padding:5px 10px;text-align:center;color:#64748b">' + futureI + '</td>' +
+      '<td style="padding:5px 10px;color:#64748b">วันที่ ' + (lc.payDays||'—') + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;color:#475569">฿' + _hrFmt(amt) + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;color:#475569">฿' + _hrFmt(rem) + '</td>' +
+      '<td style="padding:5px 10px;text-align:center"><span style="background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 8px;font-size:.72rem">📅 ประมาณการ</span></td>' +
     '</tr>';
-    idx++;
+    futureI++;
   }
 
   var html = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">' +
