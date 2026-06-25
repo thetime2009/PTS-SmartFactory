@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v11.89</span>
+      <span class="ph-chip ver">v11.94</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3627,7 +3627,38 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
         { current: true,
-          ref: '#REV-20260625-AB',
+          ref: '#REV-20260625-AG',
+          date: '2026-06-25',
+          items: [
+            'style.css: แก้ .trk-toggle-btn ถูกตัดกลาง (border: 1px ขาด) ทำให้ CSS parse error และ @media (max-width:1023px) drawer ไม่โหลด — mobile drawer เมนูกลับมาใช้งานได้',
+          ]
+        },
+        { ref: '#REV-20260625-AF',
+          date: '2026-06-25',
+          items: [
+            'employee.html: การ์ดสัญญาเงินกู้ — แก้วันทำสัญญาใช้ _lcFmtDate() แทนแสดง raw string ยาว',
+          ]
+        },
+        { ref: '#REV-20260625-AE',
+          date: '2026-06-25',
+          items: [
+            'employee.html: การ์ดสัญญาเงินกู้ — เพิ่ม header "ยอดกู้รวมทั้งหมด + วันทำสัญญา" (gradient น้ำเงินเข้ม) ด้านบน grid',
+          ]
+        },
+        { ref: '#REV-20260625-AD',
+          date: '2026-06-25',
+          items: [
+            'employee.html: redesign ตาราง สรุปเวลางาน — stat cards gradient, status/สาย/OT เป็น pill badge, header gradient เข้ม, วันเสาร์/อาทิตย์ highlight',
+          ]
+        },
+        { ref: '#REV-20260625-AC',
+          date: '2026-06-25',
+          items: [
+            'employee.html: แก้ปุ่มพิมพ์สลิป/บันทึก — cache att ที่โหลดแล้วส่งให้ hrOpenPayslip แทนการใช้ _hrAtt global (ว่างเปล่าบนหน้าพนักงาน)',
+            'employee.html: empViewSlip() ส่ง deductItems ที่บันทึกจริงไปด้วย ให้สลิปพิมพ์ถูกต้อง',
+          ]
+        },
+        { ref: '#REV-20260625-AB',
           date: '2026-06-25',
           items: [
             'hr.js v4.86→4.87: แก้การ์ดสรุปเงินเดือนแสดงสถานะ "โอนแล้ว" ผิดงวด — paidMap fallback id+all ใช้เฉพาะ mode all เท่านั้น',

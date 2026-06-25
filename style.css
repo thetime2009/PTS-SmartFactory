@@ -1740,7 +1740,11 @@ body.trk-fullscreen-mode .trk-fs-toolbar {
 
 .trk-toggle-btn {
   width: 100%; padding: 7px 10px; border-radius: 8px;
-  border: 1px 
+  border: 1px solid var(--bc-input);
+  background: transparent; color: var(--t2); cursor: pointer;
+  font-family: 'Sarabun', sans-serif; font-size: .82rem;
+}
+
 /* ═══ Mobile Group Drawer ═══════════════════════════════════════════════ */
 @media (max-width: 1023px) {
   /* Group buttons on bottom bar — tighter */

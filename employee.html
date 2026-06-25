@@ -487,6 +487,8 @@
 var _empSlipPeriod = 'all';
 var _empCurTab = 'loan';
 var EMP_SESSION_LS = 'ptts_emp_session';
+var _empCachedSlipAtt = [];      // att array ที่โหลดล่าสุด ใช้ส่งให้ hrOpenPayslip
+var _empCachedSlipDeductJson = ''; // deductItems JSON ที่บันทึกตอน confirm
 
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function() {
@@ -946,6 +948,16 @@ function _empRenderContracts() {
           '<span style="font-size:.82rem;font-weight:700;color:#374151">' + lc.loanId + '</span>' +
           '<span style="font-size:.78rem;color:#6b7280">📌 ' + lc.reason + '</span>' +
         '</div>' +
+        '<div style="background:linear-gradient(135deg,#1e3a5f,#1d4ed8);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+          '<div>' +
+            '<div style="font-size:.68rem;color:rgba(255,255,255,.7);margin-bottom:1px">ยอดกู้รวมทั้งหมด</div>' +
+            '<div style="font-size:1.2rem;font-weight:800;color:#fff">฿' + _hrFmt(lc.originalAmount) + '</div>' +
+          '</div>' +
+          '<div style="text-align:right">' +
+            '<div style="font-size:.68rem;color:rgba(255,255,255,.7);margin-bottom:1px">วันทำสัญญา</div>' +
+            '<div style="font-size:.85rem;font-weight:700;color:#93c5fd">' + (typeof _lcFmtDate==='function'?_lcFmtDate(lc.startDate):(lc.startDate||'—')) + '</div>' +
+          '</div>' +
+        '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
           '<div style="background:linear-gradient(135deg,#fee2e2,#fecaca);border-radius:10px;padding:12px">' +
             '<div style="font-size:.72rem;color:#9b1c1c;margin-bottom:2px">ยอดคงค้าง</div>' +
@@ -1015,7 +1027,11 @@ function empViewSlip() {
   if (!_hrSession) return;
   var mon = (document.getElementById('empSlipMonth') || {}).value || '';
   if (!mon) return;
-  hrOpenPayslip(_hrSession.empId, mon, _empSlipPeriod);
+  // ชั่วคราว set _hrAtt เพื่อให้ hrOpenPayslip หาข้อมูล att ได้ (employee page ไม่มี _hrAtt global)
+  var _prevAtt = _hrAtt;
+  _hrAtt = _empCachedSlipAtt;
+  hrOpenPayslip(_hrSession.empId, mon, _empSlipPeriod, _empCachedSlipDeductJson || undefined);
+  _hrAtt = _prevAtt;
 }
 
 function _empLoadSlipPreview() {
@@ -1057,12 +1073,14 @@ function _empLoadSlipPreview() {
     });
 
     var att = allAtt.filter(function(r) { return String(r.empId) === empId; });
+    _empCachedSlipAtt = allAtt; // cache ทั้งหมด (ก่อน filter) เพื่อส่งให้ hrOpenPayslip
     att = (typeof _hrFilterByPeriod === 'function') ? _hrFilterByPeriod(att, _empSlipPeriod, mon) : att;
     var empRec = (_hrEmps || []).find(function(e) { return String(e.empId) === empId; }) || null;
     var ps = (typeof _hrCalcPayslip === 'function') ? _hrCalcPayslip(empRec, att, mon, _empSlipPeriod) : null;
 
     // ── ถ้ายังไม่มีบันทึกโอน → แสดง "เงินเดือนยังไม่ออก" ──
     if (!thisPays.length) {
+      _empCachedSlipDeductJson = ''; // ไม่มีบันทึกโอน → ล้าง deduct cache
       var thMon = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
       var monParts = mon.split('-');
       var monLabel = thMon[parseInt(monParts[1])||0] + ' ' + (parseInt(monParts[0])+543);
@@ -1081,6 +1099,9 @@ function _empLoadSlipPreview() {
 
     // banner โอนแล้ว
     var latestPay = thisPays[0];
+    // cache deductItems สำหรับ empViewSlip
+    try { _empCachedSlipDeductJson = latestPay && latestPay.deductItems && latestPay.deductItems.length
+      ? encodeURIComponent(JSON.stringify(latestPay.deductItems)) : ''; } catch(e2) { _empCachedSlipDeductJson = ''; }
     // ใช้ deductItems ที่บันทึกจริงตอน confirm (ไม่ recalculate) — ให้ตรงกับสลิป admin
     if (latestPay && latestPay.deductItems && latestPay.deductItems.length) {
       ps.loanDeductItems = latestPay.deductItems;
@@ -1344,7 +1365,7 @@ function _empLoadAttTable() {
 }
 
 function _empAttTableHtml(rows) {
-  if (!rows.length) return '<div style="padding:24px;text-align:center;color:var(--t3);font-size:.85rem">ไม่พบข้อมูลเดือนนี้<br><span style="font-size:.78rem">กรุณาติดต่อ HR หากมีข้อสงสัย</span></div>';
+  if (!rows.length) return '<div style="padding:28px 16px;text-align:center;color:var(--t3);font-size:.85rem">ไม่พบข้อมูลเดือนนี้<br><span style="font-size:.78rem">กรุณาติดต่อ HR หากมีข้อสงสัย</span></div>';
 
   var present = 0, absent = 0, late = 0, lateMin = 0, otH = 0;
   rows.forEach(function(r) {
@@ -1354,58 +1375,78 @@ function _empAttTableHtml(rows) {
     otH += parseFloat(r.otHours)||0;
   });
 
-  var statBox = function(val, label, color) {
-    return '<div style="text-align:center;flex:1;padding:8px 4px;background:var(--bg-card);border:1px solid var(--bc-card);border-radius:10px">' +
-      '<div style="font-size:1.1rem;font-weight:800;color:' + color + '">' + val + '</div>' +
-      '<div style="font-size:.65rem;color:var(--t3);margin-top:2px">' + label + '</div>' +
+  // Stat card — gradient bg
+  var statCard = function(val, label, bg, textClr) {
+    return '<div style="flex:1;text-align:center;padding:10px 4px 8px;background:' + bg + ';border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.07)">' +
+      '<div style="font-size:1.25rem;font-weight:800;color:' + textClr + ';line-height:1.1">' + val + '</div>' +
+      '<div style="font-size:.62rem;font-weight:600;color:' + textClr + ';opacity:.7;margin-top:3px;letter-spacing:.2px">' + label + '</div>' +
     '</div>';
   };
 
-  var statusLabel = function(s) {
-    if (s === 'present') return '<span style="color:#059669;font-size:.75rem;font-weight:600">✓ มา</span>';
-    if (s === 'absent')  return '<span style="color:#dc2626;font-size:.75rem;font-weight:600">✗ ขาด</span>';
-    return '<span style="color:#94a3b8;font-size:.75rem">วันหยุด</span>';
+  // Status badge
+  var statusBadge = function(s) {
+    if (s === 'present') return '<span style="display:inline-block;background:#dcfce7;color:#166534;font-size:.69rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap">✓ มา</span>';
+    if (s === 'absent')  return '<span style="display:inline-block;background:#fee2e2;color:#991b1b;font-size:.69rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap">✗ ขาด</span>';
+    return '<span style="display:inline-block;background:#f1f5f9;color:#64748b;font-size:.69rem;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap">🏖 หยุด</span>';
   };
 
-  var dayRows = rows.map(function(r) {
+  // Late pill
+  var latePill = function(m) {
+    if (!m) return '<span style="color:#cbd5e1;font-size:.78rem">—</span>';
+    return '<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:99px">' + m + ' น.</span>';
+  };
+
+  // OT pill
+  var otPill = function(h) {
+    if (!h) return '<span style="color:#cbd5e1;font-size:.78rem">—</span>';
+    return '<span style="display:inline-block;background:#ede9fe;color:#4c1d95;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:99px">' + h.toFixed(1) + ' ชม.</span>';
+  };
+
+  var dayRows = rows.map(function(r, i) {
     var late_m  = parseInt(r.lateMin) || 0;
     var ot_h    = parseFloat(r.otHours) || 0;
     var dowIdx  = parseInt(r.dow) || 0;
     var isSun   = dowIdx === 0;
     var isSat   = dowIdx === 6;
-    var rowStyle = isSun
-      ? 'border-bottom:1px solid #fca5a5;background:#fff1f2;border-left:3px solid #f87171;'
-      : isSat
-        ? 'border-bottom:1px solid #fde68a;background:#fffbeb;border-left:3px solid #fbbf24;'
-        : 'border-bottom:1px solid var(--bc-input);';
-    var dateFontStyle = isSun ? 'font-size:.8rem;color:#f87171;white-space:nowrap;font-weight:700'
-                      : isSat ? 'font-size:.8rem;color:#d97706;white-space:nowrap;font-weight:700'
-                      : 'font-size:.8rem;color:var(--t2);white-space:nowrap';
-    return '<tr style="' + rowStyle + '">' +
-      '<td style="padding:7px 8px;' + dateFontStyle + '">' + (r.date||'—') + '</td>' +
-      '<td style="padding:7px 4px;font-size:.82rem;font-weight:600;color:var(--t1)">' + (r.clockIn||'—') + '</td>' +
-      '<td style="padding:7px 4px;font-size:.82rem;color:var(--t2)">' + (r.lastScan||r.clockOut||'—') + '</td>' +
-      '<td style="padding:7px 4px">' + statusLabel(r.status) + '</td>' +
-      '<td style="padding:7px 4px;font-size:.78rem;color:' + (late_m > 0 ? '#d97706' : 'var(--t4)') + '">' + (late_m > 0 ? late_m + ' น.' : '—') + '</td>' +
-      '<td style="padding:7px 4px;font-size:.78rem;color:' + (ot_h > 0 ? '#4338ca' : 'var(--t4)') + '">' + (ot_h > 0 ? ot_h.toFixed(1) + ' ชม.' : '—') + '</td>' +
+    var isHol   = r.status === 'holiday';
+    var rowBg   = isSun ? '#fff1f2' : isSat ? '#fffbeb' : (i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,.018)');
+    var leftBdr = isSun ? 'border-left:3px solid #f87171;' : isSat ? 'border-left:3px solid #fbbf24;' : 'border-left:3px solid transparent;';
+    var dateClr = isSun ? '#ef4444' : isSat ? '#d97706' : 'var(--t2)';
+    var dateW   = (isSun || isSat) ? '700' : '500';
+    // Short date: "01 มิ.ย." style
+    var thM = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    var dp = String(r.date||'').split('/');
+    var shortDate = dp.length === 3 ? dp[0] + ' ' + (thM[parseInt(dp[1])] || dp[1]) : (r.date||'—');
+    return '<tr style="background:' + rowBg + ';' + leftBdr + '">' +
+      '<td style="padding:8px 6px 8px 10px;font-size:.8rem;font-weight:' + dateW + ';color:' + dateClr + ';white-space:nowrap">' + shortDate + '</td>' +
+      '<td style="padding:8px 4px;font-size:.85rem;font-weight:700;color:var(--t1);letter-spacing:.3px">' + (r.clockIn||'—') + '</td>' +
+      '<td style="padding:8px 4px;font-size:.82rem;color:var(--t2)">' + (r.lastScan||r.clockOut||'—') + '</td>' +
+      '<td style="padding:8px 4px">' + statusBadge(r.status) + '</td>' +
+      '<td style="padding:8px 4px">' + latePill(late_m) + '</td>' +
+      '<td style="padding:8px 4px">' + otPill(ot_h) + '</td>' +
     '</tr>';
   }).join('');
 
-  return '<div style="display:flex;gap:6px;margin-bottom:10px">' +
-    statBox(present,          'วันมา',    '#059669') +
-    statBox(absent,           'วันขาด',   absent > 0 ? '#dc2626' : 'var(--t4)') +
-    statBox(late,             'ครั้งสาย', late   > 0 ? '#d97706' : 'var(--t4)') +
-    statBox(otH.toFixed(1),   'ชม. OT',  '#4338ca') +
+  var absBg  = absent > 0 ? 'linear-gradient(135deg,#fee2e2,#fecaca)' : 'var(--bg-card)';
+  var absClr = absent > 0 ? '#991b1b' : 'var(--t3)';
+  var lateBg = late > 0 ? 'linear-gradient(135deg,#fef3c7,#fde68a)' : 'var(--bg-card)';
+  var lateClr= late > 0 ? '#92400e' : 'var(--t3)';
+
+  return '<div style="display:flex;gap:6px;margin-bottom:12px">' +
+    statCard(present,        'วันมา',    'linear-gradient(135deg,#dcfce7,#bbf7d0)', '#166534') +
+    statCard(absent,         'วันขาด',   absBg,  absClr) +
+    statCard(late,           'ครั้งสาย', lateBg, lateClr) +
+    statCard(otH.toFixed(1), 'ชม. OT',  'linear-gradient(135deg,#ede9fe,#ddd6fe)', '#4c1d95') +
   '</div>' +
-  '<div style="overflow-x:auto">' +
-  '<table style="width:100%;border-collapse:collapse;min-width:320px">' +
-    '<thead><tr style="background:var(--bg-input)">' +
-      '<th style="padding:6px 8px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">วันที่</th>' +
-      '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">เข้างาน</th>' +
-      '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">ออกงาน</th>' +
-      '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">สถานะ</th>' +
-      '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">สาย</th>' +
-      '<th style="padding:6px 4px;font-size:.72rem;color:var(--t3);text-align:left;font-weight:600">OT</th>' +
+  '<div style="overflow-x:auto;border-radius:12px;border:1px solid var(--bc-card);overflow:hidden">' +
+  '<table style="width:100%;border-collapse:collapse;min-width:300px">' +
+    '<thead><tr style="background:linear-gradient(135deg,#1e3a5f,#1d4ed8)">' +
+      '<th style="padding:8px 6px 8px 10px;font-size:.7rem;color:rgba(255,255,255,.85);text-align:left;font-weight:600;white-space:nowrap">📅 วันที่</th>' +
+      '<th style="padding:8px 4px;font-size:.7rem;color:rgba(255,255,255,.85);text-align:left;font-weight:600">เข้า</th>' +
+      '<th style="padding:8px 4px;font-size:.7rem;color:rgba(255,255,255,.85);text-align:left;font-weight:600">ออก</th>' +
+      '<th style="padding:8px 4px;font-size:.7rem;color:rgba(255,255,255,.85);text-align:left;font-weight:600">สถานะ</th>' +
+      '<th style="padding:8px 4px;font-size:.7rem;color:rgba(255,255,255,.85);text-align:left;font-weight:600">สาย</th>' +
+      '<th style="padding:8px 4px;font-size:.7rem;color:rgba(255,255,255,.85);text-align:left;font-weight:600">OT</th>' +
     '</tr></thead>' +
     '<tbody>' + dayRows + '</tbody>' +
   '</table></div>';
@@ -1419,21 +1460,4 @@ function _empAttTableHtml(rows) {
 // ── Service Worker registration + auto-update ──────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then(function(reg) {
-    reg.addEventListener('updatefound', function() {
-      var newSW = reg.installing;
-      if (!newSW) return;
-      newSW.addEventListener('statechange', function() {
-        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          newSW.postMessage({ type: 'SKIP_WAITING' });
-          navigator.serviceWorker.addEventListener('controllerchange', function() {
-            window.location.reload();
-          });
-        }
-      });
-    });
-    reg.update();
-  });
-}
-</script>
-</body>
-</html>
+    reg.addEventListener('updatefound', fu
