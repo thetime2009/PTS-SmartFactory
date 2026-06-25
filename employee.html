@@ -916,12 +916,12 @@ function _empRenderContracts() {
       // แถวที่จ่ายแล้ว
       paidSorted.forEach(function(pp, idx) {
         tableRows +=
-          '<tr style="background:#f0fdf4">' +
+          '<tr style="background:#dcfce7;border-left:3px solid #16a34a">' +
             '<td style="padding:5px 8px;text-align:center;color:#166534;font-weight:700">' + (idx+1) + '</td>' +
-            '<td style="padding:5px 8px;color:#166534">' + (pp.payDate || '—') + '</td>' +
-            '<td style="padding:5px 8px;text-align:right;color:#166534;font-weight:600">฿' + _hrFmt(pp.amount) + '</td>' +
-            '<td style="padding:5px 8px;text-align:right;color:#166534">฿' + _hrFmt(pp.outstandingAfter) + '</td>' +
-            '<td style="padding:5px 8px;color:#16a34a;font-size:.72rem">' + (pp.periodLabel||pp.note||'') + '</td>' +
+            '<td style="padding:5px 8px;color:#166534;font-weight:600">' + (pp.payDate || '—') + '</td>' +
+            '<td style="padding:5px 8px;text-align:right;color:#166534;font-weight:700">฿' + _hrFmt(pp.amount) + '</td>' +
+            '<td style="padding:5px 8px;text-align:right;color:#166534;font-weight:600">฿' + _hrFmt(pp.outstandingAfter) + '</td>' +
+            '<td style="padding:5px 8px;font-size:.72rem"><span style="background:#16a34a;color:#fff;padding:2px 7px;border-radius:99px;font-weight:700;white-space:nowrap">✓ ' + (pp.note || 'หักจากเงินเดือน') + '</span></td>' +
           '</tr>';
       });
       // แถวโปรเมณการที่เหลือ
