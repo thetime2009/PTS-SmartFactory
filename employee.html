@@ -657,7 +657,7 @@ function empShowApp() {
   empTabSwitch('slip');
   _empCheckOnline();
   _empLoadHeaderStats();
-  _empRefreshLoanBadge();
+  _empCheckLoanBadgeFromServer(); // ตรวจจาก server (ไม่พึ่ง admin localStorage)
 }
 
 // ── HEADER STATS ──────────────────────────────────────────────
@@ -799,6 +799,32 @@ function empTabSwitch(tab) {
 
 // ── Loan notify badge (employee side) ──
 var _LOAN_NOTIFY_KEY = 'ptts_loan_notify';
+var _LOAN_SEEN_KEY   = 'ptts_loan_last_seen'; // ISO date "YYYY-MM-DD" ครั้งสุดท้ายที่เห็น
+
+// ตรวจจาก server ว่ามีการหักงวดใหม่ไหม (ไม่พึ่ง admin localStorage)
+function _empCheckLoanBadgeFromServer() {
+  var sess = _hrSession;
+  if (!sess || !sess.empId) return;
+  var url = (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL) || localStorage.getItem('ptts_script_url') || '';
+  if (!url) return;
+  var lastSeen = localStorage.getItem(_LOAN_SEEN_KEY) || '1970-01-01';
+  fetch(url + '?action=getHRLoanPayments&empId=' + encodeURIComponent(sess.empId) + '&_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var pays = (data && data.data) ? data.data : [];
+      // ถ้ามี payment ที่ payDate หลัง lastSeen → แสดง badge
+      var hasNew = pays.some(function(p) {
+        var d = (p.payDate || '').replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'); // dd/MM/yyyy → yyyy-MM-dd
+        return d > lastSeen;
+      });
+      if (hasNew) {
+        try { localStorage.setItem(_LOAN_NOTIFY_KEY, '1'); } catch(e) {}
+      }
+      _empRefreshLoanBadge();
+    })
+    .catch(function() {});
+}
+
 function _empRefreshLoanBadge() {
   var btn = document.getElementById('empBotBtn-contract');
   var topBtn = document.getElementById('empTabBtn-contract');
@@ -813,7 +839,10 @@ function _empRefreshLoanBadge() {
   } catch(e) {}
 }
 function _empClearLoanBadge() {
-  try { localStorage.removeItem(_LOAN_NOTIFY_KEY); } catch(e) {}
+  try {
+    localStorage.removeItem(_LOAN_NOTIFY_KEY);
+    localStorage.setItem(_LOAN_SEEN_KEY, new Date().toISOString().slice(0,10)); // บันทึกวันที่ดูล่าสุด
+  } catch(e) {}
   ['empBotBtn-contract', 'empTabBtn-contract'].forEach(function(id) {
     var btn = document.getElementById(id);
     if (!btn) return;
