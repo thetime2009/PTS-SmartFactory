@@ -3626,7 +3626,14 @@
 // ===== ประวัติการแก้ไขงาน (Dev Logs) =====
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
-      { ref:'#REV-20260625-P', date:'2026-06-25', current: true,
+      { ref:'#REV-20260625-Q', date:'2026-06-25', current: true,
+        items:[
+          'Code.gs: _fmtYYYYMM() — แก้ getSalaryPayments month filter (Sheets auto-convert "2026-06" เป็น Date ทำให้ลายน้ำไม่แสดง)',
+          'Code.gs: _getSalaryPaySh — force column D เป็น plain text ป้องกัน auto-date',
+          'Code.gs: recordSalaryPayment duplicate check ใช้ _fmtYYYYMM() ด้วย',
+          'ต้อง Redeploy Code.gs',
+        ] },
+      { ref:'#REV-20260625-P', date:'2026-06-25', current: false,
         items:[
           'hr.js v4.78: _hrGET — เพิ่ม _t:Date.now() ป้องกัน browser cache (แก้ลายน้ำ "โอนแล้ว" ไม่แสดง)',
           'hr.js: hrConfirmPayroll — เพิ่ม popup เตือนก่อนโอนโดยไม่แนบสลิป',
