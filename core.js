@@ -211,10 +211,15 @@ const GROUP_DEFS = [
     { tab:'report', label:'ค่าชุบแยกโรงชุบ', icon:'🧪', view:'plating' },
   ]},
   { id:'hr', icon:'👷', label:'HR', items: [
-    { tab:'hr', label:'นำเข้าข้อมูล',  icon:'📥', view:'import'  },
-    { tab:'hr', label:'สรุปเวลางาน',   icon:'📊', view:'summary' },
-    { tab:'hr', label:'พนักงาน',        icon:'👤', view:'emps'    },
-    { tab:'hr', label:'ตั้งค่า HR',     icon:'⚙️', view:'settings'},
+    { tab:'hr', label:'นำเข้าข้อมูล',    icon:'📥', view:'import'   },
+    { tab:'hr', label:'สรุปเวลางาน',     icon:'📊', view:'summary'  },
+    { tab:'hr', label:'สรุปเงินเดือน',   icon:'💰', view:'payroll'  },
+    { tab:'hr', label:'พนักงาน',          icon:'👤', view:'emps'     },
+    { tab:'hr', label:'ตั้งค่า HR',       icon:'⚙️', view:'settings' },
+    { tab:'hr', label:'ปฏิทินวันหยุด',   icon:'📅', view:'holidays' },
+    { tab:'hr', label:'เบิกล่วงหน้า',    icon:'💳', view:'advance'  },
+    { tab:'hr', label:'สัญญาเงินกู้',    icon:'📋', view:'loans'    },
+    { tab:'hr', label:'ทะเบียนเงินเดือน',icon:'📄', view:'register' },
   ]},
   { id:'settings', icon:'⚙️', label:'ตั้งค่า', items: [
     { tab:'api' },
@@ -286,7 +291,7 @@ function _sbGoto(tab, subTab, view) {
   }
   if (tab === 'hr' && view && typeof hrSubSwitch === 'function') {
     setTimeout(function() {
-      const MAP = { import:'1', summary:'2', emps:'3', settings:'4' };
+      const MAP = { import:'1', summary:'2', payroll:'3', emps:'4', settings:'5', holidays:'6', advance:'7', loans:'8', register:'9' };
       hrSubSwitch(MAP[view] || '1');
     }, 80);
   }
