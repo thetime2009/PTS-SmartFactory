@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v12.04</span>
+      <span class="ph-chip ver">v12.06</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3634,8 +3634,29 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
         { current: true,
+          ref: '#REV-20260626-C',
+          date: '2026-06-26',
+          items: [
+            'Code.gs: recordSalaryPayment — บันทึก allowancesJson (col O) ลง HR_SalaryPayments ทุกครั้งที่โอนเงิน',
+            'Code.gs: getSalaryPayments — return allowances[] (parse จาก col O) กลับมาให้ client',
+            'hr.js: hrConfirmPayrollFromCard — อ่าน pcAllowances_ hidden field แล้วส่งไปกับ hrConfirmPayroll',
+            'hr.js: hrConfirmPayroll — ส่ง allowancesJson ใน POST body ไปกับ recordSalaryPayment',
+            'hr.js: _hrRegBuildTable — ทะเบียนเงินเดือน ถ้างวดนั้นโอนแล้ว ใช้ paidRec.allowances (snapshot) แทนค่าปัจจุบัน',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260626-B',
+          date: '2026-06-26',
+          current: false,
+          items: [
+            'hr.js: ทะเบียนเงินเดือน — แยกคอลัมน์ "อื่นๆ" เป็นคอลัมน์รายละเอียดแต่ละรายการ (ค่าตำแหน่ง, ค่าอาหารกลางวัน ฯลฯ) แบบ dynamic',
+            'hr.js: hrPrintPayrollRegister() รองรับ dynamic allowance columns เช่นเดียวกับหน้าจอ',
+          ]
+        },
+        { current: false,
           ref: '#REV-20260626-A',
           date: '2026-06-26',
+          current: false,
           items: [
             'form.html: เพิ่ม hrBtn9 + hrPanel9 "📄 ทะเบียนเงินเดือน" ใน HR tab',
             'hr.js: hrSubSwitch รองรับ tab 9',
