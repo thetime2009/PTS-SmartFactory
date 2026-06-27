@@ -1378,6 +1378,26 @@ function calcAll() {
   updateSummaryPanel();
 }
 
+function _checkFabReady() {
+  const fab = document.getElementById('saveFab');
+  if (!fab) return;
+  const noMeshOut = ['','ไม่มี'].includes((($('f_meshOut')?.value)||'').trim());
+  const noMeshIn  = ['','ไม่มี'].includes((($('f_meshIn')?.value)||'').trim());
+  const flatOnly  = noMeshOut && noMeshIn;
+  const checks = [
+    $('f_od')?.value && $('f_od').value !== '0',
+    $('f_id')?.value && $('f_id').value !== '0',
+    flatOnly || ($('f_h')?.value && $('f_h').value !== '0'),
+    $('f_unit')?.value && $('f_unit').value !== '0',
+    $('f_matTop')?.value,
+    $('f_matBot')?.value,
+    flatOnly || $('f_meshOut')?.value,
+    flatOnly || $('f_meshIn')?.value,
+  ];
+  const ready = checks.every(Boolean);
+  fab.classList.toggle('fab-ready', ready);
+}
+
 // ── Price Comparison Table & Chart ───────────────────
 function renderPriceComparison() {
   const tbody = $('pcTableBody');

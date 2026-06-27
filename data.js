@@ -554,6 +554,18 @@ function dtLoadIntoForm(idx) {
     confirmButtonColor:'#16a34a', cancelButtonColor:'#475569'
   }).then(res => {
     if (!res.isConfirmed) return;
+    // สลับไปแท็บ breakdown ก่อน แล้วรอ browser paint 1 frame
+    // (ถ้า set ค่าขณะ DATA tab ยังอยู่ body.no-summary-tab → padding-right:0 → panel ทับ)
+    switchTab('breakdown');
+    // Force correct body padding-right ทันทีผ่าน inline style
+    // (แก้ปัญหา: หน้า DATA ไม่มี panel → body full-width → พอสลับมา Breakdown panel ทับ content)
+    // ข้ามถ้า panel ถูก collapsed ไว้แล้ว (sp-collapsed class)
+    if (!document.body.classList.contains('sp-collapsed')) {
+      const _spwStr = getComputedStyle(document.documentElement).getPropertyValue('--sp-width').trim();
+      const _spwPx  = parseInt(_spwStr) || 300;
+      document.body.style.paddingRight = (_spwPx + 8) + 'px';
+    }
+    void document.body.offsetWidth; // force reflow ด้วย padding ที่ถูกต้อง
     _addSeen(SEEN_KEY_DATA, r[DT.noQuo]);
     dtRender();
     const sv = (id, val) => { const el = $(id); if (el && val !== undefined && val !== null) el.value = val; };
@@ -656,7 +668,7 @@ function dtLoadIntoForm(idx) {
       calcAll();
       if (typeof updateSummaryPanel === 'function') updateSummaryPanel();
     }
-    switchTab('breakdown');
+    document.body.style.paddingRight = ''; // คืนให้ CSS class จัดการ (no-summary-tab ถูก remove ไปแล้ว)
     setTimeout(() => {
       Swal.fire({icon:'success',title:'โหลดสำเร็จ ✅',timer:1200,showConfirmButton:false,
         background:'#0a1c2e',color:'#f1f5f9'});

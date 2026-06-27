@@ -712,13 +712,13 @@ function _enableShareBtn(row) {
 // ── Summary Panel Resize ─────────────────────────────────────────
 // ใช้ CSS variable --sp-width เพื่อให้ทั้ง panel width และ body padding-right sync กัน
 const SP_WIDTH_KEY = 'ptts_sp_width';
-const SP_DEFAULT   = 544;   // px — ค่าเริ่มต้น (กว้างกว่าเดิม 2x)
+const SP_DEFAULT   = Math.floor(window.innerWidth * 0.25) || 380;   // 1/4 ของจอ
 const SP_MIN       = 220;   // px — แคบสุด
 const SP_MAX       = 900;   // px — กว้างสุด
 
 function _spSetWidth(w) {
   // จำกัดความกว้างสูงสุดตามหน้าจอจริง (กันแผงสรุปต้นทุนใหญ่เกินไปบนแท็บเล็ตแนวนอน)
-  const viewportCap = Math.floor(window.innerWidth * 0.35);
+  const viewportCap = Math.floor(window.innerWidth * 0.25);
   const cap = Math.max(SP_MIN, Math.min(SP_MAX, viewportCap));
   w = Math.max(SP_MIN, Math.min(cap, Math.round(w)));
   document.documentElement.style.setProperty('--sp-width', w + 'px');
@@ -767,10 +767,28 @@ function _spInitResize() {
   handle.addEventListener('dblclick', () => _spSetWidth(SP_DEFAULT));
 }
 
+// ── Summary Panel Toggle (ซ่อน/แสดง) ───────────────────────────
+const SP_COLLAPSED_KEY = 'ptts_sp_collapsed';
+function toggleSummaryPanel() {
+  const col = document.body.classList.toggle('sp-collapsed');
+  const btn = document.getElementById('spToggleBtn');
+  if (btn) btn.textContent = col ? '▶' : '◀';
+  localStorage.setItem(SP_COLLAPSED_KEY, col ? '1' : '0');
+}
+function _spRestoreCollapsed() {
+  if (localStorage.getItem(SP_COLLAPSED_KEY) === '1') {
+    document.body.classList.add('sp-collapsed');
+    const btn = document.getElementById('spToggleBtn');
+    if (btn) btn.textContent = '▶';
+  }
+}
+
 // ── Init ────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Init summary panel resize (ต้องก่อน switchTab เพื่อให้ padding-right ถูกต้อง)
   _spInitResize();
+  // Restore collapsed state
+  _spRestoreCollapsed();
   // Render tab bar from saved config (sidebar logo ถูกสร้างตรงนี้)
   renderTabBar();
   // Apply saved logo หลัง renderTabBar เพื่อให้ครบทุก element

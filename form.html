@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="style.css?v=7.45">
+<link rel="stylesheet" href="style.css?v=7.46">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v12.25</span>
+      <span class="ph-chip ver">v12.35</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -3395,6 +3395,7 @@
 </div>
 
 <!-- ── SUMMARY PANEL (desktop right, ≥1100px) ─── -->
+<button id="spToggleBtn" class="sp-toggle-btn" onclick="toggleSummaryPanel()" title="ซ่อน/แสดงสรุปต้นทุน">◀</button>
 <div class="summary-panel" id="summaryPanel">
   <!-- drag-resize handle on left edge -->
   <div class="sp-resize-handle" id="spResizeHandle" title="ลากเพื่อปรับขนาด"></div>
@@ -3634,7 +3635,80 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
         { current: true,
-          ref: '#REV-20260627-A',
+          ref: '#REV-20260627-K',
+          date: '2026-06-27',
+          items: [
+            'form.html: เพิ่ม #saveFab — ปุ่มวงกลมลอยล่างจอ เฉพาะ Breakdown tab',
+            'style.css: .save-fab + @keyframes fabPulse — กรอกครบ → เปลี่ยนสีเขียว + pulse วูบวาบ',
+            'core.js: _checkFabReady() — ตรวจ field ครบ → toggle .fab-ready บน FAB',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-J',
+          date: '2026-06-27',
+          items: [
+            'theme.js: ขยาย Summary Panel เป็น 1/4 ของจอ — SP_DEFAULT = 25%viewport, viewportCap = 25%',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-I',
+          date: '2026-06-27',
+          items: [
+            'style.css: เพิ่ม .sp-toggle-btn + body.sp-collapsed (ซ่อน panel + padding-right:0)',
+            'theme.js: เพิ่ม toggleSummaryPanel() + _spRestoreCollapsed() — จำสถานะใน localStorage',
+            'form.html: เพิ่มปุ่ม #spToggleBtn ◀/▶ ก่อน #summaryPanel',
+            'data.js: dtLoadIntoForm — ข้ามตั้ง padding-right ถ้า sp-collapsed อยู่แล้ว',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-H',
+          date: '2026-06-27',
+          items: [ 'style.css: .profit-box .t-value font-size 1.25rem → 1.55rem ให้เท่ากับ Cost รวม' ]
+        },
+        { current: false,
+          ref: '#REV-20260627-G',
+          date: '2026-06-27',
+          items: [
+            'data.js: dtLoadIntoForm — แก้ panel ทับ content เมื่อโหลดจาก DATA: force body.style.paddingRight = (sp-width+8)px ผ่าน inline style ทันทีหลัง switchTab("breakdown") แล้วค่อย fill form + calcAll() + reset inline style',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-F',
+          date: '2026-06-27',
+          items: [
+            'data.js: dtLoadIntoForm — เปลี่ยนจาก void offsetWidth เป็น requestAnimationFrame ครอบ code set ค่าทั้งหมด ให้ browser paint frame จริงก่อน (layout ถูก 916px) ก่อนค่อย fill form + calcAll()',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-E',
+          date: '2026-06-27',
+          items: [
+            'data.js: dtLoadIntoForm — เพิ่ม void document.body.offsetWidth หลัง switchTab("breakdown") บังคับ synchronous reflow ทันที ป้องกัน card กว้าง 1144px (ผิด) แทนที่จะเป็น 916px (ถูก)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-D",
+          date: '2026-06-27',
+          items: [
+            'data.js: dtLoadIntoForm — ย้าย switchTab("breakdown") ขึ้นมาก่อน set ค่า แก้ panel ทับ cost fields เมื่อโหลดจ็อบจาก DATA (root cause: layout คำนวณขณะ no-summary-tab ยังอยู่ → padding-right:0)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-C",
+          date: '2026-06-27',
+          items: [
+            'style.css: body padding-right เพิ่ม 8px buffer → calc(var(--sp-width) + 8px) — ป้องกัน S6/S7 ล้นทับ summary panel แบบ borderline',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-B",
+          date: '2026-06-27',
+          items: [
+            'style.css: bd-cols grid เปลี่ยน 1fr 1fr → minmax(0,1fr) minmax(0,1fr) — แก้ bd-right ล้นทับ summary panel บนหน้าจอ ≤1440px ทำให้กด cost fields ไม่ได้',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260627-A",
           date: '2026-06-27',
           items: [
             'formcalc.js: เพิ่ม option "ไม่มี" ในช่อง ตะแกรงนอก/ใน (seed + loadMatOptions)',

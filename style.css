@@ -361,7 +361,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
 .profit-box.neg { background: rgba(210,80,80,.07); border-color: rgba(210,80,80,.22); }
 .t-label { font-size: .72rem; color: var(--t2); margin-bottom: 4px; }
 .total-box .t-value { font-size: 1.55rem; font-weight: 700; color: var(--c1); }
-.profit-box .t-value { font-size: 1.25rem; font-weight: 700; color: #4ecdc4; }
+.profit-box .t-value { font-size: 1.55rem; font-weight: 700; color: #4ecdc4; }
 .profit-box.neg .t-value { color: #e08080; }
 
 /* ── URL BANNER ─────────────────────────────────── */
@@ -1013,7 +1013,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
 @media (min-width: 1280px) {
   .bd-cols {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 16px;
     align-items: start; /* แต่ละ column สูงตามเนื้อหาตัวเอง — ไม่หดขยายตามกัน */
   }
@@ -1190,7 +1190,7 @@ select option { background: var(--sel-bg); color: var(--t1); }
 
 /* ── DESKTOP SUMMARY PANEL (≥1100px) ─────────────────── */
 @media (min-width: 1100px) {
-  body { padding-right: var(--sp-width); }
+  body { padding-right: calc(var(--sp-width) + 8px); }
 
   .summary-panel {
     display: flex; flex-direction: column;
@@ -1208,6 +1208,30 @@ select option { background: var(--sel-bg); color: var(--t1); }
   /* แท็บ Order: ซ่อน summary panel + คืนพื้นที่ให้ตารางเต็มจอ */
   body.no-summary-tab { padding-right: 0; }
   body.no-summary-tab .summary-panel { display: none; }
+  body.no-summary-tab .sp-toggle-btn { display: none; }
+
+  /* ปุ่ม toggle ซ่อน/แสดง summary panel */
+  .sp-toggle-btn {
+    position: fixed; top: 50%; right: var(--sp-width);
+    transform: translateY(-50%);
+    width: 18px; height: 48px;
+    background: var(--bg-card);
+    border: 1px solid var(--bc-div); border-right: none;
+    border-radius: 6px 0 0 6px;
+    cursor: pointer; color: var(--t3); font-size: .8rem;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 95; padding: 0; line-height: 1;
+  }
+  .sp-toggle-btn:hover { color: var(--c1); background: var(--bg-input); }
+
+  /* Collapsed state */
+  body.sp-collapsed { padding-right: 0; }
+  body.sp-collapsed .summary-panel { display: none; }
+  body.sp-collapsed .sp-toggle-btn {
+    right: 0;
+    border-right: 1px solid var(--bc-div); border-left: none;
+    border-radius: 0 6px 6px 0;
+  }
 
   /* แท็บ ติดตามงาน: โหมดเต็มจอ — ซ่อน sidebar/header/summary */
   body.trk-fullscreen-mode { padding-left: 0; padding-right: 0; }
@@ -1832,39 +1856,58 @@ body.trk-fullscreen-mode .trk-fs-toolbar {
     min-width: unset !important;
     flex-shrink: unset !important;
   }
-  .more-menu.mob-drawer-mode .tab-btn .t-icon {
-    font-size: 1.2rem !important;
-    min-width: 24px;
-  }
-  .more-menu.mob-drawer-mode .tab-btn .t-label {
-    font-size: .88rem !important;
-    opacity: 1 !important;
-    display: block !important;
-  }
-  .more-menu.mob-drawer-mode .tab-btn.active {
-    background: var(--acc-bg, #e0f2fe) !important;
-    color: var(--acc, #0891b2) !important;
-  }
-
-  /* Semi-transparent backdrop */
-  .mob-drawer-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.32);
-    z-index: 1099;
-    bottom: 60px; /* don't cover tab bar */
-  }
-  .mob-drawer-backdrop.show { display: block; }
+  
+/* ซ่อนเมื่อไม่อยู่ Breakdown tab */
+body.no-summary-tab .save-fab {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: scale(.7) !important;
+}
+.save-fab:hover {
+  transform: scale(1.10);
+  box-shadow: 0 6px 28px rgba(8,145,178,.65);
+}
+.save-fab:active {
+  transform: scale(.96);
+}
+.save-fab-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
 }
 
-/* ── Loan deduct notification badge ── */
-.loan-notify-dot {
-  display: inline-block;
-  width: 8px; height: 8px;
-  background: #22c55e;
+/* วงแหวน pulse — แสดงเมื่อ .fab-ready */
+.save-fab-ring {
+  position: absolute;
+  inset: -4px;
   border-radius: 50%;
-  margin-left: 5px;
-  vertical-align: middle;
-  flex-shrink: 0;
-  animation: loan-dot-blink 1s ease-in-out
+  border: 3px solid rgba(6,182,212,.6);
+  opacity: 0;
+  transform: scale(1);
+  pointer-events: none;
+}
+@keyframes fabPulse {
+  0%   { opacity: .85; transform: scale(1);    border-color: rgba(6,182,212,.7); }
+  60%  { opacity: .2;  transform: scale(1.55); border-color: rgba(6,182,212,.1); }
+  100% { opacity: 0;   transform: scale(1.75); border-color: transparent; }
+}
+.save-fab.fab-ready {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 4px 24px rgba(16,185,129,.55);
+}
+.save-fab.fab-ready .save-fab-ring {
+  animation: fabPulse 1.8s ease-out infinite;
+  border-color: rgba(16,185,129,.7);
+}
+.save-fab.fab-ready:hover {
+  box-shadow: 0 6px 30px rgba(16,185,129,.75);
+}
+
+/* บน mobile — เหนือ bottom-bar */
+@media (max-width: 767px) {
+  .save-fab {
+    bottom: 74px;
+    righ
