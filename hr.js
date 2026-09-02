@@ -921,14 +921,14 @@ function _hrSumTableHtml(rows) {
     attByEmp[id].push(r);
   });
 
-  // inject executive employees ที่ไม่มีข้อมูลสแกนหน้า (ไม่ต้องสแกน) ให้โผล่บนการ์ดด้วย
+  // inject executive employees — force overwrite เสมอ (แม้มีข้อมูลสแกนใน sheet ก็ไม่นับ)
   (_hrEmps || []).forEach(function(e) {
     if (e.type === 'executive') {
       var xid = String(e.empId);
-      if (!emp[xid]) {
-        emp[xid] = { name: e.name, dept: e.dept, type: 'executive',
-          present: 0, absent: 0, off: 0, lateTimes: 0, lateMin: 0, otWD: 0, otSun: 0 };
-      }
+      emp[xid] = { name: e.name, dept: e.dept, type: 'executive',
+        present: 0, absent: 0, off: 0, lateTimes: 0, lateMin: 0, otWD: 0, otSun: 0 };
+      // ล้าง attByEmp ด้วย เพื่อไม่ให้ payslip คิด scan rows
+      if (attByEmp[xid]) delete attByEmp[xid];
     }
   });
   const executive = Object.keys(emp).filter(function(id) { return emp[id].type === 'executive'; });
@@ -1177,14 +1177,13 @@ function _hrPayTableHtml(rows) {
     attByEmp[id].push(r);
   });
 
-  // inject executive ที่ไม่มีข้อมูลสแกน ให้โผล่บนการ์ดสรุปเงินเดือนด้วย
+  // inject executive ที่ไม่มีข้อมูลสแกน — force overwrite เสมอ ไม่นับ scan
   (_hrEmps || []).forEach(function(e) {
     if (e.type === 'executive') {
       var xid = String(e.empId);
-      if (!emp[xid]) {
-        emp[xid] = { name: e.name, dept: e.dept, type: 'executive',
-          present: 0, absent: 0, off: 0, lateTimes: 0, lateMin: 0, otWD: 0, otSun: 0 };
-      }
+      emp[xid] = { name: e.name, dept: e.dept, type: 'executive',
+        present: 0, absent: 0, off: 0, lateTimes: 0, lateMin: 0, otWD: 0, otSun: 0 };
+      if (attByEmp && attByEmp[xid]) delete attByEmp[xid];
     }
   });
   const executive = Object.keys(emp).filter(function(id) { return emp[id].type === 'executive'; });
@@ -1241,7 +1240,20 @@ function _hrPayTableHtml(rows) {
     var incHtml = iRow(baseLabel, ps.basePay, false);
     if (ps.otPayWD  > 0) incHtml += iRow('OT \u0e1b\u0e23\u0e01\u0e15\u0e34 (' + ps.otWDH  + ' \u0e0a\u0e21.)', ps.otPayWD,  true);
     if (ps.otPaySun > 0) incHtml += iRow('OT \u0e2d\u0e32\u0e17\u0e34\u0e15\u0e22\u0e4c (' + ps.otSunH + ' \u0e0a\u0e21.)', ps.otPaySun, true);
-    incHtml += sumRow('\u0e23\u0e27\u0e21\u0e23\u0e32\u0e22\u0e23\u0e31\u0e1a', ps.gross, '#059669');
+    (ps.allowances || []).filter(function(a){ return (a.effectiveAmount||0) > 0; }).forEach(function(a){
+      var aLbl = (a.label || 'เบี้ยเลี้ยง') + (ps.isPeriod && a.payIn === 'split' ? ' (แบ่ง 2 งวด)' : '');
+      incHtml += iRow(aLbl, a.effectiveAmount, true);
+    });
+    if (!paidRec) {
+      incHtml += '<div id="pcBonusWrap_' + id + '"></div>'
+        + '<input type="hidden" id="pcBonusCnt_' + id + '" value="0">'
+        + '<button type="button" onclick="hrPCAddBonus(\'' + id + '\')" '
+          + 'style="width:100%;margin:4px 0;padding:4px 0;background:transparent;border:1px dashed #10b981;'
+          + 'border-radius:6px;color:#10b981;font-family:Sarabun,sans-serif;font-size:.76rem;cursor:pointer">+ เพิ่มรายได้พิเศษ</button>';
+    }
+    incHtml += '<div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;margin-top:5px;padding-top:5px;border-top:1px dashed var(--bc-input)">'
+      + '<span style="color:#059669">รวมรายรับ</span>'
+      + '<span id="pcGross_' + id + '" data-gross="' + ps.gross.toFixed(2) + '" style="color:#059669">฿' + _hrFmt(ps.gross) + '</span></div>';
 
     // รายหัก
     var totalDed = 0, fixedDed = 0, dedHtml = '', _pcEditIdx = 0;
@@ -1277,11 +1289,16 @@ function _hrPayTableHtml(rows) {
     var baseForEdit = (ps.gross - (ps.offDeduct||0) - fixedDed).toFixed(2);
     var _allDedJson = ''; try { _allDedJson = encodeURIComponent(JSON.stringify(ps.loanDeductItems || [])); } catch(e2) {}
     var _allowJson = ''; try { _allowJson = encodeURIComponent(JSON.stringify(ps.allowances || [])); } catch(e3) {}
-    var dedSumHtml = dedHtml
+    // hidden inputs \u0e15\u0e49\u0e2d\u0e07 render \u0e40\u0e2a\u0e21\u0e2d (\u0e44\u0e21\u0e48\u0e1c\u0e39\u0e01\u0e01\u0e31\u0e1a dedHtml) \u0e40\u0e1e\u0e23\u0e32\u0e30\u0e1b\u0e38\u0e48\u0e21\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e15\u0e49\u0e2d\u0e07\u0e43\u0e0a\u0e49 pcBase_ \u0e44\u0e14\u0e49\u0e41\u0e21\u0e49\u0e1e\u0e19\u0e31\u0e01\u0e07\u0e32\u0e19\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2b\u0e31\u0e01\u0e40\u0e25\u0e22
+    var pcHiddenInputs = !paidRec
       ? '<input type="hidden" id="pcBase_' + id + '" value="' + baseForEdit + '">'
         + '<input type="hidden" id="pcAllDed_' + id + '" value="' + _allDedJson + '">'
         + '<input type="hidden" id="pcAllowances_' + id + '" value="' + _allowJson + '">'
-        + '<div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;margin-top:5px;padding-top:5px;border-top:1px dashed var(--bc-input)">'
+        + '<input type="hidden" id="pcFixedDed_' + id + '" value="' + fixedDed.toFixed(2) + '">'
+      : '';
+    incHtml += pcHiddenInputs;
+    var dedSumHtml = dedHtml
+      ? '<div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;margin-top:5px;padding-top:5px;border-top:1px dashed var(--bc-input)">'
           + '<span style="color:#ef4444">\u0e23\u0e27\u0e21\u0e23\u0e32\u0e22\u0e2b\u0e31\u0e01</span>'
           + '<span id="pcTDed_' + id + '" style="color:#ef4444">&minus;\u0e3f' + _hrFmt(totalDed) + '</span></div>'
       : '';
@@ -1626,8 +1643,12 @@ function _hrEmpAllowAdd() {
   var div = document.createElement('div');
   div.id = 'empFA_' + i;
   div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+  var _piSel = '<select id="empFAPayIn_'+i+'" style="width:116px;flex-shrink:0;padding:6px 8px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.79rem;background:var(--bg-input);color:var(--t1)">'
+    +'<option value="split" selected>แบ่ง 2 งวด</option><option value="all">ทุกงวด</option>'
+    +'<option value="p1">งวด 1</option><option value="p2">งวด 2</option></select>';
   div.innerHTML = '<input id="empFALbl_' + i + '" type="text" placeholder="ชื่อรายการ เช่น ค่าตำแหน่ง" style="flex:1;padding:7px 10px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.83rem;background:var(--bg-input);color:var(--t1)">'
-    + '<input id="empFAAmt_' + i + '" type="number" min="0" placeholder="0" value="0" style="width:100px;padding:7px 10px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.83rem;background:var(--bg-input);color:var(--t1)">'
+    + '<input id="empFAAmt_' + i + '" type="number" min="0" placeholder="0" value="0" style="width:90px;padding:7px 10px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.83rem;background:var(--bg-input);color:var(--t1)">'
+    + _piSel
     + '<button type="button" onclick="_hrEmpAllowRemove(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.9rem;flex-shrink:0">✕</button>';
   list.appendChild(div);
 }
@@ -1874,7 +1895,13 @@ function _hrEmpModal(emp, idx) {
         return rows.map(function(a, i) {
           return '<div id="empFA_' + i + '" style="display:flex;gap:6px;margin-bottom:6px;align-items:center">' +
             '<input id="empFALbl_' + i + '" type="text" placeholder="ชื่อรายการ เช่น ค่าตำแหน่ง" value="' + (a.label||'') + '" style="flex:1;padding:7px 10px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.83rem;background:var(--bg-input);color:var(--t1)">' +
-            '<input id="empFAAmt_' + i + '" type="number" min="0" placeholder="0" value="' + (a.amount||0) + '" style="width:100px;padding:7px 10px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.83rem;background:var(--bg-input);color:var(--t1)">' +
+            '<input id="empFAAmt_' + i + '" type="number" min="0" placeholder="0" value="' + (a.amount||0) + '" style="width:90px;padding:7px 10px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.83rem;background:var(--bg-input);color:var(--t1)">' +
+            (function(){ var pi=a.payIn||'split'; return '<select id="empFAPayIn_'+i+'" style="width:116px;flex-shrink:0;padding:6px 8px;border:1px solid var(--bc-input);border-radius:7px;font-family:Sarabun,sans-serif;font-size:.79rem;background:var(--bg-input);color:var(--t1)">'
+              +'<option value="split"'+(pi==='split'?' selected':'')+'>แบ่ง 2 งวด</option>'
+              +'<option value="all"'+(pi==='all'?' selected':'')+'>ทุกงวด</option>'
+              +'<option value="p1"'+(pi==='p1'?' selected':'')+'>งวด 1</option>'
+              +'<option value="p2"'+(pi==='p2'?' selected':'')+'>งวด 2</option>'
+              +'</select>'; })() +
             '<button type="button" onclick="_hrEmpAllowRemove(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.9rem;flex-shrink:0">✕</button>' +
           '</div>';
         }).join('');
@@ -1930,7 +1957,8 @@ function _hrEmpModal(emp, idx) {
             var lbl = document.getElementById('empFALbl_' + i);
             var amt = document.getElementById('empFAAmt_' + i);
             if (lbl && amt && lbl.value.trim()) {
-              result.push({ label: lbl.value.trim(), amount: parseFloat(amt.value) || 0 });
+              var payInEl = document.getElementById('empFAPayIn_' + i);
+              result.push({ label: lbl.value.trim(), amount: parseFloat(amt.value) || 0, payIn: payInEl ? payInEl.value : 'split' });
             }
           }
           return result;
@@ -3249,7 +3277,19 @@ function _hrCalcPayslip(emp, att, month, period) {
   const otPaySun = otSunH * otRateSun;
   // allowances จากข้อมูลพนักงาน
   var allowances = (emp && emp.allowances) || [];
-  var allowanceTotal = allowances.reduce(function(s, a) { return s + (parseFloat(a.amount) || 0); }, 0);
+  var effectiveAllowances = allowances.map(function(a) {
+    var amt = parseFloat(a.amount) || 0;
+    var payIn = a.payIn || 'split';
+    var effAmt = amt;
+    if (isPeriod) {
+      if (payIn === 'split') effAmt = amt / 2;
+      else if (payIn === 'p1') effAmt = (period === 'p1') ? amt : 0;
+      else if (payIn === 'p2') effAmt = (period === 'p2') ? amt : 0;
+      // 'all' → effAmt = amt
+    }
+    return { label: a.label || '', amount: amt, payIn: payIn, effectiveAmount: effAmt };
+  });
+  var allowanceTotal = effectiveAllowances.reduce(function(s, a) { return s + a.effectiveAmount; }, 0);
   const gross    = basePay + otPayWD + otPaySun + allowanceTotal;
 
   // ── หักเงินกู้/เบิก — ดึงจาก _hrLoanContracts + _hrLoans (approved) ──
@@ -3375,7 +3415,7 @@ function _hrCalcPayslip(emp, att, month, period) {
     otWDH: otWDH, otSunH: otSunH,
     salary: salary, dailyRate: dailyRate, otRateWD: otRateWD, otRateSun: otRateSun,
     basePay: basePay, otPayWD: otPayWD, otPaySun: otPaySun,
-    allowances: allowances, allowanceTotal: allowanceTotal,
+    allowances: effectiveAllowances, allowanceTotal: allowanceTotal, period: period, isPeriod: isPeriod,
     absentDeduct: absentDeduct, offDeduct: offDeduct, gross: gross,
     loanDeductItems: loanDeductItems, loanDeductTotal: loanDeductTotal,
     net: net,
@@ -3396,8 +3436,8 @@ function _hrSlipHtml(p) {
       : 'เงินเดือน', p.basePay],
     p.otWDH  > 0 ? ['OT ปกติ (' + p.otWDH  + ' ชม. × ฿' + _hrFmt(p.otRateWD)  + ')', p.otPayWD]  : null,
     p.otSunH > 0 ? ['OT อาทิตย์ (' + p.otSunH + ' ชม. × ฿' + _hrFmt(p.otRateSun) + ')', p.otPaySun] : null,
-  ].concat((p.allowances || []).filter(function(a) { return a.amount > 0; }).map(function(a) {
-    return [a.label || 'รายได้อื่นๆ', a.amount];
+  ].concat((p.allowances || []).filter(function(a) { return (a.effectiveAmount || a.amount || 0) > 0; }).map(function(a) {
+    return [a.label || 'รายได้อื่นๆ', a.effectiveAmount || a.amount];
   })).filter(Boolean);
 
   const absentDeductRows = p.absentDeduct > 0
@@ -4087,6 +4127,11 @@ function hrLoanNew() {
         '<label style="font-size:.85rem;color:var(--t2)">เหตุผล</label>' +
         '<input id="lnFReason" type="text" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">' +
       '</div>' +
+      ((!_hrSession || _hrSession.role === 'manager') ?
+        '<div id="lnFDateRow" style="margin-bottom:10px">'
+        + '<label style="font-size:.85rem;color:var(--t2)">วันที่บันทึก <span style="font-size:.75rem;color:#f59e0b">(admin — ปล่อยว่างใช้วันนี้)</span></label>'
+        + '<input id="lnFDate" type="date" style="width:100%;padding:8px;border:1px solid var(--bc-input);border-radius:8px;background:var(--bg2);color:var(--t1);font-family:inherit;margin-top:4px;box-sizing:border-box">'
+        + '</div>' : '') +
       '<div id="lnBudgetInfo" style="font-size:.82rem;color:#4338ca;background:#e0e7ff;border-radius:8px;padding:8px 12px;display:none"></div>' +
     '</div>',
     showCancelButton: true,
@@ -4118,10 +4163,13 @@ function hrLoanNew() {
           }
         }
       }
+      var dateEl = document.getElementById('lnFDate');
+      var overrideDate = dateEl && dateEl.value ? dateEl.value : '';
       return {
         empId: empId, empName: empObj.name || '', dept: empObj.dept || '',
         type: type, amount: amt, reason: reason, repayPeriods: periods,
-        advanceBudget: parseFloat(empOpt.dataset.budget) || 0
+        advanceBudget: parseFloat(empOpt.dataset.budget) || 0,
+        overrideDate: overrideDate
       };
     }
   }).then(function(res) {
@@ -4729,6 +4777,41 @@ async function hrRecordSalaryPayment(empId, empName, netPay) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// hrPCAddBonus / hrPCRemoveBonus — เพิ่ม/ลบแถวรายได้พิเศษในการ์ด
+// ─────────────────────────────────────────────────────────────
+function hrPCAddBonus(empId) {
+  var cntEl = document.getElementById('pcBonusCnt_' + empId);
+  if (!cntEl) return;
+  var n = parseInt(cntEl.value) || 0;
+  var wrap = document.getElementById('pcBonusWrap_' + empId);
+  if (!wrap) return;
+  var row = document.createElement('div');
+  row.id = 'pcBonusRow_' + empId + '_' + n;
+  row.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px';
+  row.innerHTML =
+    '<input type="text" id="pcBonusLbl_' + empId + '_' + n + '" placeholder="รายละเอียด" value="รายได้พิเศษ"'
+      + ' style="flex:1;border:1px solid #86efac;border-radius:6px;padding:3px 6px;background:#f0fdf4;'
+      + 'color:#166534;font-family:Sarabun,sans-serif;font-size:.76rem">'
+    + '<span style="color:#059669;font-size:.75rem">+฿</span>'
+    + '<input type="number" id="pcBonusAmt_' + empId + '_' + n + '" placeholder="0" min="0" step="0.01" value=""'
+      + ' oninput="_hrPCRecalc(\'' + empId + '\')"'
+      + ' style="width:80px;border:1px solid #86efac;border-radius:6px;padding:3px 6px;background:#f0fdf4;'
+      + 'color:#059669;font-family:Sarabun,sans-serif;font-size:.76rem;font-weight:700;text-align:right">'
+    + '<button type="button" onclick="hrPCRemoveBonus(\'' + empId + '\',' + n + ')"'
+      + ' style="background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:2px 7px;'
+      + 'color:#ef4444;cursor:pointer;font-size:.75rem;font-family:Sarabun,sans-serif">✕</button>';
+  wrap.appendChild(row);
+  cntEl.value = n + 1;
+  _hrPCRecalc(empId);
+}
+
+function hrPCRemoveBonus(empId, n) {
+  var row = document.getElementById('pcBonusRow_' + empId + '_' + n);
+  if (row) row.remove();
+  _hrPCRecalc(empId);
+}
+
+// ─────────────────────────────────────────────────────────────
 // _hrPCRecalc — อัปเดต net ในการ์ดแบบ realtime เมื่อแก้ยอดหัก
 // ─────────────────────────────────────────────────────────────
 function _hrPCRecalc(empId) {
@@ -4739,18 +4822,28 @@ function _hrPCRecalc(empId) {
   document.querySelectorAll('[id^="pcLd_' + empId + '_"]').forEach(function(inp) {
     total += parseFloat(inp.value) || 0;
   });
-  var newNet = base - total;
+  var bonusTotal = 0;
+  document.querySelectorAll('[id^="pcBonusAmt_' + empId + '_"]').forEach(function(inp) {
+    bonusTotal += parseFloat(inp.value) || 0;
+  });
+  var newNet = base + bonusTotal - total;
   var netEl = document.getElementById('pcNet_' + empId);
   if (netEl) {
     netEl.textContent = '฿' + _hrFmt(newNet);
     netEl.setAttribute('data-net', newNet.toFixed(2));
   }
+  var grossEl = document.getElementById('pcGross_' + empId);
+  if (grossEl) {
+    var origGross = parseFloat(grossEl.getAttribute('data-gross')) || 0;
+    grossEl.textContent = '฿' + _hrFmt(origGross + bonusTotal);
+  }
+  var fixedDedEl = document.getElementById('pcFixedDed_' + empId);
+  var fixedDedVal = fixedDedEl ? (parseFloat(fixedDedEl.value) || 0) : 0;
   var tdEl = document.getElementById('pcTDed_' + empId);
   if (tdEl) {
-    var fixedEl = document.getElementById('pcBase_' + empId);
-    // totalDed = base - newNet
-    tdEl.textContent = '&minus;฿' + _hrFmt(base - newNet);
-    tdEl.innerHTML = '&minus;฿' + _hrFmt(base - newNet);
+    // รวมรายหักจริง = ยอดหักที่แก้ไขได้ + ยอดหักคงที่ (เช่น ประกันสังคม) — ไม่ผสมกับโบนัส
+    tdEl.textContent = '&minus;฿' + _hrFmt(total + fixedDedVal);
+    tdEl.innerHTML = '&minus;฿' + _hrFmt(total + fixedDedVal);
   }
 }
 
@@ -4786,6 +4879,20 @@ async function hrConfirmPayrollFromCard(empId, nameEnc, month, period) {
   var allowEl = document.getElementById('pcAllowances_' + empId);
   if (allowEl) {
     try { allowancesJson = decodeURIComponent(allowEl.value || '%5B%5D'); } catch(e3) {}
+  }
+
+  // รวมรายได้พิเศษ (bonus) ที่ผู้ใช้เพิ่มในการ์ดเข้ากับ allowancesJson
+  var cntEl = document.getElementById('pcBonusCnt_' + empId);
+  var bonusCnt = cntEl ? (parseInt(cntEl.value) || 0) : 0;
+  if (bonusCnt > 0) {
+    var allArr = [];
+    try { allArr = JSON.parse(allowancesJson); } catch(eb) {}
+    for (var bi = 0; bi < bonusCnt; bi++) {
+      var bAmt = parseFloat((document.getElementById('pcBonusAmt_' + empId + '_' + bi) || {}).value) || 0;
+      var bLbl = ((document.getElementById('pcBonusLbl_' + empId + '_' + bi) || {}).value || 'รายได้พิเศษ').trim();
+      if (bAmt > 0) allArr.push({ label: bLbl, effectiveAmount: bAmt, source: 'bonus', payIn: 'once' });
+    }
+    allowancesJson = JSON.stringify(allArr);
   }
 
   await hrConfirmPayroll(empId, nameEnc, net, month, period, loanEnc, allowancesJson);
@@ -5285,6 +5392,10 @@ function _hrLoanContractCardHtml(lc) {
           ? '<button onclick="hrLoanContractRecordPayment(\'' + lc.loanId + '\')" style="flex:1;background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;border-radius:10px;padding:9px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.86rem;font-weight:700;box-shadow:0 2px 8px rgba(8,145,178,.25)">💳 บันทึกการหัก</button>'
           : '') +
         '<button onclick="hrViewLoanContract(\'' + lc.loanId + '\')" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:10px;padding:9px 10px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.86rem;font-weight:700;box-shadow:0 2px 8px rgba(124,58,237,.2)">📄 ดูสัญญา</button>' +
+        (_lcIsAdmin
+          ? '<button onclick="hrLoanContractEdit(\'' + lc.loanId + '\')" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;padding:9px 12px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.86rem;font-weight:700">✏️</button>' +
+            '<button onclick="hrLoanContractDelete(\'' + lc.loanId + '\',\'' + encodeURIComponent(lc.empName||'') + '\')" style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:10px;padding:9px 12px;cursor:pointer;font-family:\'Sarabun\',sans-serif;font-size:.86rem;font-weight:700">🗑️</button>'
+          : '') +
       '</div>' +
     '</div>' +
     '</div>'
@@ -5292,6 +5403,109 @@ function _hrLoanContractCardHtml(lc) {
 }
 
 // ── Add contract form ─────────────────────────────────────────────────
+
+// ── Edit contract ──────────────────────────────────────────────────────
+function hrLoanContractEdit(loanId) {
+  var lc = (_hrLoanContracts||[]).find(function(x){ return x.loanId === loanId; });
+  if (!lc) { Swal.fire({icon:'error',title:'ไม่พบสัญญา',background:'#0d1b2a',color:'#cce4ff'}); return; }
+  var isActive = lc.status === 'active';
+  Swal.fire({
+    title: '✏️ แก้ไขสัญญา ' + lc.loanId,
+    html:
+      '<div style="text-align:left;display:flex;flex-direction:column;gap:10px;font-size:.88rem;font-family:\'Sarabun\',sans-serif">' +
+        '<div><label style="font-size:.8rem;color:#94a3b8;display:block;margin-bottom:3px">ประเภท</label>' +
+          '<select id="lcE_type" style="width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-size:.88rem">' +
+            '<option value="loan"' + (lc.type==='loan'?' selected':'') + '>เงินกู้</option>' +
+            '<option value="advance"' + (lc.type==='advance'?' selected':'') + '>เบิกล่วงหน้า</option>' +
+          '</select></div>' +
+        '<div><label style="font-size:.8rem;color:#94a3b8;display:block;margin-bottom:3px">ยอดเงินกู้รวม (บาท)</label>' +
+          '<input id="lcE_orig" type="number" step="0.01" value="' + lc.originalAmount + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-size:.88rem"></div>' +
+        (isActive
+          ? '<div><label style="font-size:.8rem;color:#94a3b8;display:block;margin-bottom:3px">ยอดคงค้าง (บาท)</label>' +
+              '<input id="lcE_out" type="number" step="0.01" value="' + lc.outstanding + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-size:.88rem"></div>'
+          : '') +
+        '<div><label style="font-size:.8rem;color:#94a3b8;display:block;margin-bottom:3px">หักต่องวด (บาท)</label>' +
+          '<input id="lcE_inst" type="number" step="0.01" value="' + lc.installmentAmt + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-size:.88rem"></div>' +
+        '<div><label style="font-size:.8rem;color:#94a3b8;display:block;margin-bottom:3px">วันหัก (เช่น 1,16)</label>' +
+          '<input id="lcE_days" type="text" value="' + lc.payDays + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-size:.88rem"></div>' +
+        '<div><label style="font-size:.8rem;color:#94a3b8;display:block;margin-bottom:3px">เหตุผล / รายละเอียด</label>' +
+          '<input id="lcE_reason" type="text" value="' + (lc.reason||'') + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-size:.88rem"></div>' +
+        '<div><label style="font-size:.8rem;color:#94a3b8;display:block;margin-bottom:3px">หมายเหตุ</label>' +
+          '<input id="lcE_notes" type="text" value="' + (lc.notes||'') + '" style="width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cce4ff;font-size:.88rem"></div>' +
+      '</div>',
+    background: '#0d1b2a', color: '#cce4ff',
+    showCancelButton: true,
+    confirmButtonText: '💾 บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#059669',
+    preConfirm: function() {
+      var orig = parseFloat(document.getElementById('lcE_orig').value) || 0;
+      var out  = isActive ? (parseFloat(document.getElementById('lcE_out').value) || 0) : lc.outstanding;
+      var inst = parseFloat(document.getElementById('lcE_inst').value) || 0;
+      var days = (document.getElementById('lcE_days').value||'').trim();
+      if (!orig || !inst || !days) { Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบ'); return false; }
+      if (out > orig) { Swal.showValidationMessage('ยอดคงค้างต้องไม่เกินยอดกู้รวม'); return false; }
+      return {
+        type:           document.getElementById('lcE_type').value,
+        originalAmount: orig,
+        outstanding:    out,
+        installmentAmt: inst,
+        payDays:        days,
+        reason:         document.getElementById('lcE_reason').value,
+        notes:          document.getElementById('lcE_notes').value,
+      };
+    }
+  }).then(function(result) {
+    if (!result.isConfirmed) return;
+    if (!SCRIPT_URL) return;
+    Swal.fire({title:'กำลังบันทึก...',allowOutsideClick:false,didOpen:function(){ Swal.showLoading(); },background:'#0d1b2a',color:'#cce4ff'});
+    fetch(SCRIPT_URL, {
+      method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify(Object.assign({ action:'saveHRLoanContract', loanId: loanId }, result.value))
+    }).then(function(r){ return r.json(); }).then(function(data) {
+      if (data.status !== 'ok') throw new Error(data.message||'unknown');
+      // อัป local cache
+      var c = (_hrLoanContracts||[]).find(function(x){ return x.loanId===loanId; });
+      if (c) Object.assign(c, result.value);
+      _hrRenderLoans();
+      Swal.fire({icon:'success',title:'บันทึกแล้ว ✅',toast:true,position:'top-end',timer:2000,showConfirmButton:false,background:'#0d1b2a',color:'#cce4ff'});
+    }).catch(function(e){
+      Swal.fire({icon:'error',title:'บันทึกไม่สำเร็จ',text:e.message,background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#dc2626'});
+    });
+  });
+}
+
+// ── Delete contract ─────────────────────────────────────────────────────
+function hrLoanContractDelete(loanId, nameEnc) {
+  var empName = decodeURIComponent(nameEnc||'');
+  Swal.fire({
+    icon: 'warning',
+    title: 'ลบสัญญา ' + loanId + '?',
+    html: '<div style="font-size:.85rem;color:#94a3b8">พนักงาน: <b style="color:#f1f5f9">' + empName + '</b><br>การลบไม่สามารถย้อนกลับได้</div>',
+    showCancelButton: true,
+    confirmButtonText: '🗑️ ลบเลย',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#dc2626',
+    background: '#0d1b2a', color: '#cce4ff'
+  }).then(function(result) {
+    if (!result.isConfirmed) return;
+    if (!SCRIPT_URL) return;
+    Swal.fire({title:'กำลังลบ...',allowOutsideClick:false,didOpen:function(){ Swal.showLoading(); },background:'#0d1b2a',color:'#cce4ff'});
+    fetch(SCRIPT_URL, {
+      method:'POST', mode:'cors', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({ action:'deleteHRLoanContract', loanId: loanId })
+    }).then(function(r){ return r.json(); }).then(function(data) {
+      if (data.status !== 'ok') throw new Error(data.message||'unknown');
+      _hrLoanContracts = (_hrLoanContracts||[]).filter(function(x){ return x.loanId!==loanId; });
+      _hrRenderLoans();
+      Swal.fire({icon:'success',title:'ลบแล้ว',toast:true,position:'top-end',timer:2000,showConfirmButton:false,background:'#0d1b2a',color:'#cce4ff'});
+    }).catch(function(e){
+      Swal.fire({icon:'error',title:'ลบไม่สำเร็จ',text:e.message,background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#dc2626'});
+    });
+  });
+}
+
+
 function hrLoanContractAdd() {
   var empOptions = (_hrEmps||[]).map(function(e){
     return '<option value="' + e.empId + '">' + e.name + ' (' + (e.dept||'') + ')</option>';
@@ -5731,6 +5945,14 @@ function _hrRegBuildTable() {
     var attByEmp = {};
     attFiltered.forEach(function(r) { var id = String(r.empId||''); if (!attByEmp[id]) attByEmp[id] = []; attByEmp[id].push(r); });
 
+    // ล้าง attByEmp สำหรับ executive — ไม่นับ scan (เหมือน summary card)
+    emps.forEach(function(e) {
+      if (e.type === 'executive') {
+        var xid = String(e.empId);
+        if (attByEmp[xid]) delete attByEmp[xid];
+      }
+    });
+
     // หา salaryPayment ของเดือน+งวดนี้ (สำหรับ snapshot)
     var paidMap = {};
     salPays.forEach(function(sp) {
@@ -5767,7 +5989,8 @@ function _hrRegBuildTable() {
       if (paidRec && paidRec.deductItems) {
         try {
           var actualDeds = Array.isArray(paidRec.deductItems) ? paidRec.deductItems : JSON.parse(paidRec.deductItems||"[]");
-          if (Array.isArray(actualDeds) && actualDeds.length > 0) {
+          if (Array.isArray(actualDeds)) {
+            // ถ้ามี paidRec (โอนแล้ว) ให้ใช้ actual เสมอ แม้ deductItems จะว่าง
             actualDeds.forEach(function(d) {
               var amt = Number(d.amount) || 0;
               if (d.source === 'sso')         sso     += amt;
@@ -5782,13 +6005,17 @@ function _hrRegBuildTable() {
         } catch(e) {}
       }
       if (!usedActual) {
+        // executive ที่ยังไม่ confirm → ไม่คิด loan/advance จาก calculated payslip
+        // (ตัวเลขหักจะกำหนดตอน confirm payroll เหมือน summary card)
+        var isExecUnpaid = (ps.type === 'executive') && !paidRec;
         (ps.loanDeductItems || []).forEach(function(d) {
           if (d.source === 'sso')          sso     += d.amount;
+          else if (isExecUnpaid)           return; // executive ข้าม
           else if (d.type === 'loan')      loanDed += d.amount;
           else if (d.type === 'advance')   advDed  += d.amount;
           else                             otherDed+= d.amount;
         });
-        totalDed = ps.loanDeductTotal;
+        totalDed = sso + loanDed + advDed + otherDed;
       }
       rows.push({
         empId: ps.empId, name: ps.name, dept: ps.dept,
@@ -5858,7 +6085,7 @@ function _hrRegBuildTable() {
     // dynamic allowance headers
     var allowCols = allAllowNames.map(function(n) { return th(n, 'right'); }).join('');
     var allowTotCols = allAllowNames.map(function(n) {
-      var s = 0; rows.forEach(function(r) { var a = (r.allowances||[]).find(function(x){return x.label===n;}); if(a) s+=Number(a.amount)||0; });
+      var s = 0; rows.forEach(function(r) { var a = (r.allowances||[]).find(function(x){return x.label===n;}); if(a) s+=Number(a.effectiveAmount||a.amount)||0; });
       return '<td style="padding:4px 7px;font-size:.78rem;border:1px solid #e2e8f0;text-align:right;font-weight:700">'+fmt(Math.round(s))+'</td>';
     }).join('');
 
@@ -5881,7 +6108,7 @@ function _hrRegBuildTable() {
       var paidStyle = r.isPaid ? 'background:#f0fdf4' : '';
       var allowTds = allAllowNames.map(function(n) {
         var a = (r.allowances||[]).find(function(x){return x.label===n;});
-        return td(a ? fmt(Math.round(Number(a.amount)||0)) : '-', 'right');
+        return td(a ? fmt(Math.round(Number(a.effectiveAmount||a.amount)||0)) : '-', 'right');
       }).join('');
       return '<tr style="' + paidStyle + '">' +
         td(i+1) + td(r.name, 'left') +
@@ -5975,7 +6202,7 @@ function hrPrintPayrollRegister() {
     var bg = r.isPaid ? 'background:#f0fdf4' : '';
     var pAllowTd = pAllowNames.map(function(n){
       var a = (r.allowances||[]).find(function(x){return x.label===n;});
-      return '<td style="'+tdStyle+'">'+(a?fmt(Number(a.amount)||0):'-')+'</td>';
+      return '<td style="'+tdStyle+'">'+(a?fmt(Number(a.effectiveAmount||a.amount)||0):'-')+'</td>';
     }).join('');
     return '<tr style="'+bg+'">' +
       '<td style="'+tdCStyle+'">'+  (i+1) +'</td>' +
@@ -6002,7 +6229,7 @@ function hrPrintPayrollRegister() {
   }).join('');
 
   var pAllowTotTd = pAllowNames.map(function(n){
-    var s=0; rows.forEach(function(r){ var a=(r.allowances||[]).find(function(x){return x.label===n;}); if(a) s+=Number(a.amount)||0; });
+    var s=0; rows.forEach(function(r){ var a=(r.allowances||[]).find(function(x){return x.label===n;}); if(a) s+=Number(a.effectiveAmount||a.amount)||0; });
     return '<td style="'+tdStyle+';font-weight:700">'+fmt(s)+'</td>';
   }).join('');
 

@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v12.37</span>
+      <span class="ph-chip ver">v12.65</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -1679,6 +1679,12 @@
     </div>
     <div id="gordCardBody" style="display:none">
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 14px;margin-bottom:12px">
+      <div class="field" style="grid-column:1/-1"><label>เลือกจากใบเสนอราคา (ถ้ามี)</label>
+        <input type="text" id="gord_quoteSelect" list="gord_quoteList" placeholder="ค้นหาเลขที่/ลูกค้า..." onchange="_gordFillFromQuote(this.value)">
+        <datalist id="gord_quoteList"></datalist>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 14px;margin-bottom:12px">
       <div class="field"><label>ลูกค้า</label>
         <input type="text" id="gord_customer" list="gord_customerList" placeholder="ชื่อลูกค้า"
           onfocus="if(this.value){this.dataset.prev=this.value; this.value='';}"
@@ -1910,12 +1916,13 @@
 <div id="orderEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;
   align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--bg-card);border:1px solid var(--bc-card);border-radius:14px;
-    padding:18px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto">
+    padding:18px;max-width:880px;width:100%;max-height:90vh;overflow-y:auto">
     <div style="font-weight:700;font-size:.95rem;color:var(--t1);margin-bottom:12px">
       ✏️ แก้ไข Order — <span id="ordEdit_noPO" style="color:var(--c1)"></span>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 14px;margin-bottom:14px">
-      <div class="field" style="grid-column:1/-1"><label>ลูกค้า</label>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px 14px;margin-bottom:14px">
+      <div class="field"><label>No.PO</label><input type="text" id="ordEdit_newNoPO" placeholder="เลขที่ PO"></div>
+      <div class="field" style="grid-column:2/-1"><label>ลูกค้า</label>
         <select id="ordEdit_customer"></select>
       </div>
       <div class="field"><label>วันที่สั่งซื้อ</label><input type="date" id="ordEdit_orderDate"></div>
@@ -1944,10 +1951,10 @@
       <div class="field"><label>ราคา</label><input type="number" id="ordEdit_price" step="0.01"></div>
       <div class="field" style="grid-column:1/-1"><label>รายการสินค้า</label><input type="text" id="ordEdit_productList"></div>
       <div class="field"><label>วัตถุดิบ</label><input type="text" id="ordEdit_material"></div>
-      <div class="field"><label>ฝาบน</label><input type="text" id="ordEdit_matTop"></div>
-      <div class="field"><label>ฝาล่าง</label><input type="text" id="ordEdit_matBot"></div>
-      <div class="field"><label>ตะแกรงนอก</label><input type="text" id="ordEdit_meshOut"></div>
-      <div class="field"><label>ตะแกรงใน</label><input type="text" id="ordEdit_meshIn"></div>
+      <div class="field"><label>ฝาบน</label><select id="ordEdit_matTop"><option value="">—</option></select></div>
+      <div class="field"><label>ฝาล่าง</label><select id="ordEdit_matBot"><option value="">—</option></select></div>
+      <div class="field"><label>ตะแกรงนอก</label><select id="ordEdit_meshOut"><option value="">—</option></select></div>
+      <div class="field"><label>ตะแกรงใน</label><select id="ordEdit_meshIn"><option value="">—</option></select></div>
       <div class="field"><label>OD (mm)</label><input type="number" id="ordEdit_od" step="0.01" placeholder="—"></div>
       <div class="field"><label>ID (mm)</label><input type="number" id="ordEdit_id" step="0.01" placeholder="—"></div>
       <div class="field"><label>H (mm)</label><input type="number" id="ordEdit_h" step="0.01" placeholder="—"></div>
@@ -3349,7 +3356,6 @@
       <div class="field"><label>สถานะ</label>
         <select id="invEdit_status">
           <option value="ออกแล้ว">ออกแล้ว</option>
-          <option value="ยกเลิก">ยกเลิก</option>
         </select>
       </div>
     </div>
@@ -3478,23 +3484,23 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="core.js?v=9.01"></script>
-<script src="data.js?v=8.95"></script>
-<script src="formcalc.js?v=9.08"></script>
+<script src="core.js?v=9.03"></script>
+<script src="data.js?v=2.16"></script>
+<script src="formcalc.js?v=9.09"></script>
 <script src="aifeatures.js?v=8.94"></script>
 <script src="theme.js?v=9.10"></script>
-<script src="order.js?v=9.79"></script>
+<script src="order.js?v=9.85"></script>
 <script src="dashboard.js?v=9.73"></script>
 <script src="inspect.js?v=10.09"></script>
   <script src="stock.js?v=10.32"></script>
   <script src="report.js?v=1.0"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="hr.js?v=4.90"></script>
+<script src="hr.js?v=4.101"></script>
   <script src="imageEditor.js?v=1.1"></script>
-<script src="purchase.js?v=9.58"></script>
-<script src="invoice.js?v=9.03"></script>
-<script src="plating.js?v=8.96"></script>
+<script src="purchase.js?v=9.59"></script>
+<script src="invoice.js?v=9.10"></script>
+<script src="plating.js?v=8.97"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
 <div id="docExportOverlay">
@@ -3635,6 +3641,267 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
         { current: true,
+          ref: '#REV-20260902-G',
+          date: '2026-09-02',
+          items: [
+            'data.js v2.16: โคลนใบเสนอราคา (dtCopyRow) — เปลี่ยนวันที่ของใบใหม่เป็นวันที่ปัจจุบันอัตโนมัติ (เดิมใช้วันที่เดิมของใบต้นฉบับ) พร้อมโชว์วันที่ใหม่ในกล่องยืนยันก่อนคัดลอกด้วย',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260902-F',
+          date: '2026-09-02',
+          items: [
+            'data.js v2.15: ตอนลบใบเสนอราคาใน DATA — เพิ่มรายละเอียด (วันที่/ขนาด/ลูกค้า) ในกล่องยืนยันก่อนลบ และในข้อความแจ้งผลหลังลบสำเร็จ กันสับสนเวลามีเลขที่ซ้ำกันหลายแถวว่ากำลังลบแถวไหนกันแน่',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260902-E',
+          date: '2026-09-02',
+          items: [
+            'Code.gs: แก้บัคเลขใบเสนอราคาซ้ำ (No.Quo) — getNextNo() เดิมดูแค่แถวสุดท้ายของชีต DATA มา +1 (ไม่ได้หาค่าสูงสุดจริง) แก้ให้สแกนทั้งคอลัมน์หาค่าสูงสุดจริง; updateRow() เพิ่ม LockService กันชนกันตอน 2 คนบันทึกใบเสนอราคาใหม่พร้อมกันจนได้เลขซ้ำ (deployed @236)',
+            'data.js v2.14: แก้บัคกดปุ่ม "ลบ" ใน DATA(ใบเสนอราคา) แล้วไม่ลบจริง — property menu ลบตัวเองออกจากหน้าจอก่อนเรียกฟังก์ชันลบ ทำให้ dtDelete() หาปุ่มไม่เจอ (null) แล้ว error ก่อนจะทันส่งคำขอลบไปหา Google Sheet ด้วยซ้ำ แก้ให้ dtDelete() ทำงานได้ปกติแม้ btn จะเป็น null',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260902-D',
+          date: '2026-09-02',
+          items: [
+            'order.js v9.85: Order ทั่วไป ↔ ใบเสนอราคาทั่วไป — เพิ่มช่องค้นหา/เลือกใบเสนอราคาในฟอร์ม "สร้าง Order ทั่วไป" (ดึงลูกค้า/รายการ/จำนวน/ราคาต่อหน่วยก่อน VAT มาเติมอัตโนมัติ; ถ้าใบเสนอราคามีหลายรายการ จะรวมเป็นรายการเดียวโดยใช้ subtotal ก่อน VAT เป็นราคา) + เพิ่มปุ่ม "📦 สร้าง Order" ต่อแถวในรายการใบเสนอราคาทั่วไป เพื่อดึงข้อมูลขึ้นฟอร์มด้านบนและเลื่อนจอไปแสดงทันที',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260902-C',
+          date: '2026-09-02',
+          items: [
+            'hr.js v4.101: Payroll Card — แก้บัคโบนัสรอบ 2: พนักงานที่ไม่มีรายการหักเลย (เช่น ผู้บริหารไม่มี SSO) กด +เพิ่มรายได้พิเศษ แล้วไม่อัปเดตอะไรเลย (pcBase_ ไม่ถูก render เพราะผูกกับ dedHtml) — แก้ให้ hidden inputs (pcBase_/pcAllDed_/pcAllowances_/pcFixedDed_) render เสมอไม่ว่าจะมีรายการหักหรือไม่; "รวมรายหัก" ยังไม่รวมยอดหักคงที่ (เช่น SSO) ตอนมีโบนัส — เพิ่ม pcFixedDed_ ให้ _hrPCRecalc บวกกลับเข้าไปด้วย',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260902-B',
+          date: '2026-09-02',
+          items: [
+            'hr.js v4.100: Payroll Card — แก้บัคโบนัส: "รวมรายรับ" ไม่อัปเดตยอดโบนัส (เพิ่ม id/data-gross ให้ _hrPCRecalc อัปเดตได้), "รวมรายหัก" โชว์ผิดเมื่อมีโบนัส (เปลี่ยนสูตรให้ใช้ยอดหักจริงตรงๆ แทน base-net)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260902-A',
+          date: '2026-09-02',
+          items: [
+            'hr.js v4.99: Payroll Card — เพิ่มปุ่ม "+ เพิ่มรายได้พิเศษ" ใส่ยอดพิเศษเฉพาะงวดนั้น (ไม่กระทบเดือนอื่น); hrPCAddBonus() + hrPCRemoveBonus() + รวมเข้า allowancesJson (source: bonus) ตอนยืนยันจ่าย',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260824-A',
+          date: '2026-08-24',
+          items: [
+            'hr.js v4.98: สัญญาเงินกู้ — เพิ่มปุ่ม ✏️ แก้ไข / 🗑️ ลบ ในการ์ดสัญญา (manager เท่านั้น); hrLoanContractEdit() + hrLoanContractDelete()',
+            'Code.gs: เพิ่ม deleteHRLoanContract + handler doPost; saveHRLoanContract รองรับอัป originalAmount + startDate (ต้อง Redeploy)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260814-E',
+          date: '2026-08-14',
+          items: [
+            'form.html v12.64: ลบ option "ยกเลิก" ออกจาก dropdown สถานะในหน้าแก้ไขใบกำกับ — ป้องกันยกเลิกผ่าน edit modal (ซึ่งไม่เคลียร์ AC/AD ใน Order)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260814-D',
+          date: '2026-08-14',
+          items: [
+            'invoice.js v9.10: แก้ Stamp warning — ข้าม status "ยกเลิก" เพื่อไม่ให้แจ้งเตือน PO ของใบที่ยกเลิกแล้ว',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260814-C',
+          date: '2026-08-14',
+          items: [
+            'invoice.js v9.09: แก้บัค PO ไม่คืนหลังยกเลิกใบกำกับ — cancelIssuedInvoice อัป _orderCache (เคลียร์ col AC/AD) ทันทีหลัง success โดยไม่ต้อง re-fetch เพื่อให้ renderInvOrderList แสดง PO คืนได้เลย',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260814-B',
+          date: '2026-08-14',
+          items: [
+            'invoice.js v9.08: ใบกำกับที่ยกเลิก — เพิ่มปุ่ม "👁️ ดูรายละเอียด"; openEditInvoice ตรวจ status ยกเลิก → ล็อก input/select ทุกช่อง + banner แดง "ดูได้อย่างเดียว" + ซ่อนปุ่มบันทึก',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260814-A',
+          date: '2026-08-14',
+          items: [
+            'invoice.js v9.07: รายงานภาษีขาย — ใบกำกับที่ "ยกเลิก" แสดงในรายงานพร้อม badge สีแดง ตัวเลขขีดทับ แต่ไม่นับเข้ายอดรวม',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260806-C',
+          date: '2026-08-06',
+          items: [
+            'invoice.js v9.06: เพิ่มฟีเจอร์ "🚫 ยกเลิกใบกำกับ" — คงเลขที่ไว้ เปลี่ยน status→ยกเลิก + เคลียร์ AC/AD ใน Order ให้ PO กลับมาใช้ใหม่ได้; ใบยกเลิกแสดง strikethrough+badge แดง; _invInvoicedPOSet/_invFindDuplicatePOs ข้ามใบที่ยกเลิกแล้ว',
+            'Code.gs: เพิ่ม cancelInvoiceRecord action (ต้อง Redeploy)',
+            'plating.js v8.97: แก้บัค platingQty ไม่อัปตอน save แก้ไขใบส่งชุบ',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260806-B',
+          date: '2026-08-06',
+          items: [
+            'plating.js v8.97: แก้บัค badge "ส่งแล้ว X/Y" — ตอน save แก้ไขใบส่งชุบ ไม่ได้อัป platingQty ทำให้ badge ยังแสดงค่าเก่า แก้โดยให้ save platingQty พร้อมกับ qty ทุกครั้ง',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260806-A',
+          date: '2026-08-06',
+          items: [
+            'formcalc.js v9.09: loadAllData — เพิ่ม cache TTL 10 นาที สำหรับข้อมูลที่เปลี่ยนช้า (MAT/SpecMat/WorkTypes/Contacts/Mold/Labor) → reload ครั้งที่ 2 ดึงแค่ 2 requests แทน 8; ลบ dtRefresh background ออก (lazy load เมื่อเปิดแท็บ DATA)',
+            'order.js v9.84: ลบ DOMContentLoaded auto-fetch (_gquoFetchList/_wiLoad) ออก → lazy load เมื่อเปิดแท็บ Order',
+            'purchase.js v9.59: ลบ DOMContentLoaded auto-fetch (_rfqFetchList/_rfqLoadSupplierList) ออก → lazy load เมื่อเปิดแท็บ PO',
+            'core.js v9.03: switchTab order/po — เพิ่ม lazy init _gquoFetchList/_wiLoad และ _rfqFetchList/_rfqLoadSupplierList',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260804-D',
+          date: '2026-08-04',
+          items: [
+            'data.js v2.13: dtShareCard — ไม่เรียก _enableShareBtn() อีกต่อไป ป้องกันปุ่มแชร์/รูปใน Breakdown tab ถูก enable โดยไม่ได้บันทึก Breakdown จริงๆ (set _lastSavedRow โดยตรงแทน เพื่อให้ปุ่มในการ์ดแชร์ยังทำงานได้)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260804-C',
+          date: '2026-08-04',
+          items: [
+            'data.js v2.12: ⚙ Property ▾ — เปลี่ยนชื่อและเรียงลำดับใหม่: โหลดจ็อบ→"ส่งไปแก้ไข Break Down", คัดลอก→"โคลนใบเสนอราคา", สเปค→"พิมพ์ Spec"; จัดลำดับ: แก้ไข, โคลน, พิมพ์ Spec, Order, แชร์/รูป, ลบ',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260804-B',
+          date: '2026-08-04',
+          items: [
+            'order.js v9.83: รวมปุ่ม 👁️ดู / ✂️ตัดเหล็ก / 📋Job Order เป็นปุ่ม "⚙ Property ▾" อันเดียวใน tab Order — dropdown เดียวกับ DATA tab (ดูรายละเอียด, แก้ไข Order, ตัดเหล็ก, Job Order)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260804-A',
+          date: '2026-08-04',
+          items: [
+            'core.js v9.02: Auto-ping — ping Apps Script ทุก 8 นาที (fetch mode:no-cors) ป้องกัน cold start ช้า เริ่มอัตโนมัติเมื่อ SCRIPT_URL มีค่า, รีสตาร์ทอัตโนมัติเมื่อบันทึก URL ใหม่ในแท็บตั้งค่า',
+            'Code.gs: เพิ่ม action=ping ใน doGet — ส่งกลับ {status:ok,pong:true} เพื่อปลุก runtime (ต้อง Redeploy)',
+            'aifeatures.js: เรียก _autoPingStart() หลัง apiTabSaveScript บันทึก URL',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260726-E',
+          date: '2026-07-26',
+          items: [
+            'data.js v2.11: Property menu — เพิ่มตัวเลือก 📤 แชร์/รูป เรียก showSaveSuccessCard() จาก DATA row โดยตรง ไม่ต้องโหลดเข้าฟอร์มก่อน + set _lastSavedRow ให้ปุ่ม Breakdown ทำงานต่อได้',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260726-D',
+          date: '2026-07-26',
+          items: [
+            'data.js v2.10: รวมปุ่มปฏิบัติการ (โหลด/สเปค/Order/คัดลอก/ลบ) เป็นปุ่ม "⚙ Property ▾" อันเดียว — คลิกแล้วเปิด dropdown menu',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260726-C',
+          date: '2026-07-26',
+          items: [
+            'form.html: modal แก้ไข Order — ขยายกว้าง max-width 480→880px, grid เปลี่ยนเป็น 4 คอลัมน์',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260726-B',
+          date: '2026-07-26',
+          items: [
+            'form.html + order.js v9.82: ฟอร์มแก้ไข Order — เปลี่ยนช่องฝาบน/ฝาล่าง/ตะแกรงนอก/ตะแกรงใน จาก input text เป็น dropdown (ดึงจาก _localMatFlap/_localMatMesh เหมือนฟอร์มสร้าง Order)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260726-A',
+          date: '2026-07-26',
+          items: [
+            'form.html + order.js v9.81: เพิ่มช่อง No.PO แก้ไขได้ในฟอร์มแก้ไข Order — บันทึกเปลี่ยนเลข PO ในชีตได้โดยตรง',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260716-D',
+          date: '2026-07-16',
+          items: [
+            'hr.js v4.97: _hrRegBuildTable — ล้าง attByEmp สำหรับ executive ก่อนคำนวณ payslip (แก้ register แสดงหักขาด/ลา ทั้งที่ฝ่ายบริหารไม่มีขาดงาน)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260716-C',
+          date: '2026-07-16',
+          items: [
+            'hr.js v4.96: _hrRegBuildTable — executive ที่ยังไม่ confirm payroll ไม่คิด loan/advance จาก calculated payslip (ให้ตรงกับ summary card ที่แสดง 0)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260716-B',
+          date: '2026-07-16',
+          items: [
+            'hr.js v4.95: _hrRegBuildTable — allowance columns (ค่าตำแหน่ง, ค่าอาหาร ฯลฯ) ใช้ effectiveAmount แทน amount เพื่อแสดงยอดต่องวดแทนยอดเต็ม (ทั้ง screen และ print)',
+            'hr.js: _hrRegBuildTable — แก้ register แสดงหักเงินกู้ผิด: ถ้ามี paidRec (โอนแล้ว) ให้ใช้ deductItems actual เสมอแม้จะว่าง แก้ปัญหา executive แสดง loan 4000 ทั้งที่สลิปเป็น 0',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260716-A',
+          date: '2026-07-16',
+          items: [
+            'theme.js: Quotation card — ย้ายรูปใบขอราคาจากด้านล่างมาเป็น column ขวา (flex layout)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260715-I',
+          date: '2026-07-15',
+          items: [
+            'hr.js v4.97: _hrRegBuildTable — ล้าง attByEmp สำหรับ executive ก่อนคำนวณ payslip (แก้ register แสดงหักขาด/ลา ทั้งที่ฝ่ายบริหารไม่มีขาดงาน)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260716-C',
+          date: '2026-07-16',
+          items: [
+            'hr.js v4.96: _hrRegBuildTable — executive ที่ยังไม่ confirm payroll ไม่คิด loan/advance จาก calculated payslip (ให้ตรงกับ summary card ที่แสดง 0)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260715-G',
+          date: '2026-07-15',
+          items: [
+            'order.js v9.80: เพิ่ม _orderCacheLimited flag (default=true) — set false เมื่อ fetchOrders(true) โหลดครบ',
+            'invoice.js v9.05: invInit() — ข้าม fetchOrders(true) ถ้า _orderCacheLimited===false (cache ครบอยู่แล้ว ไม่ต้องโหลดซ้ำทุกครั้ง)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260715-F',
+          date: '2026-07-15',
+          items: [
+            'invoice.js v9.05: เพิ่ม _invPoTotalMap — build จาก renderInvOrderList ก่อน text filter',
+            'invoice.js: _invUpdateSummary ดึงยอดจาก _invPoTotalMap แทน scan _orderCache (แก้ราคา 0.00)',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260715-E',
+          date: '2026-07-15',
+          items: [
+            'hr.js v4.92: รายได้อื่นๆ — เพิ่ม dropdown payIn (แบ่ง 2 งวด/ทุกงวด/งวด 1/งวด 2) ในแต่ละแถว modal',
+            'hr.js: _hrCalcPayslip — คำนวณ effectiveAllowances ตาม payIn × งวดที่ดู',
+            'hr.js: การ์ดสรุปเงินเดือน — แสดงแถวรายได้อื่นๆ พร้อม hint "(แบ่ง 2 งวด)"',
+            'hr.js: ใบสลิป — ใช้ effectiveAmount แทน amount',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260715-D',
+          date: '2026-07-15',
+          items: [
+            'core.js v9.01: แก้ switchTab invoice — ลบ fetchOrders() ออก ป้องกัน race condition กับ invInit()',
+            'invoice.js v9.05: invInit() async — await fetchOrders(true) โหลด Order ทั้งหมดก่อน render (ป้องกัน PO เก่าหายจาก Invoice tab)',
+          ]
+        },
+        { current: false,
           ref: '#REV-20260702-B',
           date: '2026-07-02',
           items: [
@@ -3704,28 +3971,28 @@ const DEV_LOGS = [
           ]
         },
         { current: false,
-          ref: '#REV-20260627-D",
+          ref: '#REV-20260627-D',
           date: '2026-06-27',
           items: [
             'data.js: dtLoadIntoForm — ย้าย switchTab("breakdown") ขึ้นมาก่อน set ค่า แก้ panel ทับ cost fields เมื่อโหลดจ็อบจาก DATA (root cause: layout คำนวณขณะ no-summary-tab ยังอยู่ → padding-right:0)',
           ]
         },
         { current: false,
-          ref: '#REV-20260627-C",
+          ref: '#REV-20260627-C',
           date: '2026-06-27',
           items: [
             'style.css: body padding-right เพิ่ม 8px buffer → calc(var(--sp-width) + 8px) — ป้องกัน S6/S7 ล้นทับ summary panel แบบ borderline',
           ]
         },
         { current: false,
-          ref: '#REV-20260627-B",
+          ref: '#REV-20260627-B',
           date: '2026-06-27',
           items: [
             'style.css: bd-cols grid เปลี่ยน 1fr 1fr → minmax(0,1fr) minmax(0,1fr) — แก้ bd-right ล้นทับ summary panel บนหน้าจอ ≤1440px ทำให้กด cost fields ไม่ได้',
           ]
         },
         { current: false,
-          ref: '#REV-20260627-A",
+          ref: '#REV-20260627-A',
           date: '2026-06-27',
           items: [
             'formcalc.js: เพิ่ม option "ไม่มี" ในช่อง ตะแกรงนอก/ใน (seed + loadMatOptions)',
@@ -7264,9 +7531,7 @@ const DEV_LOGS = [
       'ใบสั่งงานผลิต (Work Order): แยกพื้นที่ "แบบงาน / DRAWING" เป็น 2 ช่อง — ช่องซ้ายแสดงรูป Drawing (หรือแผนภาพ SVG ตามแบบงานถ้าไม่มีรูป) ช่องขวาแสดงไฟล์ PO',
     ],
   },
-  {
-    ref: '#REV-20260614-CG',
-    date: '2026-06-14',
-    current: false,
-    items: [
-      'ใบสั่งงานผลิต (Work Order): ปรับส่วน "รายการ/จำนวน" ให้ตัวใหญ่เด่นชัดแบบเดียวกับใบส่งชุบ — แปลงชื่อรา�
+];
+</script>
+</body>
+</html>

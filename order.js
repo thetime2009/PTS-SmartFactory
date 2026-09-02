@@ -24,6 +24,7 @@ const ORDER_COLS = {
 };
 const ORDER_NUM_COLS = 38;
 let _orderCache = [];
+let _orderCacheLimited = true; // true = โหลดมาแค่บางส่วน, false = ครบทั้งหมด
 let _wiCache = []; // WI list โหลดจาก backend (match ด้วย OD+ID+H+workType)
 const ORDER_LOAD_LIMIT = 100; // โหลดปกติ = 100 รายการล่าสุด, กด "โหลดทั้งหมด" = 0 (ทั้งหมด)
 let _itemMasterCache = []; // รายการสินค้า/บริการที่ใช้บ่อย (Item Master) — โหลดจาก fetchItemMaster()
@@ -187,6 +188,21 @@ function _ordFillSelectOptions(id, opts) {
   el.innerHTML = opts.map(v => `<option value="${_escH(v)}">${v ? _escH(v) : '—'}</option>`).join('');
   if (cur && !opts.includes(cur)) el.appendChild(new Option(cur, cur));
   el.value = cur;
+}
+
+// เติม dropdown ฝาบน/ฝาล่าง/ตะแกรง ในฟอร์มแก้ไข Order
+function _ordEditPopulateMatMesh() {
+  const matCodes  = ['ไม่มี', ...Array.from(new Set((_localMatFlap||[]).map(m=>String(m.code||'').trim()).filter(Boolean))).sort()];
+  const meshCodes = ['ไม่มี', ...Array.from(new Set((_localMatMesh||[]).map(m=>String(m.code||'').trim()).filter(Boolean))).sort()];
+  ['ordEdit_matTop','ordEdit_matBot'].forEach(id => _ordFillSelectOptions(id, ['', ...matCodes.filter(v=>v!=='')]));
+  ['ordEdit_meshOut','ordEdit_meshIn'].forEach(id => _ordFillSelectOptions(id, ['', ...meshCodes.filter(v=>v!=='')]));
+  // เพิ่ม "ไม่มี" เป็น option ถ้ายังไม่มี
+  ['ordEdit_matTop','ordEdit_matBot','ordEdit_meshOut','ordEdit_meshIn'].forEach(function(id){
+    var el = $(id); if(!el) return;
+    if (!Array.from(el.options).some(function(o){return o.value==='ไม่มี';})) {
+      el.insertBefore(new Option('ไม่มี','ไม่มี'), el.options[1] || null);
+    }
+  });
 }
 
 // เติมค่าอัตโนมัติลงช่อง select โดยไม่ทับค่าที่ผู้ใช้แก้ไขเองแล้ว (เพิ่ม option ใหม่ถ้ายังไม่มีในลิสต์)
@@ -643,8 +659,57 @@ function _gordResetCard() {
   });
   if ($('gord_unit'))   $('gord_unit').value = 'ชิ้น';
   if ($('gord_status')) $('gord_status').value = 'กำลังผลิต';
+  if ($('gord_quoteSelect')) $('gord_quoteSelect').value = '';
   _ordClearPoFile('gord');
   _ordClearJobImg('gord');
+}
+
+// ── เติมข้อมูลฟอร์ม Order ทั่วไปจากข้อมูลใบเสนอราคา (obj) ──
+function _gordFillFromQuoteObj(q) {
+  if (!q) return;
+  const items = Array.isArray(q.items) ? q.items : [];
+  if ($('gord_customer')) $('gord_customer').value = q.customer || '';
+  if (items.length === 1) {
+    const it = items[0];
+    if ($('gord_productList')) $('gord_productList').value = it.desc || it.name || '';
+    if ($('gord_qty'))   $('gord_qty').value   = it.qty   || '';
+    if ($('gord_unit'))  $('gord_unit').value  = it.unit  || 'ชิ้น';
+    if ($('gord_price')) $('gord_price').value = it.price || '';
+  } else if (items.length > 1) {
+    const desc = items.map(it => `${it.desc || it.name || ''} (${it.qty || 0} ${it.unit || ''})`).join(', ');
+    const subtotal = items.reduce((s, it) => s + (parseFloat(it.qty)||0) * (parseFloat(it.price)||0), 0);
+    if ($('gord_productList')) $('gord_productList').value = desc;
+    if ($('gord_qty'))   $('gord_qty').value   = 1;
+    if ($('gord_unit'))  $('gord_unit').value  = 'งาน';
+    if ($('gord_price')) $('gord_price').value = subtotal || q.subtotal || '';
+  }
+  if ($('gord_note')) {
+    const noteBase = ($('gord_note').value || '').trim();
+    const refTag = 'อ้างอิงใบเสนอราคา: ' + (q.refNo || '');
+    if (!noteBase.includes(refTag)) $('gord_note').value = noteBase ? (noteBase + ' | ' + refTag) : refTag;
+  }
+}
+
+// เรียกจาก onchange ของช่องเลือกใบเสนอราคา (datalist) ในฟอร์ม "สร้าง Order ทั่วไป"
+function _gordFillFromQuote(selectedText) {
+  const text = (selectedText || '').trim();
+  if (!text) return;
+  const refNo = text.split('—')[0].trim(); // ตัดรูปแบบ "REFNO — ลูกค้า"
+  const q = (_gquoListCache || []).find(x => String(x.refNo || '').trim() === refNo);
+  if (!q) return;
+  _gordFillFromQuoteObj(q);
+  Swal.fire({ toast:true, position:'top-end', icon:'info',
+    title: `ดึงข้อมูลจาก ${_escH(q.refNo || '')} แล้ว`,
+    showConfirmButton:false, timer:1600, timerProgressBar:true });
+}
+
+// รีเฟรช datalist รายการใบเสนอราคาในฟอร์ม "สร้าง Order ทั่วไป"
+function _gordRefreshQuoteList() {
+  const dl = $('gord_quoteList');
+  if (!dl) return;
+  dl.innerHTML = (_gquoListCache || []).map(q =>
+    `<option value="${_escH(String(q.refNo || ''))} — ${_escH(String(q.customer || ''))}">`
+  ).join('');
 }
 
 // สร้าง Order ใหม่แบบทั่วไป (สินค้า/บริการอื่นๆ) — ไม่ต้องมีข้อมูลจาก DATA
@@ -951,6 +1016,7 @@ async function _gquoFetchList() {
     const data = await res.json();
     _gquoListCache = (data.data || []).reverse(); // ใหม่สุดก่อน
     _gquoRenderList();
+    _gordRefreshQuoteList();
   } catch(err) {
     tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#f87171;font-size:.8rem">โหลดไม่สำเร็จ: ${err.message}</td></tr>`;
   }
@@ -992,6 +1058,7 @@ function _gquoRenderList() {
       <td style="padding:8px 10px">${cust}</td>
       <td style="padding:8px 10px;text-align:right;font-weight:600">${grand} ฿</td>
       <td style="padding:8px 10px;text-align:center;white-space:nowrap">
+        <button onclick="_gquoCreateOrderFromList(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.1);color:#10b981;font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif;margin-right:4px">📦 สร้าง Order</button>
         <button onclick="_gquoLoadFromList(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.1);color:#a78bfa;font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif;margin-right:4px">✏️ แก้ไข</button>
         <button onclick="_gquoPreviewFromList(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid var(--bc-div);background:var(--bg-card);color:var(--t1);font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif;margin-right:4px">🖨️ พิมพ์</button>
         <button onclick="_gquoDeleteFromList(${i})" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#f87171;font-size:.72rem;cursor:pointer;font-family:Sarabun,sans-serif">🗑️ ลบ</button>
@@ -1041,6 +1108,25 @@ function _gquoLoadFromList(i) {
   Swal.fire({ toast:true, position:'top-end', icon:'info',
     title:`โหลด ${_escH(q.refNo||'')} ลงฟอร์มแล้ว`,
     showConfirmButton:false, timer:1600, timerProgressBar:true });
+}
+
+// ปุ่ม "📦 สร้าง Order" ต่อแถวใบเสนอราคา — เติมข้อมูลขึ้นฟอร์ม "สร้าง Order ทั่วไป" ด้านบน
+function _gquoCreateOrderFromList(i) {
+  const q = _gquoListCache[i];
+  if (!q) return;
+  // ขยายการ์ดฟอร์ม Order ทั่วไปถ้าซ่อนอยู่
+  const body = $('gordCardBody');
+  if (body && body.style.display === 'none') {
+    const toggle = body.closest('.card')?.querySelector('[onclick*="gordCardBody"]');
+    if (toggle) toggle.click();
+  }
+  _gordFillFromQuoteObj(q);
+  if ($('gord_quoteSelect')) $('gord_quoteSelect').value = `${q.refNo || ''} — ${q.customer || ''}`;
+  const card = $('gord_customer');
+  if (card) card.closest('.card')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  Swal.fire({ toast:true, position:'top-end', icon:'success',
+    title:`นำ ${_escH(q.refNo||'')} ไปสร้าง Order แล้ว`,
+    showConfirmButton:false, timer:1800, timerProgressBar:true });
 }
 
 function _gquoPreviewFromList(i) {
@@ -1565,7 +1651,7 @@ function _wiViewNext() {
 }
 
 
-document.addEventListener('DOMContentLoaded', () => { if ($('gquoItemsWrap')) _gquoRenderItems(); if ($('gquoListBody')) _gquoFetchList(); setTimeout(_wiLoad, 1500); });
+// _gquoFetchList และ _wiLoad โหลดเมื่อผู้ใช้เปิดแท็บ Order (lazy via switchTab)
 
 // ══════════════════════════════════════════════════════
 // ── Item Master: รายการสินค้า/บริการที่ใช้บ่อย (sheet "ItemMaster") ──
@@ -1790,6 +1876,7 @@ async function fetchOrders(showAll) {
     if (data.status === 'error') throw new Error(data.message || 'unknown');
     // กรองแถวว่าง (ไม่มีเลข PO) ออก — เกิดจากแถวเปล่าท้ายชีตที่ getLastRow() นับรวมมาด้วย
     _orderCache = (data.rows || []).filter(r => String(r[ORDER_COLS.noPO]||'').trim()).slice().reverse(); // ใหม่สุดก่อน
+    _orderCacheLimited = !!data.limited;
     _initSeenIfEmpty(SEEN_KEY_ORDER, _orderCache.map(r => r[ORDER_COLS.noPO]));
     _ordPage = 1;
     _ordPopulateMatMeshDatalists();
@@ -1971,21 +2058,12 @@ function renderOrderTable() {
       <td style="padding:8px 10px;text-align:center;font-size:.8rem;color:var(--t1)">${r[ORDER_COLS.qty]||'—'}</td>
       <td style="padding:8px 10px;font-size:.72rem;color:var(--t2)">${[note, note2].filter(Boolean).join(' / ') || '—'}</td>
       <td style="padding:8px 10px;text-align:right;font-size:.78rem;font-weight:600;color:var(--c1);white-space:nowrap">${price ? price.toLocaleString('th-TH',{minimumFractionDigits:2}) : '—'} <span style="font-size:.65rem">฿</span></td>
-      <td style="padding:8px 10px;text-align:center;white-space:nowrap">
-        <button onclick="showOrderDetail('${noPO.replace(/'/g,"\\'")}')"
-          style="padding:5px 10px;border-radius:7px;border:none;background:#2563eb;color:#fff;
-                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px">
-          👁️ ดู
-        </button>
-        <button onclick="_ordPrintCutting('${noPO.replace(/'/g,"\\'")}')"
-          style="padding:5px 10px;border-radius:7px;border:none;background:#f59e0b;color:#fff;
-                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px">
-          ✂️ ตัดเหล็ก
-        </button>
-        <button onclick="_ordPrintWorkOrder('${noPO.replace(/'/g,"\\'")}')"
-          style="padding:5px 10px;border-radius:7px;border:none;background:#7c3aed;color:#fff;
-                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px">
-          📋 Job Order
+      <td style="padding:8px 10px;text-align:center;white-space:nowrap;position:relative">
+        <button onclick="_ordOpenMenu(event,'${noPO.replace(/'/g,"\\'")}')"
+          style="padding:5px 12px;border-radius:7px;border:none;cursor:pointer;font-family:Sarabun,sans-serif;
+                 font-size:.72rem;font-weight:600;color:#fff;
+                 background:linear-gradient(135deg,#6366f1,#8b5cf6);white-space:nowrap">
+          ⚙ Property ▾
         </button>
       </td>
     </tr>`;
@@ -2431,6 +2509,47 @@ async function _ordMarkDelivered(noPO) {
 }
 
 // ── พิมพ์ Report ขนาดตัดเหล็ก: 1) จาก Order (OD/H) → 2) จาก DATA (No.Quo) → 3) กรอกเอง ──
+// ── Order Property dropdown menu ──
+var _ordMenuOpenNoPO = null;
+function _ordOpenMenu(e, noPO) {
+  e.stopPropagation();
+  var old = document.getElementById('ordPropMenu');
+  if (old) {
+    old.remove();
+    if (_ordMenuOpenNoPO === noPO) { _ordMenuOpenNoPO = null; return; }
+  }
+  _ordMenuOpenNoPO = noPO;
+  var btn = e.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var menu = document.createElement('div');
+  menu.id = 'ordPropMenu';
+  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--bg-card);border:1px solid var(--bc-card);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);min-width:175px;padding:5px 0;font-family:Sarabun,sans-serif;font-size:.82rem';
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.left = Math.max(4, rect.right - 175) + 'px';
+  var items = [
+    { icon:'👁️', label:'ดูรายละเอียด',   color:'#2563eb', fn: function(){ showOrderDetail(noPO); } },
+    { icon:'✏️', label:'แก้ไข Order',    color:'#d97706', fn: function(){ openEditOrder(noPO); } },
+    { icon:'✂️', label:'ตัดเหล็ก',      color:'#0891b2', fn: function(){ _ordPrintCutting(noPO); } },
+    { icon:'📋', label:'Job Order',       color:'#7c3aed', fn: function(){ _ordPrintWorkOrder(noPO); } },
+  ];
+  items.forEach(function(it) {
+    if (it.sep) {
+      var hr = document.createElement('div');
+      hr.style.cssText = 'border-top:1px solid var(--bc-div);margin:4px 0';
+      menu.appendChild(hr); return;
+    }
+    var row = document.createElement('button');
+    row.style.cssText = 'display:flex;align-items:center;gap:9px;width:100%;padding:8px 14px;border:none;background:transparent;color:'+it.color+';cursor:pointer;font-family:Sarabun,sans-serif;font-size:.82rem;font-weight:600;text-align:left';
+    row.onmouseover = function(){ this.style.background='var(--bg1,#f1f5f9)'; };
+    row.onmouseout  = function(){ this.style.background='transparent'; };
+    row.innerHTML = '<span>'+it.icon+'</span><span>'+it.label+'</span>';
+    row.onclick = function(ev){ ev.stopPropagation(); menu.remove(); _ordMenuOpenNoPO=null; it.fn(); };
+    menu.appendChild(row);
+  });
+  document.body.appendChild(menu);
+  setTimeout(function(){ document.addEventListener('click', function _close(){ menu.remove(); _ordMenuOpenNoPO=null; document.removeEventListener('click',_close); }); }, 0);
+}
+
 async function _ordPrintCutting(noPO) {
   const ord = _orderCache.find(row => String(row[ORDER_COLS.noPO]) === String(noPO));
   if (!ord) return;
@@ -2956,6 +3075,8 @@ function openEditOrder(noPO) {
   renderOrderTable();
   _ordEditNoPO = noPO;
   $('ordEdit_noPO').textContent  = noPO;
+  if ($('ordEdit_newNoPO')) $('ordEdit_newNoPO').value = noPO;
+  _ordEditPopulateMatMesh();
   _ordEditFillCustomerSelect(r[ORDER_COLS.customer] || '');
   $('ordEdit_orderDate').value   = _ordDateToInput(r[ORDER_COLS.orderDate]);
   $('ordEdit_wantDate').value    = _ordDateToInput(r[ORDER_COLS.wantDate]);
@@ -2997,10 +3118,12 @@ function closeOrderEdit() {
 async function saveOrderEdit() {
   if (!_ordEditNoPO) return;
   const editingNoPO = _ordEditNoPO;
+  const newNoPO = ($('ordEdit_newNoPO')?.value || '').trim() || editingNoPO;
   const r = _orderCache.find(row => String(row[ORDER_COLS.noPO]) === String(_ordEditNoPO));
   if (!r) return;
   const row = r.slice();
   while (row.length < ORDER_NUM_COLS) row.push('');
+  row[ORDER_COLS.noPO]        = newNoPO;
   row[ORDER_COLS.customer]    = $('ordEdit_customer').value;
   row[ORDER_COLS.orderDate]   = _ordDateToSheet($('ordEdit_orderDate').value);
   row[ORDER_COLS.wantDate]    = _ordDateToSheet($('ordEdit_wantDate').value);
@@ -3060,7 +3183,7 @@ async function saveOrderEdit() {
     await fetchOrders();
     Swal.fire({icon:'success',title:'บันทึกแล้ว ✅',background:'#0d1b2a',color:'#cce4ff',
       confirmButtonColor:'#6366f1', timer:1300, showConfirmButton:false});
-    setTimeout(() => showOrderDetail(editingNoPO), 900);
+    setTimeout(() => showOrderDetail(newNoPO), 900);
   } catch (err) {
     Swal.fire({icon:'error',title:'เกิดข้อผิดพลาด',text:'บันทึกไม่สำเร็จ',background:'#0d1b2a',color:'#cce4ff',confirmButtonColor:'#6366f1'});
     if (statusEl) statusEl.textContent = '';

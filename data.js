@@ -312,7 +312,7 @@ function dtRender() {
     const workNote = [r[DT.workType], r[DT.remark]].filter(Boolean).join(' · ');
     // ไฮไลต์แถวที่ใช้วัตถุดิบสแตนเลส/SUS304 (AW) เพราะราคาสูงเป็นพิเศษ
     const rawMatStr = String(r[DT.rawMat]||'').toUpperCase();
-    const isStainless = rawMatStr.includes('สแตนเลส') || rawMatStr.includes('SUS');
+    const isStainless = rawMatStr.includes('สแตนเลส') || rawMatStr.includes('แสตนเลส') || rawMatStr.includes('SUS');
     const rowBg = isStainless
       ? 'background:rgba(250,204,21,.16);border-left:3px solid #facc15'
       : (ri % 2 === 0 ? '' : 'background:var(--pair-bg)');
@@ -331,32 +331,11 @@ function dtRender() {
       <td style="padding:8px 10px;text-align:right;font-size:.78rem;color:var(--t1);font-weight:600">${fmtB(tc)} <span style="font-size:.65rem">฿</span></td>
       <td style="padding:8px 10px;text-align:right;font-size:.78rem;font-weight:600;color:${(sp>0&&tc>0&&sp<tc)?'#f87171':'var(--c1)'}">${fmtB(sp)} <span style="font-size:.65rem">฿</span></td>
       <td style="padding:8px 10px;font-size:.72rem;color:var(--t2);max-width:160px">${workNote||'—'}</td>
-      <td style="padding:8px 10px;text-align:center;white-space:nowrap">
-        <button onclick="dtLoadIntoForm(${globalIdx})"
-          style="padding:5px 10px;border-radius:7px;border:none;background:#16a34a;color:#fff;
-                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px">
-          📂 โหลดจ็อบนี้
-        </button>
-        <button onclick="dtShowSpecSheet(${globalIdx})"
-          style="padding:5px 10px;border-radius:7px;border:none;background:#2563eb;color:#fff;
-                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px">
-          📋 สเปค
-        </button>
-        <button onclick="dtAddOrder(${globalIdx})"
-          style="padding:5px 10px;border-radius:7px;border:none;background:#f59e0b;color:#1a1200;
-                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px;font-weight:700">
-          📦 Order
-        </button>
-        <button onclick="dtCopyRow(${globalIdx})"
-          style="padding:5px 10px;border-radius:7px;border:none;background:#0891b2;color:#fff;
-                 font-size:.7rem;cursor:pointer;font-family:Sarabun,sans-serif;margin:1px"
-          title="คัดลอกใบเสนอราคานี้เป็นเลขที่ใหม่">
-          📋 คัดลอก
-        </button>
-        <button onclick="dtDelete('${String(r[DT.noQuo]||'').replace(/'/g,"\\'")}',this)"
-          style="padding:5px 8px;border-radius:7px;border:1px solid rgba(248,113,113,.35);
-                 background:rgba(248,113,113,.1);color:#f87171;font-size:.7rem;cursor:pointer;margin:1px">
-          🗑️
+      <td style="padding:8px 10px;text-align:center;white-space:nowrap;position:relative">
+        <button onclick="dtOpenMenu(event,${globalIdx},'${String(r[DT.noQuo]||'').replace(/'/g,"\\'")}')"
+          style="padding:5px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
+                 font-size:.75rem;cursor:pointer;font-family:Sarabun,sans-serif;font-weight:700">
+          ⚙ Property ▾
         </button>
       </td>
     </tr>`;
@@ -539,6 +518,64 @@ function _toIso(thaiShort) {
   return thaiShort;
 }
 
+// ── Property dropdown menu ──────────────────────────────────────
+var _dtMenuOpen = false;
+function dtOpenMenu(e, idx, noQuo) {
+  e.stopPropagation();
+  var old = document.getElementById('dtPropMenu');
+  if (old) {
+    old.remove();
+    if (_dtMenuOpen === idx) { _dtMenuOpen = false; return; }
+  }
+  _dtMenuOpen = idx;
+  var btn = e.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var menu = document.createElement('div');
+  menu.id = 'dtPropMenu';
+  menu.style.cssText = 'position:fixed;z-index:9999;background:var(--bg-card);border:1px solid var(--bc-card);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);min-width:170px;padding:5px 0;font-family:Sarabun,sans-serif;font-size:.82rem';
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.left = Math.max(4, rect.right - 170) + 'px';
+  var items = [
+    { icon:'✏️', label:'ส่งไปแก้ไข Break Down', color:'#059669', fn: function(){ dtLoadIntoForm(idx); } },
+    { icon:'📋', label:'โคลนใบเสนอราคา',         color:'#0891b2', fn: function(){ dtCopyRow(idx); } },
+    { icon:'🖨️', label:'พิมพ์ Spec',             color:'#2563eb', fn: function(){ dtShowSpecSheet(idx); } },
+    { icon:'📦', label:'สร้าง Order',             color:'#d97706', fn: function(){ dtAddOrder(idx); } },
+    { icon:'📤', label:'แชร์/รูป',               color:'#7c3aed', fn: function(){ dtShareCard(idx); } },
+    { sep: true },
+    { icon:'🗑️', label:'ลบ',                    color:'#ef4444', fn: function(){ var b=document.getElementById('dtPropMenu'); dtDelete(noQuo,b,idx); } },
+  ];
+  items.forEach(function(it) {
+    if (it.sep) {
+      var hr = document.createElement('div');
+      hr.style.cssText = 'border-top:1px solid var(--bc-div);margin:4px 0';
+      menu.appendChild(hr); return;
+    }
+    var row = document.createElement('button');
+    row.style.cssText = 'display:flex;align-items:center;gap:9px;width:100%;padding:8px 14px;border:none;background:transparent;color:'+it.color+';cursor:pointer;font-family:Sarabun,sans-serif;font-size:.82rem;font-weight:600;text-align:left';
+    row.onmouseover = function(){ this.style.background='var(--bg1,#f1f5f9)'; };
+    row.onmouseout  = function(){ this.style.background='transparent'; };
+    row.innerHTML = '<span>'+it.icon+'</span><span>'+it.label+'</span>';
+    row.onclick = function(ev){ ev.stopPropagation(); menu.remove(); _dtMenuOpen=false; it.fn(); };
+    menu.appendChild(row);
+  });
+  document.body.appendChild(menu);
+  setTimeout(function(){ document.addEventListener('click', function _close(){ menu.remove(); _dtMenuOpen=false; document.removeEventListener('click',_close); }); }, 0);
+}
+
+
+function dtShareCard(idx) {
+  var tbody = $('dtBody');
+  var rows = tbody && tbody._filteredRows;
+  if (!rows || !rows[idx]) return;
+  var r = rows[idx];
+  // เซ็ต _lastSavedRow เพื่อให้ปุ่มในการ์ดแชร์ (copy/image) ทำงานได้
+  // แต่ไม่เรียก _enableShareBtn เพื่อไม่ให้ปุ่มแชร์/รูปใน Breakdown tab ถูก enable
+  // (ปุ่มนั้น enable ได้ต้องบันทึก Breakdown จริงๆ เท่านั้น)
+  if (typeof _lastSavedRow !== 'undefined') _lastSavedRow = r;
+  if (typeof showSaveSuccessCard === 'function') showSaveSuccessCard(r, false);
+}
+
+
 function dtLoadIntoForm(idx) {
   const tbody = $('dtBody');
   const rows = tbody && tbody._filteredRows;
@@ -691,14 +728,19 @@ async function dtCopyRow(idx) {
     if (!isNaN(n) && n > maxNo) maxNo = n;
   });
   const nextNo = String(maxNo + 1);
+  // วันที่ใหม่ = วันที่ปัจจุบัน (ไม่ใช้วันที่เดิมของใบต้นฉบับ)
+  const newDateThai = (typeof isoToThaiShort === 'function' && typeof _todayStr === 'function')
+    ? isoToThaiShort(_todayStr())
+    : String(r[DT.date] || '');
 
   const { isConfirmed } = await Swal.fire({
     title: '📋 คัดลอกใบเสนอราคา',
     html: `<div style="text-align:left;font-size:.85rem;line-height:2.2">
       <div>คัดลอกจาก: <b>No.Quo ${srcNo}</b></div>
       <div>เลขที่ใหม่: <b style="color:#34d399;font-size:1.05rem">No.Quo ${nextNo}</b></div>
+      <div>วันที่ใหม่: <b style="color:#34d399">${newDateThai}</b></div>
       <div style="font-size:.78rem;color:#94a3b8;margin-top:4px">
-        ข้อมูลทั้งหมดเหมือนกัน — บันทึกลง Sheet เป็นแถวใหม่ทันที
+        ข้อมูลอื่นๆ เหมือนกันทั้งหมด — บันทึกลง Sheet เป็นแถวใหม่ทันที
       </div>
     </div>`,
     icon: 'question', showCancelButton: true,
@@ -708,11 +750,12 @@ async function dtCopyRow(idx) {
   });
   if (!isConfirmed) return;
 
-  // สร้าง row ใหม่ — copy ทั้งหมด แล้วเปลี่ยนเฉพาะ noQuo, rev, refId
+  // สร้าง row ใหม่ — copy ทั้งหมด แล้วเปลี่ยนเฉพาะ noQuo, rev, refId, date (เป็นวันที่ปัจจุบัน)
   const newRow = [...r];
   newRow[DT.noQuo]  = nextNo;
   newRow[DT.rev]    = 0;
   newRow[DT.refId]  = (typeof generateRefId === 'function') ? generateRefId() : '';
+  newRow[DT.date]   = newDateThai;
 
   Swal.fire({ title:'⏳ กำลังบันทึก…', allowOutsideClick:false,
     background:'#0a1c2e', color:'#f1f5f9', showConfirmButton:false,
@@ -932,29 +975,54 @@ function dtShowSpecSheet(idx) {
   if (swapBtn) swapBtn.style.display = 'none';
 }
 
-async function dtDelete(noQuo, btn) {
+// สร้างข้อความรายละเอียดแถว (เลขที่/วันที่/ขนาด/ลูกค้า) ไว้โชว์ตอนยืนยัน+แจ้งผลการลบ
+// กันสับสนเวลามีเลขที่ซ้ำกันหลายแถว จะได้รู้ว่ากำลังลบแถวไหนกันแน่
+function _dtDeleteDetailHtml(noQuo, idx) {
+  const r = (typeof idx === 'number' && _dtCache[idx] && String(_dtCache[idx][DT.noQuo]) === String(noQuo))
+    ? _dtCache[idx]
+    : _dtCache.find(row => String(row[DT.noQuo]) === String(noQuo));
+  if (!r) return '';
+  const od = r[DT.od]||'', id2 = r[DT.id]||'', h = r[DT.h]||'';
+  const od2r = parseFloat(r[DT.od2]) || 0;
+  const size = od && id2 && h
+    ? (od2r > 0 ? `${od2r}/${od}×${id2}×${h}` : `${od}×${id2}×${h}`)
+    : (r[DT.size]||'—');
+  const date = r[DT.date] || '—';
+  const contact = r[DT.contact] || '—';
+  return `<div style="font-size:.82rem;color:#8b8aaa;margin-top:6px;line-height:1.6">
+    วันที่: <b style="color:#cce4ff">${date}</b><br>
+    ขนาด: <b style="color:#cce4ff">${size}</b> มม.<br>
+    ลูกค้า: <b style="color:#cce4ff">${contact}</b>
+  </div>`;
+}
+
+async function dtDelete(noQuo, btn, idx) {
   if (!SCRIPT_URL) return;
+  const detailHtml = _dtDeleteDetailHtml(noQuo, idx);
   const confirm = await Swal.fire({
-    title:`ลบ ${noQuo}?`, text:'ข้อมูลจะถูกลบออกจาก Google Sheet',
+    title:`ลบ ${noQuo}?`,
+    html: 'ข้อมูลจะถูกลบออกจาก Google Sheet' + detailHtml,
     icon:'warning', showCancelButton:true,
     confirmButtonText:'🗑️ ลบ', cancelButtonText:'ยกเลิก',
     confirmButtonColor:'#dc2626', cancelButtonColor:'#475569',
     background:'#0a1c2e', color:'#f1f5f9'
   });
   if (!confirm.isConfirmed) return;
-  btn.disabled = true; btn.textContent = '…';
+  // btn อาจเป็น null ได้ (เช่น เรียกมาจาก property menu ที่ถูก .remove() ออกจากหน้าจอไปแล้วก่อนเรียกฟังก์ชันนี้)
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
     const res = await fetch(SCRIPT_URL, {
       method:'POST', mode:'no-cors',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({action:'deleteRow', noQuo})
     });
-    Swal.fire({icon:'success',title:'ลบแล้ว',timer:1200,showConfirmButton:false,
+    Swal.fire({icon:'success',title:`ลบแล้ว: ${noQuo}`,
+      html: detailHtml, timer:2800, showConfirmButton:false,
       background:'#0a1c2e',color:'#f1f5f9'});
     await dtRefresh(false);
   } catch(e) {
     Swal.fire({icon:'error',title:'ลบไม่สำเร็จ',text:e.message,background:'#0a1c2e',color:'#f1f5f9'});
-    btn.disabled = false; btn.textContent = '🗑️';
+    if (btn) { btn.disabled = false; btn.textContent = '🗑️'; }
   }
 }
 
