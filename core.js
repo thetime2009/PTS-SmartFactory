@@ -1,5 +1,41 @@
 const $ = id => document.getElementById(id);
 
+// ── Retry อัตโนมัติสำหรับ GET ไป Apps Script ──
+// Apps Script ตอบ 404/429/5xx เป็นครั้งคราวเมื่อโดนยิงถี่ (throttle)
+// → ลองใหม่อัตโนมัติก่อนโชว์ error (เฉพาะ GET, ข้าม POST/save และ no-cors)
+(function () {
+  if (typeof window === 'undefined' || !window.fetch || window.__pttsFetchPatched) return;
+  window.__pttsFetchPatched = true;
+  const _origFetch = window.fetch.bind(window);
+  const MAX_ATTEMPTS = 3; // ครั้งแรก + retry อีก 2
+  window.fetch = function (input, init) {
+    let url = '';
+    try { url = (typeof input === 'string') ? input : ((input && input.url) || ''); } catch (e) { url = ''; }
+    const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+    const mode   = (init && init.mode) || '';
+    const retryable = url.indexOf('script.google.com') !== -1 && method === 'GET' && mode !== 'no-cors';
+    if (!retryable) return _origFetch(input, init);
+    let attempt = 0;
+    const run = function () {
+      return _origFetch(input, init).then(function (res) {
+        const bad = res && (res.status === 404 || res.status === 429 || res.status >= 500);
+        if (bad && attempt < MAX_ATTEMPTS - 1) {
+          attempt++;
+          return new Promise(function (r) { setTimeout(r, 400 * attempt); }).then(run);
+        }
+        return res;
+      }).catch(function (err) {
+        if (attempt < MAX_ATTEMPTS - 1) {
+          attempt++;
+          return new Promise(function (r) { setTimeout(r, 400 * attempt); }).then(run);
+        }
+        throw err;
+      });
+    };
+    return run();
+  };
+})();
+
 // ── ป้องกันกดปุ่ม Save/ปุ่มสำคัญซ้ำระหว่างรอข้อมูลจาก cloud (กันกดซ้ำ/ทำซ้ำ) ──
 // ใช้: onclick="guardClick(this, () => saveXxx())"  หรือ onclick="guardClick(this, saveXxx)"
 async function guardClick(btn, fn, busyText) {
@@ -123,7 +159,31 @@ let SCRIPT_URL = localStorage.getItem('ptts_script_url') || '';
 if (SCRIPT_URL) {
   if ($('apiTab_scriptUrl')) $('apiTab_scriptUrl').value = SCRIPT_URL;
   if ($('setupBanner')) $('setupBanner').style.borderColor = 'rgba(52,211,153,.4)';
+  // เริ่ม auto-ping หลัง script โหลดครบ (2 วิ เผื่อ init)
+  setTimeout(function(){ if(typeof _autoPingStart==='function') _autoPingStart(); }, 2000);
 }
+// ── Auto-ping: ปลุก Apps Script runtime ทุก 8 นาที ป้องกัน cold start ──
+var _autoPingTimer = null;
+var _PING_INTERVAL = 8 * 60 * 1000; // 8 นาที
+
+function _autoPing() {
+  if (!SCRIPT_URL) return;
+  fetch(SCRIPT_URL + '?action=ping&_t=' + Date.now(), { mode: 'no-cors' })
+    .catch(function() {}); // ไม่สน error — เป้าหมายคือแค่ปลุก runtime
+}
+
+function _autoPingStart() {
+  _autoPingStop();
+  if (!SCRIPT_URL) return;
+  _autoPing(); // ping ทันทีตอนเริ่ม
+  _autoPingTimer = setInterval(_autoPing, _PING_INTERVAL);
+}
+
+function _autoPingStop() {
+  if (_autoPingTimer) { clearInterval(_autoPingTimer); _autoPingTimer = null; }
+}
+
+
 function saveScriptUrl() {
   // redirect to apiTabSaveScript
   apiTabSaveScript();
@@ -548,6 +608,7 @@ function switchTab(name) {
   if (name === 'supplier')  { fetchSuppliers(); }
   if (name === 'wi')        { if (typeof _wiLoadList==='function') _wiLoadList(); if (typeof _wiPopulateWorkTypeList==='function') _wiPopulateWorkTypeList(); }
   if (name === 'order')     { updateOrderPreview(); fetchOrders(); fetchCustomers().then(()=>_gordRefreshCustomerList()); fetchItemMaster(); }
+  if (name === 'order')     { if (typeof _gquoRenderItems==='function') _gquoRenderItems(); if (typeof _gquoFetchList==='function') _gquoFetchList(); if (typeof _wiLoad==='function') setTimeout(_wiLoad, 600); }
   if (name === 'track')     {
     fetchOrders(); renderTrackDashboard();
     // โหลดประวัติใบแจ้งชุบ เพื่อใช้แสดงไอคอน 📨 บนขั้น "กำลังส่งชุป" ถ้าออกใบแจ้งชุบแล้ว
@@ -568,8 +629,9 @@ function switchTab(name) {
     if (btn) btn.textContent = '⛶ เปิดเต็มจอ';
   }
   if (name === 'po')        { fetchSuppliers(); fetchPurchaseOrders(); fetchPOSupplierItems(); if (!_poEditingNo && !_poItems.length) _poNewForm(); }
+  if (name === 'po')         { if (typeof _rfqReset==='function') _rfqReset(); if (typeof _rfqFetchList==='function') _rfqFetchList(); if (typeof _rfqLoadSupplierList==='function') setTimeout(_rfqLoadSupplierList, 500); }
   if (name === 'cust')       { fetchCustomers(); fetchOrders(); }
-  if (name === 'invoice')    { fetchCustomers(); fetchOrders(); invInit(); }
+  if (name === 'invoice')    { fetchCustomers(); invInit(); } // fetchOrders(true) อยู่ใน invInit() แล้ว
   if (name === 'plating')    { fetchSuppliers(); fetchOrders(); platingInit(); }
   if (name === 'dashboard')  { if (typeof _dbInit    === 'function') _dbInit(); }
   if (name === 'inspect')    { if (typeof _inspInit  === 'function') _inspInit(); }

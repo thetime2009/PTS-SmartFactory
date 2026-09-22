@@ -25,6 +25,7 @@ const ORDER_COLS = {
 const ORDER_NUM_COLS = 38;
 let _orderCache = [];
 let _orderCacheLimited = true; // true = โหลดมาแค่บางส่วน, false = ครบทั้งหมด
+let _ordTotal = 0; // จำนวน Order ทั้งหมดในชีต (จาก server)
 let _wiCache = []; // WI list โหลดจาก backend (match ด้วย OD+ID+H+workType)
 const ORDER_LOAD_LIMIT = 100; // โหลดปกติ = 100 รายการล่าสุด, กด "โหลดทั้งหมด" = 0 (ทั้งหมด)
 let _itemMasterCache = []; // รายการสินค้า/บริการที่ใช้บ่อย (Item Master) — โหลดจาก fetchItemMaster()
@@ -1866,9 +1867,32 @@ async function fetchOrders(showAll) {
     return;
   }
   const limit = showAll ? 0 : ORDER_LOAD_LIMIT;
-  tbody.innerHTML = `<tr><td colspan="10" style="padding:30px;text-align:center;color:var(--t3);font-size:.8rem"><span class="spin-ico">↻</span> กำลังโหลด…</td></tr>`;
-  if (trkBody) trkBody.innerHTML = `<div style="padding:30px;text-align:center;color:var(--t3);font-size:.85rem"><span class="spin-ico">↻</span> กำลังโหลด…</div>`;
-  if (trkSum)  trkSum.innerHTML  = '';
+  const _ORD_CACHE_KEY = 'ptts_order_cache_v1';
+  let _renderedFromCache = false;
+
+  // ── แสดงจาก cache ทันที (stale-while-revalidate) แล้วค่อย refresh เบื้องหลัง ──
+  try {
+    const c = JSON.parse(localStorage.getItem(_ORD_CACHE_KEY) || 'null');
+    if (c && c.url === SCRIPT_URL && Array.isArray(c.rows) && c.rows.length
+        && (c.limit === 0 || c.limit === limit)) {
+      _orderCache = c.rows.filter(r => String(r[ORDER_COLS.noPO]||'').trim()); // cache เก็บแบบใหม่สุดก่อนแล้ว
+      _orderCacheLimited = !!c.limited;
+      _ordTotal = c.total || _orderCache.length;
+      _ordPage = 1;
+      _ordPopulateMatMeshDatalists();
+      renderOrderTable();
+      renderOrdLoadBanner(c.total || _orderCache.length, c.limited);
+      if (typeof renderTrackDashboard === 'function') renderTrackDashboard();
+      if (typeof _invRefreshCustomerSelect === 'function') _invRefreshCustomerSelect();
+      _renderedFromCache = true;
+    }
+  } catch(e) {}
+
+  if (!_renderedFromCache) {
+    tbody.innerHTML = `<tr><td colspan="10" style="padding:30px;text-align:center;color:var(--t3);font-size:.8rem"><span class="spin-ico">↻</span> กำลังโหลด…</td></tr>`;
+    if (trkBody) trkBody.innerHTML = `<div style="padding:30px;text-align:center;color:var(--t3);font-size:.85rem"><span class="spin-ico">↻</span> กำลังโหลด…</div>`;
+    if (trkSum)  trkSum.innerHTML  = '';
+  }
   try {
     const res = await fetch(SCRIPT_URL + '?action=getOrders&limit=' + limit, {mode:'cors'});
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -1877,6 +1901,14 @@ async function fetchOrders(showAll) {
     // กรองแถวว่าง (ไม่มีเลข PO) ออก — เกิดจากแถวเปล่าท้ายชีตที่ getLastRow() นับรวมมาด้วย
     _orderCache = (data.rows || []).filter(r => String(r[ORDER_COLS.noPO]||'').trim()).slice().reverse(); // ใหม่สุดก่อน
     _orderCacheLimited = !!data.limited;
+    _ordTotal = data.total || _orderCache.length;
+    // เก็บ cache ไว้ใช้ครั้งต่อไป (เก็บแบบใหม่สุดก่อน)
+    try {
+      localStorage.setItem(_ORD_CACHE_KEY, JSON.stringify({
+        ts: Date.now(), url: SCRIPT_URL, limit: limit, rows: _orderCache,
+        total: data.total || _orderCache.length, limited: !!data.limited
+      }));
+    } catch(e) {}
     _initSeenIfEmpty(SEEN_KEY_ORDER, _orderCache.map(r => r[ORDER_COLS.noPO]));
     _ordPage = 1;
     _ordPopulateMatMeshDatalists();
@@ -1885,8 +1917,10 @@ async function fetchOrders(showAll) {
     if (typeof renderTrackDashboard === 'function') renderTrackDashboard();
     if (typeof _invRefreshCustomerSelect === 'function') _invRefreshCustomerSelect(); // อัปเดตจำนวน PO ที่รอเปิดใบกำกับ
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="10" style="padding:30px;text-align:center;color:#f87171;font-size:.8rem">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
-    if (trkBody) trkBody.innerHTML = `<div style="padding:30px;text-align:center;color:#f87171;font-size:.85rem">โหลดข้อมูลไม่สำเร็จ: ${err.message}</div>`;
+    if (!_renderedFromCache) {
+      tbody.innerHTML = `<tr><td colspan="10" style="padding:30px;text-align:center;color:#f87171;font-size:.8rem">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+      if (trkBody) trkBody.innerHTML = `<div style="padding:30px;text-align:center;color:#f87171;font-size:.85rem">โหลดข้อมูลไม่สำเร็จ: ${err.message}</div>`;
+    }
   }
 }
 

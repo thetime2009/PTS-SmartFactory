@@ -38,7 +38,7 @@
       <div class="ph-sub">Smart Manufacturing &amp; Business Platform</div>
     </div>
     <div class="ph-right">
-      <span class="ph-chip ver">v12.66</span>
+      <span class="ph-chip ver">v12.71</span>
       <span class="ph-chip" id="phConnChip" style="display:none">✓ Online</span>
       <button class="theme-fab" onclick="location.reload()" title="รีเฟรชระบบ (F5)" style="font-size:1rem">🔄</button>
       <button class="theme-fab" onclick="switchTab('api')" title="ตั้งค่า">⚙️</button>
@@ -2847,6 +2847,8 @@
       </div>
     </div>
 
+    <div id="invOrderStatusBar" style="margin-bottom:10px"></div>
+
     <div style="font-size:.82rem;font-weight:700;color:var(--c1);margin-bottom:8px">
       📦 PO ที่ยังไม่ออกใบกำกับ</div>
     <div class="field" style="margin-bottom:10px"><label>ค้นหาเลขที่ PO</label>
@@ -3298,7 +3300,7 @@
       <div style="display:flex;flex-direction:column;gap:0">
         <div style="display:grid;grid-template-columns:auto 1fr;gap:0;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.07)">
           <div style="padding:10px 12px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">📑 ใบกำกับภาษี</div>
-          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ออกใบกำกับภาษีจาก Order เลือก Order ที่ต้องการออกบิล ระบุวันที่ ระบบสร้างเลขใบกำกับให้อัตโนมัติ และอัปเดต Process ของ Order ที่เกี่ยวข้อง</div>
+          <div style="padding:10px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">ออกใบกำกับภาษีจาก Order เลือก Order ที่ต้องการออกบิล ระบุวันที่ ระบบสร้างเลขใบกำกับให้อัตโนมัติ และอัปเดต Process ของ Order ที่เกี่ยวข้อง<br><span style="color:#f59e0b">💡 ถ้าแถบสถานะด้านบนขึ้นเตือนว่าโหลด Order ไม่ครบ (เช่น 100/1,319) ให้กดปุ่ม <b>📂 โหลดทั้งหมด</b> ก่อน — มิฉะนั้นอาจค้นหา PO ที่ต้องการไม่เจอ</span></div>
           <div style="padding:10px 12px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">👥 เพิ่มลูกค้า</div>
           <div style="padding:10px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.07);font-size:.79rem;color:var(--t2);line-height:1.55">จัดการข้อมูลลูกค้า (ชื่อ, ที่อยู่, เลขประจำตัวผู้เสียภาษี) ข้อมูลจะถูกดึงไปใช้ในใบกำกับภาษีและใบเสนอราคา</div>
           <div style="padding:10px 12px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(255,255,255,.07);font-size:.78rem;font-weight:700;color:#a78bfa;white-space:nowrap">📊 รายงานภาษีขาย</div>
@@ -3484,12 +3486,12 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="core.js?v=9.03"></script>
-<script src="data.js?v=2.16"></script>
-<script src="formcalc.js?v=9.09"></script>
+  <script src="core.js?v=9.04"></script>
+  <script src="data.js?v=2.17"></script>
+  <script src="formcalc.js?v=9.10"></script>
 <script src="aifeatures.js?v=8.94"></script>
 <script src="theme.js?v=9.10"></script>
-<script src="order.js?v=9.85"></script>
+  <script src="order.js?v=9.86"></script>
 <script src="dashboard.js?v=9.73"></script>
 <script src="inspect.js?v=10.09"></script>
   <script src="stock.js?v=10.32"></script>
@@ -3499,7 +3501,7 @@
 <script src="hr.js?v=4.101"></script>
   <script src="imageEditor.js?v=1.1"></script>
 <script src="purchase.js?v=9.59"></script>
-<script src="invoice.js?v=9.10"></script>
+  <script src="invoice.js?v=9.11"></script>
 <script src="plating.js?v=8.97"></script>
 
 <!-- ═══ DOCUMENT EXPORT OVERLAY ════════════════════════════════ -->
@@ -3641,6 +3643,49 @@
 // เพิ่มรายการใหม่ไว้ "บนสุด" ของ array นี้ทุกครั้งที่แก้ไขโค้ดเสร็จในแต่ละรอบ
 const DEV_LOGS = [
         { current: true,
+          ref: '#REV-20260922-E',
+          date: '2026-09-22',
+          items: [
+            'core.js v9.04: เพิ่ม retry อัตโนมัติสำหรับ GET ไป Apps Script — ดัก fetch ทั้งหมด ถ้าเจอ 404/429/5xx (throttle) จะลองใหม่เองอีก 2 ครั้ง (เว้น 0.4 → 0.8 วิ) ก่อนโชว์ error แก้อาการ "HTTP 404" ที่โผล่เป็นครั้งคราวเวลายิง request ถี่',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260922-D',
+          date: '2026-09-22',
+          items: [
+            'invoice.js v9.11: แท็บ "ออกใบกำกับ" — เพิ่มแถบสถานะ Order (โหลดครบ/ยังไม่ครบ/กำลังโหลด/โหลดล้ม) พร้อมปุ่ม "📂 โหลดทั้งหมด" ในหน้าเดียว กดแล้วโหลด Order ทั้งหมด + รีเฟรชรายการ PO อัตโนมัติ แก้ปัญหาหา PO ไม่เจอเพราะโหลดมาแค่ 100 แถวโดยไม่รู้ตัว',
+            'order.js: เพิ่มตัวแปร _ordTotal (จำนวน Order ทั้งหมดจาก server) ให้แถบสถานะใช้แสดงผล',
+            'form.html: เพิ่ม #invOrderStatusBar ในแท็บออกใบกำกับ + อัปเดตวิธีใช้งานแผนกบัญชี',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260922-C',
+          date: '2026-09-22',
+          items: [
+            'Code.gs: getOrders() — จำกัดคอลัมน์สูงสุด 38 (A..AL) และเปลี่ยนการแปลงวันที่จาก Utilities.formatDate ต่อเซลล์ (ช้ามาก) เป็น JS ล้วน → กด "โหลดทั้งหมด" ในแท็บ Order เร็วขึ้น (ต้อง Redeploy)',
+            'order.js v9.86: fetchOrders() — cache รายการ Order ใน localStorage แบบ stale-while-revalidate กด "โหลดทั้งหมด" ครั้งแรกช้า หลังจากนั้นเห็นข้อมูลทันทีแล้ว refresh เบื้องหลัง',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260922-B',
+          date: '2026-09-22',
+          items: [
+            'Code.gs: เพิ่ม _computeNextNo() — แคชเลข No.Quo ถัดไปใน CacheService 2 นาที (เดิมสแกนคอลัมน์ B ทั้งชีตทุกครั้ง ใช้เวลา ~4.6 วิ และทำให้ getBootstrap/getNextNo timeout-404) + _clearNextNoCache() ล้าง cache ทันทีเมื่อ save ใหม่/อัปเดต/ลบใบเสนอราคา เพื่อให้เลขถูกต้องเสมอ (ต้อง Redeploy)',
+            'Code.gs: getNextNo() และ getBootstrap() ใช้ _computeNextNo() ร่วมกัน ลดเวลาอ่านชีตซ้ำซ้อน',
+          ]
+        },
+        { current: false,
+          ref: '#REV-20260922-A',
+          date: '2026-09-22',
+          items: [
+            'Code.gs: เพิ่ม getBootstrap() — รวมข้อมูล startup (MAT/SpecMat/WorkTypes/Contacts/NextNo/Modl/LaborConfig/Drafts) เป็น request เดียว เปิด Spreadsheet ครั้งเดียว ลด cold start จาก 8 requests → 1 (ต้อง Redeploy)',
+            'Code.gs: updateRow() / บันทึก Cost row — ลบ scheduleTelegram() ออก (เดิมสร้าง trigger ทุกครั้งที่ save = 3 Script-service calls และ trigger ชี้ฟังก์ชัน sendTelegramOnChangeManual ที่ไม่มีอยู่จริง) → save เร็วขึ้น',
+            'Code.gs: getCosts() — format วันที่เฉพาะคอลัมน์ C และจำกัดคอลัมน์สูงสุด 60 (A..BH) ตามที่เว็บใช้จริง ลด payload/เวลาโหลด DATA',
+            'formcalc.js v9.10: loadAllData() — ใช้ getBootstrap ดึงข้อมูล startup ครั้งเดียว (มี fallback เป็นการดึงแยกเดิมถ้า server ยังไม่ redeploy)',
+            'data.js v2.17: dtRefresh() — cache 200 รายการล่าสุดใน localStorage แบบ stale-while-revalidate เปิดแท็บ DATA เห็นข้อมูลทันทีแล้ว refresh เบื้องหลัง',
+          ]
+        },
+        { current: false,
           ref: '#REV-20260902-G',
           date: '2026-09-02',
           items: [

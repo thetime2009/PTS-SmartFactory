@@ -79,17 +79,64 @@ async function loadAllData(showResult) {
     fetch(base + '?action=' + action, {mode:'cors'})
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
 
+  // ── Cache TTL: ข้อมูลที่เปลี่ยนช้า (MAT / Config / Mold ฯลฯ) cache 10 นาที ──
+  const _CACHE_KEY = 'ptts_lazydata_v1';
+  const _CACHE_TTL = 10 * 60 * 1000;
+  let matData, specData, workData, contactData, moldDataRes, laborData;
+  let _usedCache = false;
+  if (!showResult) {
+    try {
+      const _c = JSON.parse(localStorage.getItem(_CACHE_KEY) || 'null');
+      if (_c && _c.url === SCRIPT_URL && (Date.now() - _c.ts) < _CACHE_TTL) {
+        matData = _c.matData; specData = _c.specData; workData = _c.workData;
+        contactData = _c.contactData; moldDataRes = _c.moldDataRes; laborData = _c.laborData;
+        _usedCache = true;
+      }
+    } catch(e) {}
+  }
+
   try {
-    const [matData, specData, workData, contactData, nextNoData, moldDataRes, laborData, draftsData] = await Promise.all([
-      fetchJSON('getMAT'),
-      fetchJSON('getSpecMat'),
-      fetchJSON('getWorkTypes'),
-      fetchJSON('getContacts'),
-      fetchJSON('getNextNo'),
-      fetchJSON('getModl'),
-      fetchJSON('getLaborConfig'),
-      fetchJSON('getDrafts'),
-    ]);
+    let nextNoData, draftsData;
+    if (_usedCache) {
+      // cache ยังสด — ดึงแค่ 2 ตัวที่เปลี่ยนบ่อย
+      [nextNoData, draftsData] = await Promise.all([
+        fetchJSON('getNextNo'),
+        fetchJSON('getDrafts'),
+      ]);
+    } else {
+      // cache หมดอายุหรือยังไม่มี — ดึงทั้งหมดในครั้งเดียว (getBootstrap) ลด cold start จาก 8 → 1
+      let _boot = null;
+      try { _boot = await fetchJSON('getBootstrap'); } catch(eB) { _boot = null; }
+      if (_boot && _boot.status === 'ok') {
+        matData     = _boot.mat;
+        specData    = _boot.spec;
+        workData    = _boot.work;
+        contactData = _boot.contacts;
+        moldDataRes = _boot.mold;
+        laborData   = _boot.labor;
+        draftsData  = _boot.drafts;
+        nextNoData  = { status:'ok', nextNo: _boot.nextNo };
+      } else {
+        // fallback: ดึงแยกทีละ endpoint (กรณี Code.gs ฝั่ง server ยังไม่ได้ redeploy)
+        [matData, specData, workData, contactData, nextNoData, moldDataRes, laborData, draftsData] = await Promise.all([
+          fetchJSON('getMAT'),
+          fetchJSON('getSpecMat'),
+          fetchJSON('getWorkTypes'),
+          fetchJSON('getContacts'),
+          fetchJSON('getNextNo'),
+          fetchJSON('getModl'),
+          fetchJSON('getLaborConfig'),
+          fetchJSON('getDrafts'),
+        ]);
+      }
+      // บันทึก cache
+      try {
+        localStorage.setItem(_CACHE_KEY, JSON.stringify({
+          ts: Date.now(), url: SCRIPT_URL,
+          matData, specData, workData, contactData, moldDataRes, laborData
+        }));
+      } catch(e) {}
+    }
 
     // MAT — server เป็นข้อมูลหลักเสมอ (sync ข้ามเครื่อง) คงค่า w/l เดิมไว้ถ้ามี
     if (matData.status === 'ok') {
@@ -188,15 +235,13 @@ async function loadAllData(showResult) {
       _updateDraftBadge();
     }
 
-    setDbStatus('ok', '✓ เชื่อมต่อแล้ว');
+    setDbStatus('ok', _usedCache ? '✓ เชื่อมต่อแล้ว' : '✓ เชื่อมต่อแล้ว');
     if (showResult) {
       Swal.fire({icon:'success',title:'โหลดข้อมูลสำเร็จ ✅',
         background:'#0a1c2e',color:'#f1f5f9',timer:1500,showConfirmButton:false,
         toast:true,position:'top-end'});
     }
-    // โหลด history (DATA rows) ในพื้นหลังเพื่อให้ Pricing Insight ทำงานได้ทันที
-    // ไม่ต้องรอให้ผู้ใช้ไปแท็บ DATA ก่อน
-    dtRefresh(false).catch(() => {});
+    // dtRefresh โหลดเมื่อผู้ใช้เปิดแท็บ DATA เอง (lazy) — ไม่โหลดพื้นหลังตอน startup
   } catch(err) {
     setDbStatus('error', '✗ ' + (err.message||'โหลดไม่สำเร็จ'));
     const errMsg = err.message || String(err);

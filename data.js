@@ -61,7 +61,32 @@ async function dtRefresh(showMsg) {
     return;
   }
   const limit = showMsg ? 0 : 200;  // รีเฟรชปกติ = 200, กด "โหลดทั้งหมด" = 0
-  dtShowEmpty(`↻ กำลังโหลด${limit > 0 ? ' ' + limit + ' รายการล่าสุด' : 'ทั้งหมด'}…`);
+  const _DT_CACHE_KEY = 'ptts_dt_cache_v1';
+  let _renderedFromCache = false;
+
+  // ── แสดงจาก cache ทันที (stale-while-revalidate) แล้วค่อย refresh เบื้องหลัง ──
+  if (!showMsg) {
+    try {
+      const c = JSON.parse(localStorage.getItem(_DT_CACHE_KEY) || 'null');
+      if (c && c.url === SCRIPT_URL && Array.isArray(c.rows) && c.rows.length) {
+        _dtCache = c.rows;
+        _dtPage  = 0;
+        _dtFilter = 'all';
+        computeNextNo();
+        dtRender();
+        _updatePricingInsight();
+        renderDtLoadBanner(c.total || c.rows.length, false);
+        _renderedFromCache = true;
+      } else {
+        dtShowEmpty(`↻ กำลังโหลด ${limit} รายการล่าสุด…`);
+      }
+    } catch(e) {
+      dtShowEmpty(`↻ กำลังโหลด ${limit} รายการล่าสุด…`);
+    }
+  } else {
+    dtShowEmpty('↻ กำลังโหลดทั้งหมด…');
+  }
+
   try {
     const url = SCRIPT_URL + '?action=getCosts&limit=' + limit;  // limit=0 = ทั้งหมด
     const res  = await fetch(url, {mode:'cors'});
@@ -70,6 +95,14 @@ async function dtRefresh(showMsg) {
     if (data.status !== 'ok') throw new Error(data.message || 'ข้อผิดพลาดจาก server');
     _dtCache = Array.isArray(data.rows) ? data.rows : [];
     _dtPage  = 0;
+    // เก็บ cache เฉพาะโหลดปกติ (limit=200) — กัน localStorage บวมตอน "โหลดทั้งหมด"
+    if (!showMsg) {
+      try {
+        localStorage.setItem(_DT_CACHE_KEY, JSON.stringify({
+          ts: Date.now(), url: SCRIPT_URL, rows: _dtCache, total: data.total || _dtCache.length
+        }));
+      } catch(e) {}
+    }
     // ตั้ง baseline "เห็นแล้ว" ครั้งแรก — ไม่ให้ของเก่าทั้งหมดขึ้น NEW พร้อมกัน
     _initSeenIfEmpty(SEEN_KEY_DATA, _dtCache.map(r => r[DT.noQuo]));
     computeNextNo();
@@ -86,7 +119,8 @@ async function dtRefresh(showMsg) {
       text:`พบ ${_dtCache.length} รายการ`,timer:1500,showConfirmButton:false,
       background:'#0a1c2e',color:'#f1f5f9'});
   } catch(e) {
-    dtShowEmpty('❌ โหลดไม่สำเร็จ: ' + e.message);
+    // ถ้าแสดงจาก cache ได้แล้ว ให้คงข้อมูลเดิมไว้ ไม่ต้องลบด้วยข้อความ error
+    if (!_renderedFromCache) dtShowEmpty('❌ โหลดไม่สำเร็จ: ' + e.message);
   }
 }
 
